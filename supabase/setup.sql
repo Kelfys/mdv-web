@@ -17,6 +17,7 @@
 --   014_admin_email_trigger.sql
 --   015_admin_create_stores.sql
 --   016_moderator_role.sql
+--   017_moderator_policies.sql
 --
 -- Após rodar as migrations (recomendado via CLI):
 --   npx supabase login
