@@ -137,6 +137,32 @@ function adminOrdersFilterBar(stores) {
     </div>`
 }
 
+const ORDERS_PAGE_SIZE = 20
+
+function renderOrdersPaginationHtml({ currentPage, totalPages, matchedCount }) {
+  if (matchedCount === 0) return ''
+
+  const start = (currentPage - 1) * ORDERS_PAGE_SIZE + 1
+  const end = Math.min(currentPage * ORDERS_PAGE_SIZE, matchedCount)
+
+  if (totalPages <= 1) {
+    return `
+      <div class="admin-pagination admin-pagination--single">
+        <p class="admin-pagination__info">${matchedCount} pedido${matchedCount === 1 ? '' : 's'}</p>
+      </div>`
+  }
+
+  return `
+    <div class="admin-pagination">
+      <p class="admin-pagination__info">${start}–${end} de ${matchedCount} pedido${matchedCount === 1 ? '' : 's'}</p>
+      <div class="admin-pagination__controls">
+        <button type="button" class="btn btn-outline btn-sm" data-page-prev ${currentPage <= 1 ? 'disabled' : ''}>← Anterior</button>
+        <span class="admin-pagination__status">Página ${currentPage} de ${totalPages}</span>
+        <button type="button" class="btn btn-outline btn-sm" data-page-next ${currentPage >= totalPages ? 'disabled' : ''}>Próxima →</button>
+      </div>
+    </div>`
+}
+
 function bindOrdersListFilters(main) {
   const search = main.querySelector('#admin-orders-search')
   const storeSelect = main.querySelector('#admin-orders-store')
@@ -144,14 +170,37 @@ function bindOrdersListFilters(main) {
   const periodChips = main.querySelectorAll('[data-order-period]')
   const rows = main.querySelectorAll('[data-order-row]')
   const emptyRow = main.querySelector('[data-orders-empty]')
+  const paginationWrap = main.querySelector('#admin-orders-pagination-wrap')
   let activeStatus = 'all'
   let activePeriod = 'all'
+  let currentPage = 1
+  let matchedRows = []
 
-  const apply = () => {
+  const applyPagination = () => {
+    const totalPages = Math.max(1, Math.ceil(matchedRows.length / ORDERS_PAGE_SIZE))
+    if (currentPage > totalPages) currentPage = totalPages
+
+    matchedRows.forEach((row, index) => {
+      const onPage = index >= (currentPage - 1) * ORDERS_PAGE_SIZE && index < currentPage * ORDERS_PAGE_SIZE
+      row.hidden = !onPage
+    })
+
+    if (paginationWrap) {
+      paginationWrap.innerHTML = renderOrdersPaginationHtml({
+        currentPage,
+        totalPages,
+        matchedCount: matchedRows.length,
+      })
+    }
+  }
+
+  const apply = ({ resetPage = false } = {}) => {
+    if (resetPage) currentPage = 1
+
     const term = search?.value.trim().toLowerCase() ?? ''
     const activeStore = storeSelect?.value ?? 'all'
     const cutoff = getOrderPeriodCutoff(activePeriod)
-    let visibleCount = 0
+    matchedRows = []
 
     rows.forEach((row) => {
       const matchesSearch = !term || (row.dataset.orderSearch ?? '').includes(term)
@@ -159,30 +208,48 @@ function bindOrdersListFilters(main) {
       const matchesStatus = activeStatus === 'all' || row.dataset.orderStatus === activeStatus
       const orderDate = new Date(row.dataset.orderCreated)
       const matchesPeriod = !cutoff || orderDate >= cutoff
-      const visible = matchesSearch && matchesStore && matchesStatus && matchesPeriod
-      row.hidden = !visible
-      if (visible) visibleCount++
+      const matches = matchesSearch && matchesStore && matchesStatus && matchesPeriod
+      row.dataset.orderMatch = matches ? '1' : '0'
+      if (matches) matchedRows.push(row)
+      else row.hidden = true
     })
 
-    if (emptyRow) emptyRow.hidden = visibleCount > 0
+    if (emptyRow) emptyRow.hidden = matchedRows.length > 0
+    applyPagination()
   }
 
-  search?.addEventListener('input', apply)
-  storeSelect?.addEventListener('change', apply)
+  search?.addEventListener('input', () => apply({ resetPage: true }))
+  storeSelect?.addEventListener('change', () => apply({ resetPage: true }))
   statusChips.forEach((chip) => {
     chip.addEventListener('click', () => {
       activeStatus = chip.dataset.orderStatus
       statusChips.forEach((c) => c.classList.toggle('active', c === chip))
-      apply()
+      apply({ resetPage: true })
     })
   })
   periodChips.forEach((chip) => {
     chip.addEventListener('click', () => {
       activePeriod = chip.dataset.orderPeriod
       periodChips.forEach((c) => c.classList.toggle('active', c === chip))
-      apply()
+      apply({ resetPage: true })
     })
   })
+
+  paginationWrap?.addEventListener('click', (event) => {
+    const totalPages = Math.max(1, Math.ceil(matchedRows.length / ORDERS_PAGE_SIZE))
+    if (event.target.closest('[data-page-prev]') && currentPage > 1) {
+      currentPage--
+      applyPagination()
+      main.querySelector('.admin-orders-table')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+    if (event.target.closest('[data-page-next]') && currentPage < totalPages) {
+      currentPage++
+      applyPagination()
+      main.querySelector('.admin-orders-table')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  })
+
+  apply()
 }
 
 function bindListFilters(main, {
@@ -266,7 +333,7 @@ function bindOrdersCsvExport(main, orders) {
   btn.addEventListener('click', () => {
     const visibleIds = new Set()
     main.querySelectorAll('[data-order-row]').forEach((row) => {
-      if (!row.hidden) visibleIds.add(row.dataset.orderId)
+      if (row.dataset.orderMatch === '1') visibleIds.add(row.dataset.orderId)
     })
 
     const toExport = orders.filter((o) => visibleIds.has(o.id))
@@ -1224,9 +1291,10 @@ export async function renderAdminDashboard(main, tab = 'overview', selectedStore
             </tbody>
           </table>
         </div>
+        ${orders.length > 0 ? '<div id="admin-orders-pagination-wrap"></div>' : ''}
       `,
       orders.length > 0
-        ? '<span class="admin-export-hint">Exporta os pedidos visíveis (respeita busca, loja, status e período)</span>'
+        ? '<span class="admin-export-hint">Exporta todos os pedidos filtrados (todas as páginas)</span>'
         : ''
     )
 
