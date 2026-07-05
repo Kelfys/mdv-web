@@ -17,15 +17,16 @@ import { getStoreThemeColor } from './config.js'
 import { escapeHtml, formatCurrency, formatPhone } from './utils.js'
 import {
   getUser, logout, onAuthChange, toggleTheme, getTheme, getAdminPendingCount,
+  getMerchantNewOrdersCount,
   getCart, onCartChange, openCart, closeCart, removeItem, updateQuantity,
   getCartTotal, getCartItemCount, clearCart,
 } from './state.js'
 import { buildOrderMessage, buildWhatsAppUrl } from './whatsapp.js'
 import { createOrder } from './api.js'
-import { navigate, render as rerenderRoute } from './router.js'
+import { navigate, render as rerenderRoute, getCurrentPath, routeHref } from './router.js'
 import { showToast } from './utils.js'
 import { STAFF_PANELS, getStaffMenu, isStaffPath, getStaffPanel, getStaffTab } from './staff-nav.js'
-import { MERCHANT_PANEL, MERCHANT_MENU, isMerchantPath, getMerchantTab } from './merchant-nav.js'
+import { MERCHANT_PANEL, MERCHANT_MENU, isMerchantPath, getMerchantTab, merchantMenuHref } from './merchant-nav.js'
 
 let menuOpen = false
 let staffMenuOpen = false
@@ -59,7 +60,7 @@ export function renderHeader() {
   if (!header) return
 
   const user = getUser()
-  const currentPath = window.location.hash.replace(/^#/, '') || '/'
+  const currentPath = getCurrentPath()
   const staffPanel = getStaffPanel(currentPath)
   const onStaff = (user?.role === 'admin' && staffPanel === 'admin')
     || (user?.role === 'moderator' && staffPanel === 'moderator')
@@ -91,7 +92,7 @@ export function renderHeader() {
             <div class="header-dropdown__panel admin-menu" role="menu">
               <p class="admin-menu__title">${MERCHANT_PANEL.label}</p>
               ${MERCHANT_MENU.map((item) => `
-                <a href="${item.href}" class="admin-menu__item ${merchantTab === item.id ? 'active' : ''}">
+                <a href="${merchantMenuHref(item)}" class="admin-menu__item ${merchantTab === item.id ? 'active' : ''}">
                   <span class="admin-menu__icon">${item.icon}</span>
                   <span>${item.label}</span>
                 </a>
@@ -115,9 +116,11 @@ export function renderHeader() {
       ${user?.role === 'customer' ? '<a href="#/favoritos">❤️ Favoritos</a>' : ''}
       ${user?.role === 'merchant' ? `
         <p class="nav-mobile__section">Painel do Lojista</p>
-        ${MERCHANT_MENU.map((item) => `
-          <a href="${item.href}" class="${merchantTab === item.id ? 'active' : ''}">${item.icon} ${item.label}</a>
-        `).join('')}
+        ${MERCHANT_MENU.map((item) => {
+          const badge = item.id === 'orders' && getMerchantNewOrdersCount() > 0
+            ? ` (${getMerchantNewOrdersCount()})` : ''
+          return `<a href="${merchantMenuHref(item)}" class="${merchantTab === item.id ? 'active' : ''}">${item.icon} ${item.label}${badge}</a>`
+        }).join('')}
         <a href="#/">← Voltar ao site</a>
       ` : ''}
       ${user?.role === 'admin' ? `
@@ -154,11 +157,14 @@ export function renderHeader() {
       <div class="admin-toolbar merchant-toolbar">
         <div class="admin-toolbar__inner">
           <div class="admin-toolbar__tabs">
-            ${MERCHANT_MENU.map((item) => `
-              <a href="${item.href}" class="admin-toolbar__tab ${merchantTab === item.id ? 'active' : ''}">
+            ${MERCHANT_MENU.map((item) => {
+              const pending = item.id === 'orders' ? getMerchantNewOrdersCount() : 0
+              return `
+              <a href="${merchantMenuHref(item)}" class="admin-toolbar__tab ${merchantTab === item.id ? 'active' : ''}">
                 <span>${item.icon}</span> ${item.label}
-              </a>
-            `).join('')}
+                ${pending > 0 ? `<span class="admin-toolbar__badge">${pending}</span>` : ''}
+              </a>`
+            }).join('')}
           </div>
           <button type="button" class="btn btn-outline btn-sm" id="merchant-refresh" title="Atualizar dados">↻ Atualizar</button>
         </div>

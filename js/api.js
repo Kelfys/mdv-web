@@ -21,6 +21,7 @@ import { STORAGE_BUCKETS, uploadImage } from './uploads.js'
 import {
   planAllowsStoreBranding, FREE_PLAN_BRANDING_MESSAGE,
   FREE_PLAN_PRODUCT_IMAGE_LIMIT, FREE_PLAN_PRODUCT_IMAGE_MESSAGE,
+  getPriceCooldownRemaining, formatPriceCooldownRemaining,
 } from './plans.js'
 
 async function countStoreProductsWithImages(client, storeId) {
@@ -504,6 +505,25 @@ export async function createProduct(storeId, form) {
 
 export async function updateProduct(productId, form) {
   const client = await requireClient()
+
+  if (form.price !== undefined) {
+    const { data: existing, error: fetchError } = await client
+      .from('products')
+      .select('price, price_changed_at, store:stores(plan_id)')
+      .eq('id', productId)
+      .single()
+    if (fetchError) throw fetchError
+
+    const newPrice = Number(form.price)
+    const oldPrice = Number(existing.price)
+    if (newPrice !== oldPrice) {
+      const cooldown = getPriceCooldownRemaining(existing.store?.plan_id ?? 'free', existing.price_changed_at)
+      if (!cooldown.allowed) {
+        throw new Error(`Aguarde ${formatPriceCooldownRemaining(cooldown.remainingMs)} para alterar o preço novamente.`)
+      }
+    }
+  }
+
   const updates = {}
   for (const key of ['name', 'description', 'price', 'category_id', 'stock', 'active']) {
     if (form[key] !== undefined) updates[key] = form[key]
@@ -973,4 +993,132 @@ export async function fetchAdminOrders(limit = 200) {
     .limit(limit)
   if (error) throw error
   return data ?? []
+}
+
+export async function updateOrderStatus(orderId, status) {
+  const client = await requireClient()
+  const { data, error } = await client
+    .from('orders')
+    .update({ status })
+    .eq('id', orderId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function fetchMerchantOrdersAnalytics(storeId) {
+  const client = await requireClient()
+  const { data, error } = await client
+    .from('orders')
+    .select('id, total, status, created_at')
+    .eq('store_id', storeId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  const timeline = data ?? []
+  return {
+    metrics: summarizeAdminOrders(timeline),
+    timeline,
+  }
+}
+
+export async function fetchStoreViewStats(storeId) {
+  const client = await requireClient()
+  const now = new Date()
+  const weekAgo = new Date(now)
+  weekAgo.setDate(weekAgo.getDate() - 6)
+
+  const { data, error, count } = await client
+    .from('store_views')
+    .select('id, created_at', { count: 'exact' })
+    .eq('store_id', storeId)
+  if (error) throw error
+
+  const views = data ?? []
+  const weekViews = views.filter((v) => new Date(v.created_at) >= weekAgo).length
+
+  return {
+    total: count ?? views.length,
+    week: weekViews,
+  }
+}
+
+export async function fetchProductPriceHistory(productId, limit = 10) {
+  const client = await requireClient()
+  const { data, error } = await client
+    .from('product_price_history')
+    .select('old_price, new_price, changed_at')
+    .eq('product_id', productId)
+    .order('changed_at', { ascending: false })
+    .limit(limit)
+  if (error) {
+    if (error.code === '42P01') return []
+    throw error
+  }
+  return data ?? []
+}
+
+export async function fetchStoreAds(storeId) {
+  const client = await requireClient()
+  const { data, error } = await client
+    .from('store_ads')
+    .select('*')
+    .eq('store_id', storeId)
+    .order('created_at', { ascending: false })
+  if (error) {
+    if (error.code === '42P01') return []
+    throw error
+  }
+  return data ?? []
+}
+
+export async function createStoreAd(storeId, { title, message, image }) {
+  const client = await requireClient()
+  let image_url = null
+  if (image instanceof File) {
+    image_url = await uploadImage(STORAGE_BUCKETS.products, `ads/${storeId}/${Date.now()}`, image)
+  }
+
+  const { data, error } = await client
+    .from('store_ads')
+    .insert({
+      store_id: storeId,
+      title: title.trim(),
+      message: message.trim(),
+      image_url,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function countUnreadMerchantOrders(storeId) {
+  const client = await requireClient()
+  const { count, error } = await client
+    .from('orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('store_id', storeId)
+    .eq('status', 'sent')
+  if (error) throw error
+  return count ?? 0
+}
+
+export function subscribeToStoreOrders(storeId, onInsert) {
+  const client = getSupabase()
+  if (!client) return () => {}
+
+  const channel = client
+    .channel(`orders-store-${storeId}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'orders',
+      filter: `store_id=eq.${storeId}`,
+    }, (payload) => onInsert?.(payload.new))
+    .subscribe()
+
+  return () => {
+    client.removeChannel(channel)
+  }
 }

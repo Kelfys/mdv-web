@@ -20,6 +20,14 @@
     <div id="cart-root"></div>
     <div id="toast" class="toast hidden" role="status"></div>
   </div>
+  <script>
+    (function () {
+      var target = sessionStorage.getItem('spa-redirect')
+      if (!target) return
+      sessionStorage.removeItem('spa-redirect')
+      history.replaceState(null, '', target)
+    })()
+  </script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

@@ -43,6 +43,17 @@ export function getAdminPendingCount() {
   return adminPendingCount
 }
 
+// --- Merchant UI (badge na toolbar) ---
+let merchantNewOrdersCount = 0
+
+export function setMerchantNewOrdersCount(count) {
+  merchantNewOrdersCount = Math.max(0, Number(count) || 0)
+}
+
+export function getMerchantNewOrdersCount() {
+  return merchantNewOrdersCount
+}
+
 // --- Auth ---
 let currentUser = null
 const authListeners = new Set()

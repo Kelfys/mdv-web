@@ -17,6 +17,18 @@ export const SUPABASE_URL = 'https://ulpjsxmilumqedkkfuqw.supabase.co'
 export const SUPABASE_ANON_KEY = 'sb_publishable_2hCOD3j1j7FRjLMsPF3sdw_4dG7A_HW'
 
 export const APP_NAME = 'MaredeVendas'
+
+/** Base path no GitHub Pages (vazio em localhost na raiz). */
+export function detectAppBasePath() {
+  const match = window.location.pathname.match(/^(\/[^/]+)/)
+  if (match && !match[1].includes('.')) return match[1]
+  return ''
+}
+
+export const APP_BASE_PATH = detectAppBasePath()
+
+/** true = URLs limpas (/dashboard); false = hash (#/dashboard) */
+export const USE_HISTORY_ROUTER = Boolean(APP_BASE_PATH)
 export const CART_STORAGE_KEY = 'maredevendas-cart'
 export const THEME_STORAGE_KEY = 'maredevendas-theme'
 

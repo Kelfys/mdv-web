@@ -47,12 +47,20 @@ export function canAddProductImage(planId, productsWithImages, productAlreadyHas
   return productsWithImages < FREE_PLAN_PRODUCT_IMAGE_LIMIT
 }
 
+const PLAN_COOLDOWN_HOURS = {
+  free: 24,
+  starter: 12,
+  growth: 4,
+  premium: null,
+}
+
 export const SUBSCRIPTION_PLANS = [
   {
     id: 'free',
     name: 'Gratuito',
     description: 'Ideal para começar com vitrine enxuta no marketplace.',
     priceMonthly: 0,
+    priceCooldownHours: PLAN_COOLDOWN_HOURS.free,
     features: [
       'Até 10 produtos',
       'Imagens em até 4 produtos (500 KB cada)',
@@ -67,6 +75,7 @@ export const SUBSCRIPTION_PLANS = [
     name: 'Starter',
     description: 'Mais produtos e preços mais flexíveis.',
     priceMonthly: 5,
+    priceCooldownHours: PLAN_COOLDOWN_HOURS.starter,
     features: [
       'Até 30 produtos',
       'Imagens em todos os produtos',
@@ -81,6 +90,7 @@ export const SUBSCRIPTION_PLANS = [
     name: 'Growth',
     description: 'Para lojas em expansão com catálogo maior.',
     priceMonthly: 15,
+    priceCooldownHours: PLAN_COOLDOWN_HOURS.growth,
     features: [
       'Até 80 produtos',
       'Imagens em todos os produtos',
@@ -95,6 +105,7 @@ export const SUBSCRIPTION_PLANS = [
     name: 'Premium',
     description: 'Sem limites para lojas consolidadas.',
     priceMonthly: 35,
+    priceCooldownHours: PLAN_COOLDOWN_HOURS.premium,
     features: [
       'Produtos ilimitados',
       'Imagens em todos os produtos',
@@ -112,6 +123,34 @@ export function formatPlanPrice(priceMonthly) {
 
 export function getPlanById(planId) {
   return SUBSCRIPTION_PLANS.find((p) => p.id === planId) ?? SUBSCRIPTION_PLANS[0]
+}
+
+export function getPlanPriceCooldownHours(planId) {
+  const plan = getPlanById(planId)
+  return plan.priceCooldownHours ?? PLAN_COOLDOWN_HOURS[plan.id] ?? null
+}
+
+export function getPriceCooldownRemaining(planId, priceChangedAt) {
+  const hours = getPlanPriceCooldownHours(planId)
+  if (hours === null) return { allowed: true, remainingMs: 0 }
+
+  const changed = new Date(priceChangedAt).getTime()
+  const unlockAt = changed + hours * 60 * 60 * 1000
+  const remainingMs = unlockAt - Date.now()
+  return {
+    allowed: remainingMs <= 0,
+    remainingMs: Math.max(0, remainingMs),
+    unlockAt: new Date(unlockAt),
+  }
+}
+
+export function formatPriceCooldownRemaining(remainingMs) {
+  if (remainingMs <= 0) return ''
+  const totalMinutes = Math.ceil(remainingMs / 60000)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours > 0) return `${hours}h ${minutes}min`
+  return `${minutes}min`
 }
 
 function buildPaymentMessage(planName, planPrice) {

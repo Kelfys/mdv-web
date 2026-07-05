@@ -1,41 +1,23 @@
 /**
  * Ponto de entrada da aplicação MaredeVendas.
- *
- * Responsabilidades:
- * - Registrar todas as rotas (hash-based SPA)
- * - Tratar callback OAuth do Supabase
- * - Inicializar header, carrinho e roteador
- *
- * Manutenção:
- * - Novas páginas: importar o render e chamar registerRoute() em boot()
- * - Rotas com parâmetros usam sintaxe :nome (ex.: /loja/:slug)
- *
- * Melhorias futuras:
- * - Migrar de hash (#/) para History API (pushState) para URLs limpas
- * - Lazy-load de páginas com dynamic import() para reduzir bundle inicial
- * - Service Worker para cache offline de assets estáticos
  */
 import { setTheme, loadUser } from './state.js'
 import { initHeader, initCart } from './ui.js'
-import { registerRoute, initRouter } from './router.js'
-import { renderHome } from './pages/home.js'
-import { renderStorePage } from './pages/store-page.js'
-import {
-  renderCustomerLogin, renderCustomerRegister,
-  renderMerchantLogin, renderMerchantRegister, renderAdminLogin, renderModeratorLogin,
-} from './pages/auth.js'
-import { renderMerchantDashboard } from './pages/merchant.js'
-import { renderAdminDashboard, renderModeratorDashboard } from './pages/admin.js'
-import { renderFavorites } from './pages/favorites.js'
-import { renderRules } from './pages/rules.js'
+import { registerRoute, initRouter, routeHref } from './router.js'
 import { getSupabase } from './db.js'
+
+const lazy = (loader) => async (main, params) => {
+  const mod = await loader()
+  const fn = mod.default ?? Object.values(mod).find((v) => typeof v === 'function')
+  return fn(main, params)
+}
 
 async function handleAuthCallback() {
   const params = new URLSearchParams(window.location.search)
   if (!params.get('code') && !params.get('error')) return
 
-  const hash = window.location.hash
-  if (!hash.includes('auth/callback')) return
+  const path = window.location.pathname + window.location.hash
+  if (!path.includes('auth/callback')) return
 
   try {
     const client = getSupabase()
@@ -47,7 +29,7 @@ async function handleAuthCallback() {
     const clean = new URL(window.location.href)
     clean.searchParams.delete('code')
     clean.searchParams.delete('state')
-    window.history.replaceState({}, '', clean.pathname + clean.hash)
+    window.history.replaceState({}, '', clean.pathname + clean.search)
   } catch (err) {
     console.error('Auth callback error:', err)
   }
@@ -56,39 +38,41 @@ async function handleAuthCallback() {
 function boot() {
   setTheme(localStorage.getItem('maredevendas-theme') || 'light')
 
-  registerRoute('/', renderHome)
-  registerRoute('/loja/:slug', renderStorePage)
-  registerRoute('/conta/entrar', renderCustomerLogin)
-  registerRoute('/conta/criar', renderCustomerRegister)
-  registerRoute('/lojista/entrar', renderMerchantLogin)
-  registerRoute('/lojista/cadastro', renderMerchantRegister)
-  registerRoute('/admin/entrar', renderAdminLogin)
-  registerRoute('/admin', (main) => renderAdminDashboard(main, 'overview'))
-  registerRoute('/admin/lojas', (main) => renderAdminDashboard(main, 'stores'))
-  registerRoute('/admin/produtos/:storeId', (main, params) => renderAdminDashboard(main, 'products', params.storeId))
-  registerRoute('/admin/produtos', (main) => renderAdminDashboard(main, 'products'))
-  registerRoute('/admin/pedidos', (main) => renderAdminDashboard(main, 'pedidos'))
-  registerRoute('/admin/aprovacoes', (main) => renderAdminDashboard(main, 'approvals'))
-  registerRoute('/admin/moderadores', (main) => renderAdminDashboard(main, 'moderators'))
-  registerRoute('/admin/conta', (main) => renderAdminDashboard(main, 'account'))
-  registerRoute('/moderador/entrar', renderModeratorLogin)
-  registerRoute('/moderador', (main) => renderModeratorDashboard(main, 'overview'))
-  registerRoute('/moderador/aprovacoes', (main) => renderModeratorDashboard(main, 'approvals'))
-  registerRoute('/moderador/lojas', (main) => renderModeratorDashboard(main, 'stores'))
-  registerRoute('/moderador/produtos/:storeId', (main, params) => renderModeratorDashboard(main, 'products', params.storeId))
-  registerRoute('/moderador/produtos', (main) => renderModeratorDashboard(main, 'products'))
-  registerRoute('/moderador/pedidos', (main) => renderModeratorDashboard(main, 'pedidos'))
-  registerRoute('/moderador/conta', (main) => renderModeratorDashboard(main, 'account'))
-  registerRoute('/dashboard', (main) => renderMerchantDashboard(main, 'overview'))
-  registerRoute('/dashboard/produtos', (main) => renderMerchantDashboard(main, 'products'))
-  registerRoute('/dashboard/pedidos', (main) => renderMerchantDashboard(main, 'orders'))
-  registerRoute('/dashboard/configuracoes', (main) => renderMerchantDashboard(main, 'settings'))
-  registerRoute('/favoritos', renderFavorites)
-  registerRoute('/regras', renderRules)
+  registerRoute('/', lazy(() => import('./pages/home.js').then((m) => ({ default: m.renderHome }))))
+  registerRoute('/loja/:slug', lazy(() => import('./pages/store-page.js').then((m) => ({ default: m.renderStorePage }))))
+  registerRoute('/conta/entrar', lazy(() => import('./pages/auth.js').then((m) => ({ default: m.renderCustomerLogin }))))
+  registerRoute('/conta/criar', lazy(() => import('./pages/auth.js').then((m) => ({ default: m.renderCustomerRegister }))))
+  registerRoute('/lojista/entrar', lazy(() => import('./pages/auth.js').then((m) => ({ default: m.renderMerchantLogin }))))
+  registerRoute('/lojista/cadastro', lazy(() => import('./pages/auth.js').then((m) => ({ default: m.renderMerchantRegister }))))
+  registerRoute('/admin/entrar', lazy(() => import('./pages/auth.js').then((m) => ({ default: m.renderAdminLogin }))))
+  registerRoute('/admin', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'overview') }))))
+  registerRoute('/admin/lojas', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'stores') }))))
+  registerRoute('/admin/produtos/:storeId', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main, p) => m.renderAdminDashboard(main, 'products', p.storeId) }))))
+  registerRoute('/admin/produtos', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'products') }))))
+  registerRoute('/admin/pedidos', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'pedidos') }))))
+  registerRoute('/admin/aprovacoes', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'approvals') }))))
+  registerRoute('/admin/moderadores', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'moderators') }))))
+  registerRoute('/admin/conta', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'account') }))))
+  registerRoute('/moderador/entrar', lazy(() => import('./pages/auth.js').then((m) => ({ default: m.renderModeratorLogin }))))
+  registerRoute('/moderador', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderModeratorDashboard(main, 'overview') }))))
+  registerRoute('/moderador/aprovacoes', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderModeratorDashboard(main, 'approvals') }))))
+  registerRoute('/moderador/lojas', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderModeratorDashboard(main, 'stores') }))))
+  registerRoute('/moderador/produtos/:storeId', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main, p) => m.renderModeratorDashboard(main, 'products', p.storeId) }))))
+  registerRoute('/moderador/produtos', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderModeratorDashboard(main, 'products') }))))
+  registerRoute('/moderador/pedidos', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderModeratorDashboard(main, 'pedidos') }))))
+  registerRoute('/moderador/conta', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderModeratorDashboard(main, 'account') }))))
+  registerRoute('/dashboard', lazy(() => import('./pages/merchant.js').then((m) => ({ default: (main) => m.renderMerchantDashboard(main, 'overview') }))))
+  registerRoute('/dashboard/produtos', lazy(() => import('./pages/merchant.js').then((m) => ({ default: (main) => m.renderMerchantDashboard(main, 'products') }))))
+  registerRoute('/dashboard/pedidos', lazy(() => import('./pages/merchant.js').then((m) => ({ default: (main) => m.renderMerchantDashboard(main, 'orders') }))))
+  registerRoute('/dashboard/anuncios', lazy(() => import('./pages/merchant.js').then((m) => ({ default: (main) => m.renderMerchantDashboard(main, 'ads') }))))
+  registerRoute('/dashboard/configuracoes', lazy(() => import('./pages/merchant.js').then((m) => ({ default: (main) => m.renderMerchantDashboard(main, 'settings') }))))
+  registerRoute('/dashboard/conta', lazy(() => import('./pages/merchant.js').then((m) => ({ default: (main) => m.renderMerchantDashboard(main, 'account') }))))
+  registerRoute('/favoritos', lazy(() => import('./pages/favorites.js').then((m) => ({ default: m.renderFavorites }))))
+  registerRoute('/regras', lazy(() => import('./pages/rules.js').then((m) => ({ default: m.renderRules }))))
   registerRoute('/auth/callback', async (main) => {
     main.innerHTML = '<div class="loading"><div class="spinner"></div></div>'
     await handleAuthCallback()
-    window.location.hash = '#/'
+    window.location.href = routeHref('/')
   })
 
   initHeader()

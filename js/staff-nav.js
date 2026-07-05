@@ -1,6 +1,8 @@
 /**
  * Navegação dos painéis admin e moderador.
  */
+import { getCurrentPath } from './router.js'
+
 export const STAFF_PANELS = {
   admin: {
     id: 'admin',
@@ -37,10 +39,6 @@ export const MODERATOR_MENU = [
   { id: 'account', label: 'Minha Conta', icon: '🔑', href: '#/moderador/conta' },
 ]
 
-function currentPath() {
-  return window.location.hash.replace(/^#/, '') || '/'
-}
-
 export function staffHref(panel, segment = '') {
   const base = STAFF_PANELS[panel]?.basePath ?? '/admin'
   return segment ? `#${base}/${segment}` : `#${base}`
@@ -50,18 +48,18 @@ export function getStaffMenu(panel = 'admin') {
   return panel === 'moderator' ? MODERATOR_MENU : ADMIN_MENU
 }
 
-export function isStaffPath(path = currentPath()) {
+export function isStaffPath(path = getCurrentPath()) {
   return path === '/admin' || path.startsWith('/admin/')
     || path === '/moderador' || path.startsWith('/moderador/')
 }
 
-export function getStaffPanel(path = currentPath()) {
+export function getStaffPanel(path = getCurrentPath()) {
   if (path === '/moderador' || path.startsWith('/moderador/')) return 'moderator'
   if (path === '/admin' || path.startsWith('/admin/')) return 'admin'
   return null
 }
 
-export function getStaffTab(path = currentPath(), panel = getStaffPanel(path)) {
+export function getStaffTab(path = getCurrentPath(), panel = getStaffPanel(path)) {
   if (!panel) return null
   const base = STAFF_PANELS[panel].basePath
   if (path === base) return 'overview'
@@ -76,11 +74,11 @@ export function getStaffMenuItem(tab, panel = 'admin') {
 
 // Compatibilidade com imports antigos
 export const ADMIN_MENU_LEGACY = ADMIN_MENU
-export function isAdminPath(path = currentPath()) {
+export function isAdminPath(path = getCurrentPath()) {
   return path === '/admin' || path.startsWith('/admin/')
 }
 
-export function getAdminTab(path = currentPath()) {
+export function getAdminTab(path = getCurrentPath()) {
   return getStaffTab(path, 'admin')
 }
 
