@@ -49,6 +49,8 @@ export async function render() {
   const main = document.getElementById('main')
   if (!main) return
 
+  import('./ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
+
   if (currentCleanup) {
     currentCleanup()
     currentCleanup = null
