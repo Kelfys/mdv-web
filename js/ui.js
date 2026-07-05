@@ -110,10 +110,21 @@ export function renderStoreCard(store) {
   `
 }
 
-export function renderProductCard(product, onAddId) {
+export function renderProductCard(product, options = {}) {
+  const {
+    user = null,
+    commentsOpen = false,
+    comments = [],
+    commentsLoading = false,
+  } = options
   const oos = product.stock <= 0
+  const likesCount = product.likes_count ?? 0
+  const commentsCount = product.comments_count ?? 0
+  const liked = Boolean(product.liked_by_user)
+  const canEngage = Boolean(user)
+
   return `
-    <article class="product-card ${oos ? 'out-of-stock' : ''}">
+    <article class="product-card ${oos ? 'out-of-stock' : ''}" data-product-id="${product.id}">
       <div class="product-card__img">
         ${product.image
           ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" />`
@@ -123,9 +134,51 @@ export function renderProductCard(product, onAddId) {
       <div class="product-card__body">
         <h3 class="product-card__name">${escapeHtml(product.name)}</h3>
         ${product.description ? `<p class="product-card__desc">${escapeHtml(product.description)}</p>` : ''}
+        <div class="product-card__engagement">
+          ${canEngage ? `
+            <button type="button" class="engagement-btn ${liked ? 'active' : ''}" data-like-product="${product.id}" aria-pressed="${liked}">
+              ${liked ? '❤️' : '🤍'} <span data-like-count="${product.id}">${likesCount}</span>
+            </button>
+            <button type="button" class="engagement-btn" data-toggle-comments="${product.id}" aria-expanded="${commentsOpen}">
+              💬 <span data-comment-count="${product.id}">${commentsCount}</span>
+            </button>
+          ` : `
+            <span class="engagement-btn engagement-btn--readonly" title="Entre para curtir">🤍 ${likesCount}</span>
+            <button type="button" class="engagement-btn engagement-btn--ghost" data-toggle-comments="${product.id}" aria-expanded="${commentsOpen}">
+              💬 ${commentsCount}
+            </button>
+          `}
+        </div>
+        ${commentsOpen ? `
+          <div class="product-comments" data-comments-panel="${product.id}">
+            ${commentsLoading
+              ? '<p class="product-comments__status">Carregando comentários...</p>'
+              : comments.length === 0
+                ? '<p class="product-comments__status">Nenhum comentário ainda.</p>'
+                : comments.map((comment) => `
+                    <div class="product-comment">
+                      <div class="product-comment__meta">
+                        <strong>${escapeHtml(comment.user?.name ?? 'Usuário')}</strong>
+                        <span>${new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(comment.created_at))}</span>
+                      </div>
+                      <p>${escapeHtml(comment.content)}</p>
+                    </div>
+                  `).join('')}
+            ${canEngage ? `
+              <form class="product-comment-form" data-comment-form="${product.id}">
+                <textarea class="form-input" name="content" rows="2" maxlength="500" placeholder="Escreva um comentário..." required></textarea>
+                <button type="submit" class="btn btn-primary btn-sm">Comentar</button>
+              </form>
+            ` : `
+              <p class="product-comments__login-hint">
+                <a href="#/conta/entrar">Entre</a> ou <a href="#/conta/criar">crie uma conta</a> para comentar.
+              </p>
+            `}
+          </div>
+        ` : ''}
         <div class="product-card__footer">
           <span class="product-card__price">${formatCurrency(product.price)}</span>
-          <button type="button" class="btn btn-primary btn-sm" data-add-product="${onAddId}" ${oos ? 'disabled' : ''}>+ Adicionar</button>
+          <button type="button" class="btn btn-primary btn-sm" data-add-product="${product.id}" ${oos ? 'disabled' : ''}>+ Adicionar</button>
         </div>
       </div>
     </article>

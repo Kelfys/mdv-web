@@ -180,16 +180,48 @@ export async function rejectStoreRegistration(storeId) {
 }
 
 // --- Products ---
-export async function fetchProductsByStore(storeId) {
+async function attachProductEngagement(products, userId = null) {
+  if (!products.length) return []
+
+  const client = await requireClient()
+  const ids = products.map((p) => p.id)
+
+  const [{ data: likes, error: likesError }, { data: comments, error: commentsError }] = await Promise.all([
+    client.from('product_likes').select('product_id, user_id').in('product_id', ids),
+    client.from('product_comments').select('product_id').in('product_id', ids),
+  ])
+  if (likesError) throw likesError
+  if (commentsError) throw commentsError
+
+  const likeCounts = {}
+  const userLikes = new Set()
+  for (const row of likes ?? []) {
+    likeCounts[row.product_id] = (likeCounts[row.product_id] ?? 0) + 1
+    if (userId && row.user_id === userId) userLikes.add(row.product_id)
+  }
+
+  const commentCounts = {}
+  for (const row of comments ?? []) {
+    commentCounts[row.product_id] = (commentCounts[row.product_id] ?? 0) + 1
+  }
+
+  return products.map((product) => ({
+    ...product,
+    likes_count: likeCounts[product.id] ?? 0,
+    comments_count: commentCounts[product.id] ?? 0,
+    liked_by_user: userLikes.has(product.id),
+  }))
+}
+
+export async function fetchProductsByStore(storeId, userId = null) {
   const client = await requireClient()
   const { data, error } = await client
     .from('products')
     .select('*, category:categories(*)')
     .eq('store_id', storeId)
     .eq('active', true)
-    .order('name')
   if (error) throw error
-  return data ?? []
+  return attachProductEngagement(data ?? [], userId)
 }
 
 export async function fetchMerchantProducts(storeId) {
@@ -229,6 +261,53 @@ export async function deleteProduct(productId) {
   const client = await requireClient()
   const { error } = await client.from('products').delete().eq('id', productId)
   if (error) throw error
+}
+
+export async function toggleProductLike(userId, productId) {
+  const client = await requireClient()
+  const { data: existing, error: readError } = await client
+    .from('product_likes')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('product_id', productId)
+    .maybeSingle()
+  if (readError) throw readError
+
+  if (existing) {
+    const { error } = await client.from('product_likes').delete().eq('id', existing.id)
+    if (error) throw error
+    return false
+  }
+
+  const { error } = await client.from('product_likes').insert({ user_id: userId, product_id: productId })
+  if (error) throw error
+  return true
+}
+
+export async function fetchProductComments(productId) {
+  const client = await requireClient()
+  const { data, error } = await client
+    .from('product_comments')
+    .select('*, user:users(name)')
+    .eq('product_id', productId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function addProductComment(userId, productId, content) {
+  const client = await requireClient()
+  const trimmed = content.trim()
+  if (!trimmed) throw new Error('Escreva um comentário antes de enviar.')
+  if (trimmed.length > 500) throw new Error('O comentário deve ter no máximo 500 caracteres.')
+
+  const { data, error } = await client
+    .from('product_comments')
+    .insert({ user_id: userId, product_id: productId, content: trimmed })
+    .select('*, user:users(name)')
+    .single()
+  if (error) throw error
+  return data
 }
 
 // --- Orders ---

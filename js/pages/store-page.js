@@ -1,12 +1,13 @@
 import {
   fetchStoreBySlug, fetchProductsByStore, fetchReviewsByStore,
   recordStoreView, toggleFavorite, isFavorite,
+  toggleProductLike, fetchProductComments, addProductComment,
 } from '../api.js'
 import { getStoreThemeColor } from '../config.js'
 import {
   renderProductCard, openCart, formatPhone,
 } from '../ui.js'
-import { escapeHtml } from '../utils.js'
+import { escapeHtml, rankProductsByEngagement } from '../utils.js'
 import { setStore, addItem, getCartItemCount, getUser } from '../state.js'
 import { navigate } from '../router.js'
 import { showToast } from '../utils.js'
@@ -28,22 +29,46 @@ export async function renderStorePage(main, { slug }) {
   setStore(store.id, store.name, store.whatsapp)
   recordStoreView(store.id)
 
-  const [products, reviews] = await Promise.all([
-    fetchProductsByStore(store.id),
+  const user = getUser()
+  const [rawProducts, reviews] = await Promise.all([
+    fetchProductsByStore(store.id, user?.id),
     fetchReviewsByStore(store.id),
   ])
 
+  let products = rankProductsByEngagement(rawProducts)
   const theme = getStoreThemeColor(store.theme_color)
-  const user = getUser()
   let favorited = user ? await isFavorite(user.id, store.id) : false
   const avgRating = reviews.length
     ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
     : 0
 
   const productMap = new Map(products.map((p) => [p.id, p]))
+  const openComments = new Set()
+  const commentsByProduct = new Map()
+  const commentsLoading = new Set()
+
+  function requireAuthForEngagement() {
+    navigate(`/conta/entrar?redirect=${encodeURIComponent(`/loja/${slug}`)}`)
+    showToast('Entre na sua conta para curtir ou comentar.')
+  }
+
+  async function loadComments(productId) {
+    commentsLoading.add(productId)
+    paint()
+    try {
+      const comments = await fetchProductComments(productId)
+      commentsByProduct.set(productId, comments)
+    } catch (err) {
+      showToast(err.message ?? 'Erro ao carregar comentários.')
+    } finally {
+      commentsLoading.delete(productId)
+      paint()
+    }
+  }
 
   function paint() {
     const cartCount = getCartItemCount()
+    const currentUser = getUser()
     const bannerStyle = `background:linear-gradient(135deg,${theme.gradientFrom},${theme.gradientTo})`
 
     main.innerHTML = `
@@ -83,14 +108,22 @@ export async function renderStorePage(main, { slug }) {
           <div class="info-panel__item">📞 ${formatPhone(store.whatsapp)}</div>
         </div>
 
-        <h2 class="section-title">Produtos</h2>
+        <div class="products-header">
+          <h2 class="section-title">Produtos</h2>
+          <p class="products-header__hint">Ordenados por popularidade — os mais curtidos aparecem com mais destaque.</p>
+        </div>
         ${products.length === 0
           ? '<div class="empty-state"><h2>Nenhum produto disponível</h2></div>'
-          : `<div class="product-grid" id="products">${products.map((p) => renderProductCard(p, p.id)).join('')}</div>`}
+          : `<div class="product-grid" id="products">${products.map((product) => renderProductCard(product, {
+              user: currentUser,
+              commentsOpen: openComments.has(product.id),
+              comments: commentsByProduct.get(product.id) ?? [],
+              commentsLoading: commentsLoading.has(product.id),
+            })).join('')}</div>`}
 
         ${reviews.length > 0 ? `
           <section style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
-            <h2 class="section-title">Avaliações</h2>
+            <h2 class="section-title">Avaliações da loja</h2>
             ${reviews.map((r) => `
               <div class="review-card">
                 <div style="display:flex;justify-content:space-between">
@@ -117,15 +150,15 @@ export async function renderStorePage(main, { slug }) {
     })
 
     document.getElementById('favorite-btn')?.addEventListener('click', async () => {
-      if (!user) {
+      if (!currentUser) {
         navigate(`/conta/entrar?redirect=${encodeURIComponent(`/loja/${slug}`)}`)
         return
       }
-      if (user.role !== 'customer') {
+      if (currentUser.role !== 'customer') {
         showToast('Apenas clientes podem favoritar lojas.')
         return
       }
-      favorited = await toggleFavorite(user.id, store.id)
+      favorited = await toggleFavorite(currentUser.id, store.id)
       paint()
     })
 
@@ -135,6 +168,78 @@ export async function renderStorePage(main, { slug }) {
         if (product) {
           addItem(product)
           openCart()
+          paint()
+        }
+      })
+    })
+
+    main.querySelectorAll('[data-like-product]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!currentUser) {
+          requireAuthForEngagement()
+          return
+        }
+
+        const productId = btn.dataset.likeProduct
+        const product = productMap.get(productId)
+        if (!product) return
+
+        try {
+          const liked = await toggleProductLike(currentUser.id, productId)
+          product.liked_by_user = liked
+          product.likes_count = Math.max(0, (product.likes_count ?? 0) + (liked ? 1 : -1))
+          paint()
+        } catch (err) {
+          showToast(err.message ?? 'Não foi possível curtir este produto.')
+        }
+      })
+    })
+
+    main.querySelectorAll('[data-toggle-comments]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const productId = btn.dataset.toggleComments
+        if (openComments.has(productId)) {
+          openComments.delete(productId)
+          paint()
+          return
+        }
+
+        openComments.add(productId)
+        if (!commentsByProduct.has(productId)) {
+          await loadComments(productId)
+          return
+        }
+        paint()
+      })
+    })
+
+    main.querySelectorAll('[data-comment-form]').forEach((form) => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        if (!currentUser) {
+          requireAuthForEngagement()
+          return
+        }
+
+        const productId = form.dataset.commentForm
+        const content = form.content.value
+        const submitBtn = form.querySelector('button[type="submit"]')
+        if (submitBtn) {
+          submitBtn.disabled = true
+          submitBtn.textContent = 'Enviando...'
+        }
+
+        try {
+          const comment = await addProductComment(currentUser.id, productId, content)
+          const product = productMap.get(productId)
+          if (product) product.comments_count = (product.comments_count ?? 0) + 1
+          const existing = commentsByProduct.get(productId) ?? []
+          commentsByProduct.set(productId, [comment, ...existing])
+          form.reset()
+          paint()
+          showToast('Comentário publicado!')
+        } catch (err) {
+          showToast(err.message ?? 'Não foi possível publicar o comentário.')
           paint()
         }
       })

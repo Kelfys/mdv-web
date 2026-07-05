@@ -11,6 +11,7 @@
 --   008_product_price_cooldown.sql
 --   009_marketplace_visibility.sql
 --   010_store_ads.sql
+--   011_product_engagement.sql
 --
 -- Após rodar as migrations:
 -- 1. Authentication → URL Configuration → adicione sua URL do tiiny.host

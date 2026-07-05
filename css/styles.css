@@ -381,6 +381,99 @@ img { max-width: 100%; display: block; }
 .product-card__footer { margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .product-card__price { font-size: 1.125rem; font-weight: 700; color: var(--primary-600); }
 
+.product-card__engagement {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.engagement-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.engagement-btn:hover:not(:disabled) {
+  border-color: var(--primary-600);
+  color: var(--primary-600);
+}
+
+.engagement-btn.active {
+  border-color: var(--red-500);
+  color: var(--red-500);
+  background: color-mix(in srgb, var(--red-500) 8%, var(--surface));
+}
+
+.engagement-btn--readonly {
+  cursor: default;
+}
+
+.engagement-btn--ghost {
+  background: transparent;
+}
+
+.product-comments {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.product-comments__status,
+.product-comments__login-hint {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.product-comments__login-hint a {
+  color: var(--primary-600);
+  font-weight: 500;
+}
+
+.product-comment {
+  font-size: 0.875rem;
+}
+
+.product-comment__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.product-comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.products-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.products-header__hint {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
 /* Store page */
 .store-hero {
   position: relative;
