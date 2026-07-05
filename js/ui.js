@@ -25,6 +25,7 @@ import { createOrder } from './api.js'
 import { navigate, render as rerenderRoute } from './router.js'
 import { showToast } from './utils.js'
 import { STAFF_PANELS, getStaffMenu, isStaffPath, getStaffPanel, getStaffTab } from './staff-nav.js'
+import { MERCHANT_PANEL, MERCHANT_MENU, isMerchantPath, getMerchantTab } from './merchant-nav.js'
 
 let menuOpen = false
 let staffMenuOpen = false
@@ -58,10 +59,13 @@ export function renderHeader() {
   if (!header) return
 
   const user = getUser()
-  const staffPanel = getStaffPanel()
+  const currentPath = window.location.hash.replace(/^#/, '') || '/'
+  const staffPanel = getStaffPanel(currentPath)
   const onStaff = (user?.role === 'admin' && staffPanel === 'admin')
     || (user?.role === 'moderator' && staffPanel === 'moderator')
-  const staffTab = onStaff ? getStaffTab(window.location.hash.replace(/^#/, '') || '/', staffPanel) : null
+  const onMerchant = user?.role === 'merchant' && isMerchantPath(currentPath)
+  const staffTab = onStaff ? getStaffTab(currentPath, staffPanel) : null
+  const merchantTab = onMerchant ? getMerchantTab(currentPath) : null
 
   header.innerHTML = `
     <div class="header__inner">
@@ -81,7 +85,21 @@ export function renderHeader() {
 
         ${!user ? `<a href="#/conta/entrar" class="btn btn-primary btn-sm btn-login-mobile">Entrar</a>` : ''}
         ${user?.role === 'customer' ? `<a href="#/favoritos" class="icon-btn" title="Favoritos">❤️</a>` : ''}
-        ${user?.role === 'merchant' ? `<a href="#/dashboard" class="icon-btn" title="Painel">📊</a>` : ''}
+        ${user?.role === 'merchant' ? `
+          <div class="header-dropdown ${staffMenuOpen ? 'open' : ''}" id="staff-dropdown-merchant">
+            <button type="button" class="icon-btn ${onMerchant ? 'icon-btn--active' : ''}" id="staff-menu-toggle-merchant" title="${MERCHANT_PANEL.label}" aria-expanded="${staffMenuOpen}" aria-haspopup="true">${MERCHANT_PANEL.icon}</button>
+            <div class="header-dropdown__panel admin-menu" role="menu">
+              <p class="admin-menu__title">${MERCHANT_PANEL.label}</p>
+              ${MERCHANT_MENU.map((item) => `
+                <a href="${item.href}" class="admin-menu__item ${merchantTab === item.id ? 'active' : ''}">
+                  <span class="admin-menu__icon">${item.icon}</span>
+                  <span>${item.label}</span>
+                </a>
+              `).join('')}
+              <div class="admin-menu__divider"></div>
+              <a href="#/" class="admin-menu__item admin-menu__item--muted">← Voltar ao site</a>
+            </div>
+          </div>` : ''}
         ${user?.role === 'admin' ? renderStaffPanelDropdown(user, 'admin', staffTab) : ''}
         ${user?.role === 'moderator' ? renderStaffPanelDropdown(user, 'moderator', staffTab) : ''}
         ${user ? `<button type="button" class="icon-btn" id="logout-btn" title="Sair">🚪</button>` : `<a href="#/conta/entrar" class="icon-btn hidden md:flex" title="Entrar">❤️</a>`}
@@ -95,7 +113,13 @@ export function renderHeader() {
       <a href="#/lojista/entrar">Área do Lojista</a>
       <a href="#/regras">Regras</a>
       ${user?.role === 'customer' ? '<a href="#/favoritos">❤️ Favoritos</a>' : ''}
-      ${user?.role === 'merchant' ? '<a href="#/dashboard">📊 Painel do Lojista</a>' : ''}
+      ${user?.role === 'merchant' ? `
+        <p class="nav-mobile__section">Painel do Lojista</p>
+        ${MERCHANT_MENU.map((item) => `
+          <a href="${item.href}" class="${merchantTab === item.id ? 'active' : ''}">${item.icon} ${item.label}</a>
+        `).join('')}
+        <a href="#/">← Voltar ao site</a>
+      ` : ''}
       ${user?.role === 'admin' ? `
         <p class="nav-mobile__section">Painel Admin</p>
         ${renderStaffMenuItems('admin', staffTab, { compact: true })}
@@ -126,11 +150,25 @@ export function renderHeader() {
         </div>
       </div>
     ` : ''}
+    ${onMerchant ? `
+      <div class="admin-toolbar merchant-toolbar">
+        <div class="admin-toolbar__inner">
+          <div class="admin-toolbar__tabs">
+            ${MERCHANT_MENU.map((item) => `
+              <a href="${item.href}" class="admin-toolbar__tab ${merchantTab === item.id ? 'active' : ''}">
+                <span>${item.icon}</span> ${item.label}
+              </a>
+            `).join('')}
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="merchant-refresh" title="Atualizar dados">↻ Atualizar</button>
+        </div>
+      </div>
+    ` : ''}
   `
 
-  header.classList.toggle('header--admin', onStaff)
+  header.classList.toggle('header--admin', onStaff || onMerchant)
 
-  ;['admin', 'moderator'].forEach((panel) => {
+  ;['admin', 'moderator', 'merchant'].forEach((panel) => {
     document.getElementById(`staff-menu-toggle-${panel}`)?.addEventListener('click', (e) => {
       e.stopPropagation()
       staffMenuOpen = !staffMenuOpen
@@ -140,6 +178,11 @@ export function renderHeader() {
   })
 
   document.getElementById('admin-refresh')?.addEventListener('click', () => {
+    rerenderRoute()
+    showToast('Painel atualizado')
+  })
+
+  document.getElementById('merchant-refresh')?.addEventListener('click', () => {
     rerenderRoute()
     showToast('Painel atualizado')
   })
@@ -154,7 +197,7 @@ export function renderHeader() {
   if (staffMenuOpen) {
     setTimeout(() => {
       const close = (ev) => {
-        const inside = ['admin', 'moderator'].some((panel) =>
+        const inside = ['admin', 'moderator', 'merchant'].some((panel) =>
           document.getElementById(`staff-dropdown-${panel}`)?.contains(ev.target))
         if (!inside) {
           staffMenuOpen = false

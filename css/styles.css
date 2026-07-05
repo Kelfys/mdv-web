@@ -2009,8 +2009,145 @@ tr:last-child td { border-bottom: none; }
   color: var(--text-secondary);
 }
 
+.merchant-page .admin-page__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.merchant-status-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.125rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 1.25rem;
+}
+
+.merchant-status-banner__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.merchant-status-banner__main p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.merchant-status-banner--approved {
+  border-color: rgb(34 197 94 / 0.35);
+  background: rgb(34 197 94 / 0.06);
+}
+
+.merchant-status-banner--pending {
+  border-color: rgb(245 158 11 / 0.35);
+  background: rgb(245 158 11 / 0.06);
+}
+
+.merchant-status-banner--blocked {
+  border-color: rgb(239 68 68 / 0.35);
+  background: rgb(239 68 68 / 0.06);
+}
+
+.merchant-metrics .metric-card__value {
+  font-size: 1.25rem;
+}
+
+.merchant-alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.merchant-alert-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.merchant-settings-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.merchant-settings-aside {
+  position: sticky;
+  top: 5.5rem;
+}
+
+.merchant-store-card {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+
+.merchant-store-card__swatch {
+  height: 4rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 0.875rem;
+}
+
+.merchant-store-card h3 {
+  font-size: 1.0625rem;
+  margin-bottom: 0.25rem;
+}
+
+.merchant-store-card p {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.merchant-store-card__plan {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.merchant-settings-main {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+
+.merchant-settings-section h2 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
 .merchant-settings-form {
-  max-width: 32rem;
+  max-width: none;
+}
+
+.merchant-toolbar .admin-toolbar__tab.active {
+  color: var(--primary-600);
+}
+
+@media (max-width: 768px) {
+  .merchant-settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .merchant-settings-aside {
+    position: static;
+  }
+
+  .merchant-status-banner {
+    flex-direction: column;
+  }
 }
 
 .merchant-branding {

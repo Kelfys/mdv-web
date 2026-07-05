@@ -110,6 +110,10 @@ export function formatPlanPrice(priceMonthly) {
   return priceMonthly === 0 ? 'Grátis' : `${formatCurrency(priceMonthly)}/mês`
 }
 
+export function getPlanById(planId) {
+  return SUBSCRIPTION_PLANS.find((p) => p.id === planId) ?? SUBSCRIPTION_PLANS[0]
+}
+
 function buildPaymentMessage(planName, planPrice) {
   return [
     'Olá!',
