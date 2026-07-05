@@ -139,6 +139,34 @@ function adminOrdersFilterBar(stores) {
 
 const ORDERS_PAGE_SIZE = 20
 
+function sortOrderRowsByDate(rows, direction = 'desc') {
+  return [...rows].sort((a, b) => {
+    const diff = new Date(a.dataset.orderCreated).getTime() - new Date(b.dataset.orderCreated).getTime()
+    return direction === 'asc' ? diff : -diff
+  })
+}
+
+function reorderOrderRowsInDom(tbody, matchedRows, emptyRow) {
+  if (!tbody) return
+  const anchor = emptyRow ?? null
+  for (const row of matchedRows) tbody.insertBefore(row, anchor)
+  tbody.querySelectorAll('[data-order-row]').forEach((row) => {
+    if (row.dataset.orderMatch !== '1') tbody.insertBefore(row, anchor)
+  })
+}
+
+function updateOrdersSortButton(button, direction) {
+  if (!button) return
+  button.dataset.orderSort = direction
+  button.classList.toggle('active', true)
+  const icon = button.querySelector('.admin-table-sort__icon')
+  if (icon) icon.textContent = direction === 'asc' ? '↑' : '↓'
+  button.setAttribute(
+    'aria-label',
+    direction === 'asc' ? 'Ordenar por data, mais antigos primeiro' : 'Ordenar por data, mais recentes primeiro',
+  )
+}
+
 function renderOrdersPaginationHtml({ currentPage, totalPages, matchedCount }) {
   if (matchedCount === 0) return ''
 
@@ -166,13 +194,15 @@ function renderOrdersPaginationHtml({ currentPage, totalPages, matchedCount }) {
 function bindOrdersListFilters(main) {
   const search = main.querySelector('#admin-orders-search')
   const storeSelect = main.querySelector('#admin-orders-store')
+  const sortButton = main.querySelector('#admin-orders-sort')
   const statusChips = main.querySelectorAll('[data-order-status]')
   const periodChips = main.querySelectorAll('[data-order-period]')
-  const rows = main.querySelectorAll('[data-order-row]')
+  const tbody = main.querySelector('#admin-orders-tbody')
   const emptyRow = main.querySelector('[data-orders-empty]')
   const paginationWrap = main.querySelector('#admin-orders-pagination-wrap')
   let activeStatus = 'all'
   let activePeriod = 'all'
+  let sortDirection = sortButton?.dataset.orderSort ?? 'desc'
   let currentPage = 1
   let matchedRows = []
 
@@ -200,6 +230,7 @@ function bindOrdersListFilters(main) {
     const term = search?.value.trim().toLowerCase() ?? ''
     const activeStore = storeSelect?.value ?? 'all'
     const cutoff = getOrderPeriodCutoff(activePeriod)
+    const rows = main.querySelectorAll('[data-order-row]')
     matchedRows = []
 
     rows.forEach((row) => {
@@ -213,6 +244,9 @@ function bindOrdersListFilters(main) {
       if (matches) matchedRows.push(row)
       else row.hidden = true
     })
+
+    matchedRows = sortOrderRowsByDate(matchedRows, sortDirection)
+    reorderOrderRowsInDom(tbody, matchedRows, emptyRow)
 
     if (emptyRow) emptyRow.hidden = matchedRows.length > 0
     applyPagination()
@@ -235,6 +269,12 @@ function bindOrdersListFilters(main) {
     })
   })
 
+  sortButton?.addEventListener('click', () => {
+    sortDirection = sortDirection === 'desc' ? 'asc' : 'desc'
+    updateOrdersSortButton(sortButton, sortDirection)
+    apply()
+  })
+
   paginationWrap?.addEventListener('click', (event) => {
     const totalPages = Math.max(1, Math.ceil(matchedRows.length / ORDERS_PAGE_SIZE))
     if (event.target.closest('[data-page-prev]') && currentPage > 1) {
@@ -249,6 +289,7 @@ function bindOrdersListFilters(main) {
     }
   })
 
+  updateOrdersSortButton(sortButton, sortDirection)
   apply()
 }
 
@@ -331,12 +372,11 @@ function bindOrdersCsvExport(main, orders) {
   if (!btn) return
 
   btn.addEventListener('click', () => {
-    const visibleIds = new Set()
-    main.querySelectorAll('[data-order-row]').forEach((row) => {
-      if (row.dataset.orderMatch === '1') visibleIds.add(row.dataset.orderId)
-    })
-
-    const toExport = orders.filter((o) => visibleIds.has(o.id))
+    const orderMap = new Map(orders.map((o) => [o.id, o]))
+    const toExport = [...main.querySelectorAll('[data-order-row]')]
+      .filter((row) => row.dataset.orderMatch === '1')
+      .map((row) => orderMap.get(row.dataset.orderId))
+      .filter(Boolean)
     if (toExport.length === 0) {
       showToast('Nenhum pedido para exportar')
       return
@@ -1280,8 +1320,15 @@ export async function renderAdminDashboard(main, tab = 'overview', selectedStore
           </div>` : ''}
         <div class="table-wrap admin-orders-table" style="margin-top:1rem">
           <table>
-            <thead><tr><th>Data</th><th>Loja</th><th>Cliente</th><th>Telefone</th><th>Total</th><th>Status</th></tr></thead>
-            <tbody>
+            <thead><tr>
+              <th class="admin-table-sortable">
+                <button type="button" class="admin-table-sort active" id="admin-orders-sort" data-order-sort="desc" aria-label="Ordenar por data, mais recentes primeiro">
+                  Data <span class="admin-table-sort__icon" aria-hidden="true">↓</span>
+                </button>
+              </th>
+              <th>Loja</th><th>Cliente</th><th>Telefone</th><th>Total</th><th>Status</th>
+            </tr></thead>
+            <tbody id="admin-orders-tbody">
               ${orders.length === 0
                 ? `<tr><td colspan="6">${adminEmptyState('🛒', 'Nenhum pedido', 'Os pedidos feitos pelos clientes aparecerão aqui.')}</td></tr>`
                 : `${renderAdminOrderRows(orders)}

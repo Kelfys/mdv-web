@@ -1547,6 +1547,33 @@ tr:last-child td { border-bottom: none; }
   font-size: 0.875rem;
 }
 
+.admin-table-sortable {
+  white-space: nowrap;
+}
+
+.admin-table-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+}
+
+.admin-table-sort:hover,
+.admin-table-sort.active {
+  color: var(--primary-600, #2563eb);
+}
+
+.admin-table-sort__icon {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
 .admin-orders-toolbar {
   display: flex;
   flex-wrap: wrap;
