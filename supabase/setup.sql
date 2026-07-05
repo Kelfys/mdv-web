@@ -12,6 +12,7 @@
 --   009_marketplace_visibility.sql
 --   010_store_ads.sql
 --   011_product_engagement.sql
+--   012_demo_stores.sql
 --
 -- Após rodar as migrations (recomendado via CLI):
 --   npx supabase login
