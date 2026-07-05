@@ -1,3 +1,15 @@
+/**
+ * Página pública da loja — catálogo, carrinho, favoritos e engajamento.
+ *
+ * Produtos são ordenados por rankProductsByEngagement (curtidas + novidade).
+ * paint() re-renderiza o DOM inteiro; retorna cleanup ao sair da rota.
+ *
+ * Melhorias futuras:
+ * - Atualização parcial do DOM (evitar repaint completo a cada like)
+ * - Filtro de produtos por categoria dentro da loja
+ * - Formulário de avaliação da loja (reviews já existe na API)
+ * - Compartilhamento de link da loja (Web Share API)
+ */
 import {
   fetchStoreBySlug, fetchProductsByStore, fetchReviewsByStore,
   recordStoreView, toggleFavorite, isFavorite,

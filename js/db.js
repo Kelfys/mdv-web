@@ -1,3 +1,14 @@
+/**
+ * Cliente Supabase (singleton).
+ *
+ * Carrega o SDK via CDN ESM — sem bundler no projeto.
+ * Credenciais em js/config.js; use isSupabaseConfigured() antes de operações.
+ *
+ * Melhorias futuras:
+ * - Mover SDK para npm + bundler para versionamento fixo
+ * - Listener onAuthStateChange para refresh automático de sessão
+ * - Retry com backoff em falhas de rede
+ */
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js'
 

@@ -1,3 +1,16 @@
+/**
+ * Painel do lojista — CRUD de produtos, pedidos e configurações da loja.
+ *
+ * Abas: overview, products, orders, settings (via rotas /dashboard/*).
+ * guardMerchant() bloqueia acesso de não-lojistas.
+ *
+ * Melhorias futuras:
+ * - Upload de imagens de produto/banner via Supabase Storage
+ * - Edição de estoque em lote
+ * - Gráficos de vendas e visualizações
+ * - Notificações de novos pedidos (Realtime)
+ * - Cooldown de alteração de preço (regra já existe no schema)
+ */
 import {
   fetchStoreByOwner, fetchMerchantProducts, fetchOrdersByStore,
   createProduct, updateProduct, deleteProduct, updateStore, fetchCategories,

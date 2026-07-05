@@ -1,3 +1,15 @@
+/**
+ * Painel administrativo — métricas e aprovação de lojas.
+ *
+ * Apenas usuários com role=admin acessam (guardAdmin).
+ * Aprovar loja ativa plano free e subscription_status=active.
+ *
+ * Melhorias futuras:
+ * - Listagem de todas as lojas com filtros e busca
+ * - Moderação de comentários e denúncias
+ * - Gestão de planos e assinaturas
+ * - Logs de auditoria das ações do admin
+ */
 import {
   fetchAdminMetrics, fetchPendingStoreApprovals,
   approveStoreRegistration, rejectStoreRegistration,

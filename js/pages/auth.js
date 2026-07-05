@@ -1,3 +1,14 @@
+/**
+ * Páginas de autenticação (cliente, lojista e admin).
+ *
+ * Três fluxos separados com roles distintos no user_metadata do Supabase.
+ * Suporta ?redirect= na URL para voltar à página após login.
+ *
+ * Melhorias futuras:
+ * - Recuperação de senha (resetPasswordForEmail)
+ * - Login social (Google, magic link)
+ * - Validação de CNPJ/telefone no cadastro de lojista
+ */
 import { signIn, signUpCustomer } from '../api.js'
 import { setUser } from '../state.js'
 import { navigate } from '../router.js'

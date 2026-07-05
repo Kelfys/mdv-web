@@ -1,3 +1,19 @@
+/**
+ * Camada de acesso a dados (Supabase).
+ *
+ * Todas as queries ao banco passam por aqui — páginas nunca chamam
+ * getSupabase() diretamente. Erros do Supabase são propagados para
+ * quem chamou tratar na UI.
+ *
+ * Domínios: Auth, Categories, Stores, Products, Orders, Reviews,
+ * Favorites, Admin.
+ *
+ * Melhorias futuras:
+ * - Paginação em fetchStores / fetchOrdersByStore
+ * - Cache em memória para categorias (mudam pouco)
+ * - Upload de imagens (banner/logo/produto) via Storage API
+ * - Webhook de assinatura real (Stripe) em vez de status manual
+ */
 import { requireClient, isSupabaseConfigured, getSupabase } from './db.js'
 import { generateSlug, sanitizeSearch } from './utils.js'
 import { DEFAULT_THEME_COLOR } from './config.js'

@@ -1,3 +1,4 @@
+/** Página estática com regras e termos da plataforma. */
 export async function renderRules(main) {
   main.innerHTML = `
     <div class="container-wide" style="padding:2rem 1rem 3rem;max-width:48rem">

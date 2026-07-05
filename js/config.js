@@ -1,4 +1,17 @@
-/** Configuração Supabase — edite com suas credenciais do dashboard */
+/**
+ * Configuração central da aplicação.
+ *
+ * ATENÇÃO: SUPABASE_ANON_KEY é pública por design (RLS protege os dados).
+ * Nunca commitar service_role key neste arquivo.
+ *
+ * Manutenção:
+ * - Novas cores de tema: adicionar em STORE_THEME_COLORS
+ * - Chaves de localStorage: alterar aqui para migrar dados antigos
+ *
+ * Melhorias futuras:
+ * - Carregar credenciais de variáveis de ambiente no build (CI)
+ * - Suporte a múltiplos ambientes (dev/staging/prod)
+ */
 export const SUPABASE_URL = 'https://ogyrbdmlynfwkgwumicn.supabase.co'
 export const SUPABASE_ANON_KEY = 'sb_publishable_19GJapxf-RSrbq3VFzi6gQ_tv6cWh5P'
 

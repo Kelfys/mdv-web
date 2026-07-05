@@ -1,3 +1,13 @@
+/**
+ * Página inicial — feed de lojas com busca e filtro por categoria.
+ *
+ * Exibe apenas lojas aprovadas com assinatura ativa (marketplaceVisible).
+ *
+ * Melhorias futuras:
+ * - Paginação / scroll infinito no feed
+ * - Ordenação (mais recentes, mais visualizadas, por cidade)
+ * - Destaques patrocinados (tabela store_ads já existe no schema)
+ */
 import { fetchCategories, fetchStores } from '../api.js'
 import { renderStoreCard } from '../ui.js'
 import { escapeHtml } from '../utils.js'

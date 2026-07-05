@@ -1,3 +1,14 @@
+/**
+ * Integração com WhatsApp para finalização de pedidos.
+ *
+ * O fluxo não processa pagamento in-app — apenas monta a mensagem
+ * e abre wa.me com o texto pré-preenchido.
+ *
+ * Melhorias futuras:
+ * - Template de mensagem configurável por loja
+ * - Fallback para api.whatsapp.com em desktop sem app
+ * - Rastreamento de conversão (pedido enviado vs. confirmado)
+ */
 import { formatCurrency } from './utils.js'
 
 export function buildOrderMessage({ items, total, customerName, customerPhone, customerAddress, deliveryPeriod }) {

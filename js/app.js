@@ -1,3 +1,20 @@
+/**
+ * Ponto de entrada da aplicação MaredeVendas.
+ *
+ * Responsabilidades:
+ * - Registrar todas as rotas (hash-based SPA)
+ * - Tratar callback OAuth do Supabase
+ * - Inicializar header, carrinho e roteador
+ *
+ * Manutenção:
+ * - Novas páginas: importar o render e chamar registerRoute() em boot()
+ * - Rotas com parâmetros usam sintaxe :nome (ex.: /loja/:slug)
+ *
+ * Melhorias futuras:
+ * - Migrar de hash (#/) para History API (pushState) para URLs limpas
+ * - Lazy-load de páginas com dynamic import() para reduzir bundle inicial
+ * - Service Worker para cache offline de assets estáticos
+ */
 import { setTheme, loadUser } from './state.js'
 import { initHeader, initCart } from './ui.js'
 import { registerRoute, initRouter } from './router.js'

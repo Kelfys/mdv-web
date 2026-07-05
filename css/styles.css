@@ -1,3 +1,15 @@
+/**
+ * Estilos globais do MaredeVendas.
+ *
+ * Estrutura:
+ * 1. Variáveis CSS (tema claro/escuro via data-theme)
+ * 2. Reset e tipografia base
+ * 3. Layout (header, main, container)
+ * 4. Componentes (cards, forms, dashboard, cart)
+ *
+ * Manutenção: preferir variáveis CSS a cores hardcoded.
+ * Melhorias futuras: separar em arquivos por domínio (layout.css, components.css).
+ */
 :root {
   --primary-50: #eff6ff;
   --primary-100: #dbeafe;

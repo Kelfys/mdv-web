@@ -1,3 +1,6 @@
+# Deploy automático para GitHub Pages.
+# Copia arquivos estáticos para dist/ e publica via actions/deploy-pages.
+# Dispara em push na main ou manualmente: gh workflow run deploy.yml
 name: Deploy GitHub Pages
 
 on:

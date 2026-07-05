@@ -1,3 +1,18 @@
+/**
+ * Estado global da aplicação (tema, auth, carrinho).
+ *
+ * Padrão pub/sub: onAuthChange / onCartChange notificam componentes
+ * sem acoplamento direto entre módulos.
+ *
+ * Persistência:
+ * - Tema e carrinho ficam no localStorage
+ * - Sessão do usuário vem do Supabase Auth (api.js)
+ *
+ * Melhorias futuras:
+ * - Carrinho por loja com TTL (expirar após X dias)
+ * - Sincronizar carrinho com conta logada (tabela no Supabase)
+ * - Validar estoque/preço ao reabrir carrinho salvo
+ */
 import { CART_STORAGE_KEY, THEME_STORAGE_KEY } from './config.js'
 import { getCurrentUser, signOut as apiSignOut } from './api.js'
 

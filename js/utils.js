@@ -1,3 +1,14 @@
+/**
+ * Funções utilitárias puras (formatação, segurança, ranking).
+ *
+ * escapeHtml: obrigatório em todo conteúdo dinâmico inserido via innerHTML.
+ * sanitizeSearch: evita wildcards maliciosos em filtros ilike do Supabase.
+ *
+ * Melhorias futuras:
+ * - Debounce/throttle reutilizáveis (hoje home.js faz debounce inline)
+ * - Validação de telefone brasileiro mais rigorosa
+ * - i18n se expandir para outros países
+ */
 export function formatCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
 }

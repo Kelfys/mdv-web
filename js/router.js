@@ -1,3 +1,14 @@
+/**
+ * Roteador SPA baseado em hash (#/caminho).
+ *
+ * Cada rota registra um handler async que recebe (mainElement, params).
+ * Handlers podem retornar uma função de cleanup executada ao trocar de rota.
+ *
+ * Melhorias futuras:
+ * - Suporte a query strings na rota (hoje só auth.js faz parse manual)
+ * - Guards de autenticação centralizados (hoje cada página valida sozinha)
+ * - Scroll-to-top automático após navegação
+ */
 const routes = new Map()
 let currentCleanup = null
 

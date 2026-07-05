@@ -1,3 +1,4 @@
+/** Página de lojas favoritas do cliente logado. */
 import { fetchFavorites } from '../api.js'
 import { getUser } from '../state.js'
 import { renderStoreCard } from '../ui.js'
