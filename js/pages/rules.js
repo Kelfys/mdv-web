@@ -1,28 +1,51 @@
-/** Página estática com regras e termos da plataforma. */
-export async function renderRules(main) {
-  main.innerHTML = `
-    <div class="container-wide" style="padding:2rem 1rem 3rem;max-width:48rem">
-      <a href="#/" style="display:inline-block;margin-bottom:1.5rem;font-size:0.875rem;color:var(--text-secondary)">← Voltar para as lojas</a>
-      <div style="padding:2rem;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--surface)">
-        <h1 style="font-size:1.75rem;margin-bottom:1rem">Regras da Plataforma</h1>
+import { escapeHtml } from '../utils.js'
+import { SUBSCRIPTION_PLANS, formatPlanPrice, buildPlanPaymentUrl, buildGenericPaymentUrl } from '../plans.js'
 
-        <section style="margin-bottom:1.5rem">
-          <h2 style="font-size:1.125rem;margin-bottom:0.5rem">1. Sobre o MaredeVendas</h2>
-          <p style="color:var(--text-secondary);font-size:0.9375rem">Marketplace local que conecta clientes a lojas da região. Pedidos são finalizados via WhatsApp — não há pagamento in-app.</p>
+/** Página estática com regras, termos e planos da plataforma. */
+export async function renderRules(main) {
+  const planCards = SUBSCRIPTION_PLANS.map((plan) => `
+    <article class="plan-card ${plan.id === 'premium' ? 'plan-card--highlight' : ''}">
+      <div class="plan-card__header">
+        <h3 class="plan-card__name">${escapeHtml(plan.name)}</h3>
+        <p class="plan-card__price">${escapeHtml(formatPlanPrice(plan.priceMonthly))}</p>
+      </div>
+      <p class="plan-card__desc">${escapeHtml(plan.description)}</p>
+      <ul class="plan-card__features">
+        ${plan.features.map((f) => `<li>${escapeHtml(f)}</li>`).join('')}
+      </ul>
+      ${plan.priceMonthly > 0 ? `
+        <a href="${buildPlanPaymentUrl(plan)}" target="_blank" rel="noopener noreferrer" class="btn btn-green btn-block btn-sm">
+          Enviar comprovante — ${escapeHtml(plan.name)}
+        </a>
+      ` : `
+        <p class="plan-card__note">Incluso na aprovação do cadastro</p>
+      `}
+    </article>
+  `).join('')
+
+  main.innerHTML = `
+    <div class="container-wide rules-page">
+      <a href="#/" class="rules-page__back">← Voltar para as lojas</a>
+      <div class="rules-page__card">
+        <h1 class="rules-page__title">Regras da Plataforma</h1>
+
+        <section class="rules-section">
+          <h2>1. Sobre o MaredeVendas</h2>
+          <p>Marketplace local que conecta clientes a lojas da região. Pedidos são finalizados via WhatsApp — não há pagamento in-app.</p>
         </section>
 
-        <section style="margin-bottom:1.5rem">
-          <h2 style="font-size:1.125rem;margin-bottom:0.5rem">2. Clientes</h2>
-          <ul style="color:var(--text-secondary);font-size:0.9375rem;padding-left:1.25rem;display:flex;flex-direction:column;gap:0.375rem">
+        <section class="rules-section">
+          <h2>2. Clientes</h2>
+          <ul>
             <li>Não é obrigatório criar conta para comprar.</li>
             <li>Conta gratuita permite favoritar lojas e pré-preencher dados no checkout.</li>
             <li>Combine entrega e pagamento diretamente com a loja no WhatsApp.</li>
           </ul>
         </section>
 
-        <section style="margin-bottom:1.5rem">
-          <h2 style="font-size:1.125rem;margin-bottom:0.5rem">3. Lojistas</h2>
-          <ul style="color:var(--text-secondary);font-size:0.9375rem;padding-left:1.25rem;display:flex;flex-direction:column;gap:0.375rem">
+        <section class="rules-section">
+          <h2>3. Lojistas</h2>
+          <ul>
             <li>Cadastro sujeito à aprovação do administrador.</li>
             <li>Informações da loja devem ser verdadeiras e atualizadas.</li>
             <li>Produtos com preço e estoque corretos.</li>
@@ -30,9 +53,27 @@ export async function renderRules(main) {
           </ul>
         </section>
 
-        <section>
-          <h2 style="font-size:1.125rem;margin-bottom:0.5rem">4. Conduta</h2>
-          <p style="color:var(--text-secondary);font-size:0.9375rem">Conteúdo ilegal, discriminatório ou enganoso será removido. Lojas podem ser bloqueadas em caso de violação.</p>
+        <section class="rules-section">
+          <h2>4. Planos para lojistas</h2>
+          <p>Escolha o plano que melhor se encaixa no tamanho da sua loja. O plano <strong>Gratuito</strong> é ativado após aprovação do cadastro. Para planos pagos, realize o pagamento e envie o comprovante pelo WhatsApp.</p>
+          <div class="plan-grid">${planCards}</div>
+          <div class="plan-payment-info">
+            <p><strong>Como assinar um plano pago:</strong></p>
+            <ol>
+              <li>Realize o pagamento do valor mensal do plano escolhido.</li>
+              <li>Clique no botão do plano acima ou envie o comprovante para nosso WhatsApp.</li>
+              <li>Informe o nome da loja e o email cadastrado na mensagem.</li>
+              <li>Após confirmação, seu plano será ativado pelo administrador.</li>
+            </ol>
+            <a href="${buildGenericPaymentUrl()}" target="_blank" rel="noopener noreferrer" class="btn btn-green">
+              Enviar comprovante via WhatsApp
+            </a>
+          </div>
+        </section>
+
+        <section class="rules-section">
+          <h2>5. Conduta</h2>
+          <p>Conteúdo ilegal, discriminatório ou enganoso será removido. Lojas podem ser bloqueadas em caso de violação.</p>
         </section>
       </div>
     </div>

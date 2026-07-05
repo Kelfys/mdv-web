@@ -861,3 +861,142 @@ tr:last-child td { border-bottom: none; }
   font-size: 0.6875rem;
   font-weight: 700;
 }
+
+/* Rules & Plans */
+.rules-page {
+  padding: 2rem 1rem 3rem;
+  max-width: 52rem;
+}
+
+.rules-page__back {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.rules-page__card {
+  padding: 2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+
+.rules-page__title {
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+}
+
+.rules-section {
+  margin-bottom: 1.5rem;
+}
+
+.rules-section:last-child {
+  margin-bottom: 0;
+}
+
+.rules-section h2 {
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+}
+
+.rules-section p,
+.rules-section li {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+}
+
+.rules-section ul,
+.rules-section ol {
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface-secondary);
+}
+
+.plan-card--highlight {
+  border-color: var(--primary-600);
+  box-shadow: 0 0 0 1px var(--primary-600);
+}
+
+.plan-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.plan-card__name {
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.plan-card__price {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--primary-600);
+  white-space: nowrap;
+}
+
+.plan-card__desc {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.plan-card__features {
+  flex: 1;
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.plan-card__features li::before {
+  content: '✓ ';
+  color: var(--green-600);
+  font-weight: 700;
+}
+
+.plan-card__note {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.plan-payment-info {
+  margin-top: 1rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface-tertiary);
+  border: 1px solid var(--border);
+}
+
+.plan-payment-info p {
+  margin-bottom: 0.5rem;
+}
+
+.plan-payment-info ol {
+  margin-bottom: 1rem;
+}
