@@ -26,6 +26,36 @@ export function formatDate(date) {
   }).format(new Date(date))
 }
 
+export function formatDateTimeCsv(date) {
+  const d = new Date(date)
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+export function escapeCsvField(value) {
+  const str = value == null ? '' : String(value)
+  if (/[;"\n\r]/.test(str)) return `"${str.replace(/"/g, '""')}"`
+  return str
+}
+
+export function buildCsv(headers, rows, delimiter = ';') {
+  const lines = [
+    headers.map(escapeCsvField).join(delimiter),
+    ...rows.map((row) => row.map(escapeCsvField).join(delimiter)),
+  ]
+  return lines.join('\n')
+}
+
+export function downloadTextFile(filename, content, mime = 'text/csv;charset=utf-8') {
+  const blob = new Blob([`\uFEFF${content}`], { type: mime })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 export function generateSlug(text) {
   return text
     .toLowerCase()

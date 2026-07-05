@@ -12,7 +12,10 @@ import {
 } from '../api.js'
 import { getUser, setAdminPendingCount } from '../state.js'
 import { navigate } from '../router.js'
-import { escapeHtml, formatDate, formatCurrency, showToast } from '../utils.js'
+import {
+  escapeHtml, formatDate, formatCurrency, showToast,
+  formatDateTimeCsv, buildCsv, downloadTextFile,
+} from '../utils.js'
 import { STORE_THEME_COLORS } from '../config.js'
 import { getAdminMenuItem } from '../admin-nav.js'
 import {
@@ -127,6 +130,12 @@ function statusBadge(status) {
   return map[status] ?? escapeHtml(status)
 }
 
+const ORDER_STATUS_LABELS = {
+  pending: 'Pendente',
+  sent: 'Enviado',
+  viewed: 'Visualizado',
+}
+
 function orderStatusBadge(status) {
   const map = {
     pending: '<span class="badge badge-order-pending">Pendente</span>',
@@ -134,6 +143,45 @@ function orderStatusBadge(status) {
     viewed: '<span class="badge badge-order-viewed">Visualizado</span>',
   }
   return map[status] ?? escapeHtml(status)
+}
+
+function ordersToCsv(orders) {
+  const headers = ['Data', 'Loja', 'Cidade', 'UF', 'Cliente', 'Telefone', 'Endereço', 'Total (R$)', 'Status', 'ID']
+  const rows = orders.map((o) => [
+    formatDateTimeCsv(o.created_at),
+    o.store?.name ?? '',
+    o.store?.city ?? '',
+    o.store?.state ?? '',
+    o.customer_name,
+    o.customer_phone,
+    o.customer_address ?? '',
+    Number(o.total).toFixed(2),
+    ORDER_STATUS_LABELS[o.status] ?? o.status,
+    o.id,
+  ])
+  return buildCsv(headers, rows)
+}
+
+function bindOrdersCsvExport(main, orders) {
+  const btn = main.querySelector('#admin-orders-export')
+  if (!btn) return
+
+  btn.addEventListener('click', () => {
+    const visibleIds = new Set()
+    main.querySelectorAll('[data-order-row]').forEach((row) => {
+      if (!row.hidden) visibleIds.add(row.dataset.orderId)
+    })
+
+    const toExport = orders.filter((o) => visibleIds.has(o.id))
+    if (toExport.length === 0) {
+      showToast('Nenhum pedido para exportar')
+      return
+    }
+
+    const date = new Date().toISOString().slice(0, 10)
+    downloadTextFile(`pedidos-${date}.csv`, ordersToCsv(toExport))
+    showToast(`${toExport.length} pedido(s) exportado(s)`)
+  })
 }
 
 function orderMetricsChips(metrics) {
@@ -270,6 +318,7 @@ function renderAdminOrderRows(orders, { compact = false } = {}) {
   return orders.map((o) => `
     <tr
       data-order-row
+      data-order-id="${escapeHtml(o.id)}"
       data-order-status="${escapeHtml(o.status)}"
       data-order-search="${escapeHtml(`${o.customer_name} ${o.customer_phone} ${o.store?.name ?? ''} ${o.store?.city ?? ''}`.toLowerCase())}"
     >
@@ -1058,16 +1107,20 @@ export async function renderAdminDashboard(main, tab = 'overview', selectedStore
       `
         ${orderMetricsChips(orderMetrics)}
         ${renderOrdersChart(buildOrderPeriodSeries(orderAnalytics.timeline, '30d'), { period: '30d', metric: 'orders' })}
-        ${orders.length > 0 ? adminFilterBar({
-          searchId: 'admin-orders-search',
-          searchPlaceholder: 'Buscar cliente, telefone ou loja...',
-          chips: [
-            { id: 'all', label: 'Todos', active: true },
-            { id: 'sent', label: 'Enviados', active: false },
-            { id: 'viewed', label: 'Visualizados', active: false },
-            { id: 'pending', label: 'Pendentes', active: false },
-          ],
-        }) : ''}
+        ${orders.length > 0 ? `
+          <div class="admin-orders-toolbar">
+            ${adminFilterBar({
+              searchId: 'admin-orders-search',
+              searchPlaceholder: 'Buscar cliente, telefone ou loja...',
+              chips: [
+                { id: 'all', label: 'Todos', active: true },
+                { id: 'sent', label: 'Enviados', active: false },
+                { id: 'viewed', label: 'Visualizados', active: false },
+                { id: 'pending', label: 'Pendentes', active: false },
+              ],
+            })}
+            <button type="button" class="btn btn-outline btn-sm" id="admin-orders-export">⬇ Exportar CSV</button>
+          </div>` : ''}
         <div class="table-wrap admin-orders-table" style="margin-top:1rem">
           <table>
             <thead><tr><th>Data</th><th>Loja</th><th>Cliente</th><th>Telefone</th><th>Total</th><th>Status</th></tr></thead>
@@ -1078,10 +1131,14 @@ export async function renderAdminDashboard(main, tab = 'overview', selectedStore
             </tbody>
           </table>
         </div>
-      `
+      `,
+      orders.length > 0
+        ? '<span class="admin-export-hint">Exporta os pedidos visíveis (respeita busca e filtros)</span>'
+        : ''
     )
 
     bindOrdersChart(main, orderAnalytics.timeline)
+    bindOrdersCsvExport(main, orders)
     bindListFilters(main, {
       searchId: 'admin-orders-search',
       rowSelector: '[data-order-row]',

@@ -1547,6 +1547,25 @@ tr:last-child td { border-bottom: none; }
   font-size: 0.875rem;
 }
 
+.admin-orders-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.admin-orders-toolbar .admin-filter-bar {
+  flex: 1 1 20rem;
+  margin-bottom: 0;
+}
+
+.admin-export-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 .admin-chart-panel {
   margin-top: 1.25rem;
   padding: 1rem;
