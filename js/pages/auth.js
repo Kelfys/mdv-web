@@ -65,14 +65,14 @@ export async function renderCustomerLogin(main) {
     errEl.innerHTML = ''
 
     try {
-      const { data } = await signIn(form.email.value, form.password.value)
-      const role = data.user?.user_metadata?.role ?? 'customer'
-      if (role !== 'customer') {
+      await signIn(form.email.value, form.password.value)
+      const { loadUser, getUser, logout } = await import('../state.js')
+      await loadUser()
+      if (getUser()?.role !== 'customer') {
+        await logout()
         errEl.innerHTML = '<div class="alert alert-error">Use a área do lojista ou admin para esse tipo de conta.</div>'
         return
       }
-      const { loadUser } = await import('../state.js')
-      await loadUser()
       navigate(redirect.startsWith('/') ? redirect : `/${redirect}`)
     } catch (err) {
       errEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
@@ -153,14 +153,14 @@ export async function renderMerchantLogin(main) {
     const errEl = main.querySelector('#auth-error')
 
     try {
-      const { data } = await signIn(form.email.value, form.password.value)
-      const role = data.user?.user_metadata?.role ?? 'customer'
-      if (role !== 'merchant') {
+      await signIn(form.email.value, form.password.value)
+      const { loadUser, getUser, logout } = await import('../state.js')
+      await loadUser()
+      if (getUser()?.role !== 'merchant') {
+        await logout()
         errEl.innerHTML = '<div class="alert alert-error">Esta conta não é de lojista.</div>'
         return
       }
-      const { loadUser } = await import('../state.js')
-      await loadUser()
       navigate('/dashboard')
     } catch (err) {
       errEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
