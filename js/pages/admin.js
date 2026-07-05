@@ -1428,7 +1428,8 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                     </tr>
                   </tbody>
                 </table>
-              </div>`}
+              </div>
+              <div id="admin-moderators-pagination-wrap"></div>`}
         </section>
       `,
       '',
@@ -1710,6 +1711,8 @@ function bindProductEdits(main, selectedStoreId = null) {
   })
 }
 
+const MODERATORS_PAGE_SIZE = 10
+
 function renderModeratorTableRows(moderators) {
   if (moderators.length === 0) return ''
 
@@ -1730,36 +1733,102 @@ function renderModeratorTableRows(moderators) {
   `).join('')
 }
 
-function bindModeratorsSearch(main) {
+function renderModeratorsPaginationHtml({ currentPage, totalPages, matchedCount }) {
+  if (matchedCount === 0) return ''
+
+  const start = (currentPage - 1) * MODERATORS_PAGE_SIZE + 1
+  const end = Math.min(currentPage * MODERATORS_PAGE_SIZE, matchedCount)
+  const label = matchedCount === 1 ? 'moderador' : 'moderadores'
+
+  if (totalPages <= 1) {
+    return `
+      <div class="admin-pagination admin-pagination--single">
+        <p class="admin-pagination__info">${matchedCount} ${label}</p>
+      </div>`
+  }
+
+  return `
+    <div class="admin-pagination">
+      <p class="admin-pagination__info">${start}–${end} de ${matchedCount} ${label}</p>
+      <div class="admin-pagination__controls">
+        <button type="button" class="btn btn-outline btn-sm" data-moderator-page-prev ${currentPage <= 1 ? 'disabled' : ''}>← Anterior</button>
+        <span class="admin-pagination__status">Página ${currentPage} de ${totalPages}</span>
+        <button type="button" class="btn btn-outline btn-sm" data-moderator-page-next ${currentPage >= totalPages ? 'disabled' : ''}>Próxima →</button>
+      </div>
+    </div>`
+}
+
+function bindModeratorsList(main) {
   const search = main.querySelector('#admin-moderators-search')
-  const rows = main.querySelectorAll('[data-moderator-row]')
   const emptyRow = main.querySelector('[data-moderators-empty]')
   const countEl = main.querySelector('#admin-moderators-count')
-  if (!search || rows.length === 0) return
+  const paginationWrap = main.querySelector('#admin-moderators-pagination-wrap')
+  let currentPage = 1
+  let matchedRows = []
 
-  const apply = () => {
-    const term = search.value.trim().toLowerCase()
-    let visibleCount = 0
+  const applyPagination = () => {
+    const totalPages = Math.max(1, Math.ceil(matchedRows.length / MODERATORS_PAGE_SIZE))
+    if (currentPage > totalPages) currentPage = totalPages
 
-    rows.forEach((row) => {
-      const matches = !term || (row.dataset.moderatorSearch ?? '').includes(term)
-      row.hidden = !matches
-      if (matches) visibleCount++
+    matchedRows.forEach((row, index) => {
+      const onPage = index >= (currentPage - 1) * MODERATORS_PAGE_SIZE && index < currentPage * MODERATORS_PAGE_SIZE
+      row.hidden = !onPage
     })
 
-    if (emptyRow) emptyRow.hidden = visibleCount > 0
-    if (countEl) {
-      countEl.textContent = term && visibleCount !== rows.length
-        ? `${visibleCount} de ${rows.length} moderador${rows.length === 1 ? '' : 'es'}`
-        : `${rows.length} cadastrado${rows.length === 1 ? '' : 's'}`
+    if (paginationWrap) {
+      paginationWrap.innerHTML = renderModeratorsPaginationHtml({
+        currentPage,
+        totalPages,
+        matchedCount: matchedRows.length,
+      })
     }
   }
 
-  search.addEventListener('input', apply)
+  const apply = ({ resetPage = false } = {}) => {
+    if (resetPage) currentPage = 1
+
+    const rows = main.querySelectorAll('[data-moderator-row]')
+    const term = search?.value.trim().toLowerCase() ?? ''
+    matchedRows = []
+
+    rows.forEach((row) => {
+      const matches = !term || (row.dataset.moderatorSearch ?? '').includes(term)
+      row.dataset.moderatorMatch = matches ? '1' : '0'
+      if (matches) matchedRows.push(row)
+      else row.hidden = true
+    })
+
+    if (emptyRow) emptyRow.hidden = matchedRows.length > 0
+    if (countEl) {
+      countEl.textContent = term && matchedRows.length !== rows.length
+        ? `${matchedRows.length} de ${rows.length} moderador${rows.length === 1 ? '' : 'es'}`
+        : `${rows.length} cadastrado${rows.length === 1 ? '' : 's'}`
+    }
+
+    applyPagination()
+  }
+
+  search?.addEventListener('input', () => apply({ resetPage: true }))
+
+  paginationWrap?.addEventListener('click', (event) => {
+    const totalPages = Math.max(1, Math.ceil(matchedRows.length / MODERATORS_PAGE_SIZE))
+    if (event.target.closest('[data-moderator-page-prev]') && currentPage > 1) {
+      currentPage--
+      applyPagination()
+      main.querySelector('.admin-moderators-table')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+    if (event.target.closest('[data-moderator-page-next]') && currentPage < totalPages) {
+      currentPage++
+      applyPagination()
+      main.querySelector('.admin-moderators-table')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  })
+
+  apply()
 }
 
 function bindModeratorManagement(main) {
-  bindModeratorsSearch(main)
+  bindModeratorsList(main)
 
   main.querySelector('#promote-moderator-form')?.addEventListener('submit', async (e) => {
     e.preventDefault()
