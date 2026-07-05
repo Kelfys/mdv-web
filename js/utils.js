@@ -122,6 +122,38 @@ export function rankProductsByEngagement(products) {
   return ranked
 }
 
+export const MIN_REGISTRATION_AGE = 18
+
+/** Data máxima de nascimento para cadastro (hoje − 18 anos). */
+export function getMaxBirthDateForRegistration(now = new Date()) {
+  const max = new Date(now)
+  max.setFullYear(max.getFullYear() - MIN_REGISTRATION_AGE)
+  return max.toISOString().slice(0, 10)
+}
+
+export function calculateAge(birthDate, now = new Date()) {
+  const birth = new Date(`${birthDate}T12:00:00`)
+  const today = new Date(now)
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
+
+export function validateRegistrationBirthDate(birthDate, now = new Date()) {
+  const value = birthDate?.trim()
+  if (!value) return { ok: false, message: 'Informe sua data de nascimento.' }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return { ok: false, message: 'Data de nascimento inválida.' }
+
+  const birth = new Date(`${value}T12:00:00`)
+  if (Number.isNaN(birth.getTime())) return { ok: false, message: 'Data de nascimento inválida.' }
+  if (value > getMaxBirthDateForRegistration(now)) {
+    return { ok: false, message: `É necessário ter ${MIN_REGISTRATION_AGE} anos ou mais para se cadastrar.` }
+  }
+
+  return { ok: true, birthDate: value }
+}
+
 export function showToast(message, duration = 3000) {
   const el = document.getElementById('toast')
   if (!el) return

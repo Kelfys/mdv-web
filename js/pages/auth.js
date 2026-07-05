@@ -12,7 +12,7 @@
 import { signIn, signUpCustomer } from '../api.js'
 import { setUser } from '../state.js'
 import { navigate } from '../router.js'
-import { escapeHtml } from '../utils.js'
+import { escapeHtml, getMaxBirthDateForRegistration, validateRegistrationBirthDate } from '../utils.js'
 
 function parseQuery() {
   const hash = window.location.hash
@@ -89,6 +89,11 @@ export async function renderCustomerRegister(main) {
         <div class="form-group"><label class="form-label">Nome</label><input class="form-input" name="name" required /></div>
         <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" name="email" required /></div>
         <div class="form-group"><label class="form-label">Senha</label><input class="form-input" type="password" name="password" required minlength="6" /></div>
+        <div class="form-group">
+          <label class="form-label">Data de nascimento</label>
+          <input class="form-input" type="date" name="birth_date" required max="${getMaxBirthDateForRegistration()}" />
+          <p class="form-hint">É necessário ter 18 anos ou mais para criar conta.</p>
+        </div>
         <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" name="phone" required /></div>
         <div class="form-group"><label class="form-label">Endereço</label><textarea class="form-input" name="address" rows="2" required></textarea></div>
         <div class="form-group">
@@ -114,6 +119,9 @@ export async function renderCustomerRegister(main) {
     const errEl = main.querySelector('#auth-error')
 
     try {
+      const birthCheck = validateRegistrationBirthDate(form.birth_date.value)
+      if (!birthCheck.ok) throw new Error(birthCheck.message)
+
       await signUpCustomer({
         email: form.email.value,
         password: form.password.value,
@@ -121,6 +129,7 @@ export async function renderCustomerRegister(main) {
         phone: form.phone.value,
         address: form.address.value,
         delivery_period: form.delivery_period.value,
+        birth_date: birthCheck.birthDate,
       })
       const { loadUser } = await import('../state.js')
       await loadUser()

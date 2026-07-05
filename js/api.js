@@ -72,11 +72,24 @@ export async function signUp(email, password, name, role = 'customer') {
   return data
 }
 
-export async function signUpCustomer({ email, password, name, phone, address, delivery_period }) {
+export async function signUpCustomer({ email, password, name, phone, address, delivery_period, birth_date }) {
+  const { validateRegistrationBirthDate } = await import('./utils.js')
+  const birthCheck = validateRegistrationBirthDate(birth_date)
+  if (!birthCheck.ok) throw new Error(birthCheck.message)
+
   const client = await requireClient()
   const { data, error } = await client.auth.signUp({
     email, password,
-    options: { data: { name, role: 'customer', phone, address, delivery_period } },
+    options: {
+      data: {
+        name,
+        role: 'customer',
+        phone,
+        address,
+        delivery_period,
+        birth_date: birthCheck.birthDate,
+      },
+    },
   })
   if (error) throw error
   return data
