@@ -1550,15 +1550,37 @@ tr:last-child td { border-bottom: none; }
 .admin-orders-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
   margin-top: 1rem;
 }
 
-.admin-orders-toolbar .admin-filter-bar {
+.admin-orders-filters {
   flex: 1 1 20rem;
-  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-orders-filters__groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+}
+
+.admin-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.admin-filter-group__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
 }
 
 .admin-export-hint {

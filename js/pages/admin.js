@@ -3,7 +3,7 @@
  */
 import {
   fetchAdminMetrics, fetchAdminOrdersAnalytics, fetchAdminOrders,
-  buildOrderPeriodSeries,
+  buildOrderPeriodSeries, getOrderPeriodCutoff,
   fetchPendingStoreApprovals,
   approveStoreRegistration, rejectStoreRegistration,
   updatePassword, fetchMerchants, fetchAllStoresAdmin,
@@ -86,6 +86,83 @@ function adminFilterBar({ searchId, searchPlaceholder, chips }) {
         `).join('')}
       </div>
     </div>`
+}
+
+function adminOrdersFilterBar() {
+  return `
+    <div class="admin-orders-filters">
+      <input
+        type="search"
+        class="form-input admin-filter-bar__search"
+        id="admin-orders-search"
+        placeholder="Buscar cliente, telefone ou loja..."
+        autocomplete="off"
+      />
+      <div class="admin-orders-filters__groups">
+        <div class="admin-filter-group">
+          <span class="admin-filter-group__label">Status</span>
+          <div class="admin-filter-chips" role="group">
+            <button type="button" class="admin-filter-chip active" data-filter="all">Todos</button>
+            <button type="button" class="admin-filter-chip" data-filter="sent">Enviados</button>
+            <button type="button" class="admin-filter-chip" data-filter="viewed">Visualizados</button>
+            <button type="button" class="admin-filter-chip" data-filter="pending">Pendentes</button>
+          </div>
+        </div>
+        <div class="admin-filter-group">
+          <span class="admin-filter-group__label">Período</span>
+          <div class="admin-filter-chips" role="group">
+            <button type="button" class="admin-filter-chip active" data-order-period="all">Todos</button>
+            <button type="button" class="admin-filter-chip" data-order-period="7d">7 dias</button>
+            <button type="button" class="admin-filter-chip" data-order-period="30d">30 dias</button>
+            <button type="button" class="admin-filter-chip" data-order-period="12m">12 meses</button>
+          </div>
+        </div>
+      </div>
+    </div>`
+}
+
+function bindOrdersListFilters(main) {
+  const search = main.querySelector('#admin-orders-search')
+  const statusChips = main.querySelectorAll('[data-filter]')
+  const periodChips = main.querySelectorAll('[data-order-period]')
+  const rows = main.querySelectorAll('[data-order-row]')
+  const emptyRow = main.querySelector('[data-orders-empty]')
+  let activeStatus = 'all'
+  let activePeriod = 'all'
+
+  const apply = () => {
+    const term = search?.value.trim().toLowerCase() ?? ''
+    const cutoff = getOrderPeriodCutoff(activePeriod)
+    let visibleCount = 0
+
+    rows.forEach((row) => {
+      const matchesSearch = !term || (row.dataset.orderSearch ?? '').includes(term)
+      const matchesStatus = activeStatus === 'all' || row.dataset.orderStatus === activeStatus
+      const orderDate = new Date(row.dataset.orderCreated)
+      const matchesPeriod = !cutoff || orderDate >= cutoff
+      const visible = matchesSearch && matchesStatus && matchesPeriod
+      row.hidden = !visible
+      if (visible) visibleCount++
+    })
+
+    if (emptyRow) emptyRow.hidden = visibleCount > 0
+  }
+
+  search?.addEventListener('input', apply)
+  statusChips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      activeStatus = chip.dataset.filter
+      statusChips.forEach((c) => c.classList.toggle('active', c === chip))
+      apply()
+    })
+  })
+  periodChips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      activePeriod = chip.dataset.orderPeriod
+      periodChips.forEach((c) => c.classList.toggle('active', c === chip))
+      apply()
+    })
+  })
 }
 
 function bindListFilters(main, {
@@ -320,6 +397,7 @@ function renderAdminOrderRows(orders, { compact = false } = {}) {
       data-order-row
       data-order-id="${escapeHtml(o.id)}"
       data-order-status="${escapeHtml(o.status)}"
+      data-order-created="${escapeHtml(o.created_at)}"
       data-order-search="${escapeHtml(`${o.customer_name} ${o.customer_phone} ${o.store?.name ?? ''} ${o.store?.city ?? ''}`.toLowerCase())}"
     >
       <td>${formatDate(o.created_at)}</td>
@@ -1109,16 +1187,7 @@ export async function renderAdminDashboard(main, tab = 'overview', selectedStore
         ${renderOrdersChart(buildOrderPeriodSeries(orderAnalytics.timeline, '30d'), { period: '30d', metric: 'orders' })}
         ${orders.length > 0 ? `
           <div class="admin-orders-toolbar">
-            ${adminFilterBar({
-              searchId: 'admin-orders-search',
-              searchPlaceholder: 'Buscar cliente, telefone ou loja...',
-              chips: [
-                { id: 'all', label: 'Todos', active: true },
-                { id: 'sent', label: 'Enviados', active: false },
-                { id: 'viewed', label: 'Visualizados', active: false },
-                { id: 'pending', label: 'Pendentes', active: false },
-              ],
-            })}
+            ${adminOrdersFilterBar()}
             <button type="button" class="btn btn-outline btn-sm" id="admin-orders-export">⬇ Exportar CSV</button>
           </div>` : ''}
         <div class="table-wrap admin-orders-table" style="margin-top:1rem">
@@ -1127,24 +1196,22 @@ export async function renderAdminDashboard(main, tab = 'overview', selectedStore
             <tbody>
               ${orders.length === 0
                 ? `<tr><td colspan="6">${adminEmptyState('🛒', 'Nenhum pedido', 'Os pedidos feitos pelos clientes aparecerão aqui.')}</td></tr>`
-                : renderAdminOrderRows(orders)}
+                : `${renderAdminOrderRows(orders)}
+                  <tr data-orders-empty hidden>
+                    <td colspan="6">${adminEmptyState('🔍', 'Nenhum resultado', 'Nenhum pedido corresponde aos filtros selecionados.')}</td>
+                  </tr>`}
             </tbody>
           </table>
         </div>
       `,
       orders.length > 0
-        ? '<span class="admin-export-hint">Exporta os pedidos visíveis (respeita busca e filtros)</span>'
+        ? '<span class="admin-export-hint">Exporta os pedidos visíveis (respeita busca, status e período)</span>'
         : ''
     )
 
     bindOrdersChart(main, orderAnalytics.timeline)
     bindOrdersCsvExport(main, orders)
-    bindListFilters(main, {
-      searchId: 'admin-orders-search',
-      rowSelector: '[data-order-row]',
-      getSearchText: (row) => row.dataset.orderSearch ?? '',
-      getFilterValue: (row) => row.dataset.orderStatus ?? '',
-    })
+    bindOrdersListFilters(main)
     return
   }
 

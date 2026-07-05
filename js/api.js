@@ -773,6 +773,26 @@ function startOfLocalDay(date = new Date()) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
 
+export function getOrderPeriodCutoff(period = 'all') {
+  if (period === 'all') return null
+
+  const today = startOfLocalDay()
+  if (period === '7d') {
+    const date = new Date(today)
+    date.setDate(date.getDate() - 6)
+    return date
+  }
+  if (period === '30d') {
+    const date = new Date(today)
+    date.setDate(date.getDate() - 29)
+    return date
+  }
+  if (period === '12m') {
+    return new Date(today.getFullYear(), today.getMonth() - 11, 1)
+  }
+  return null
+}
+
 export function buildOrderPeriodSeries(orders, period = '30d') {
   const today = startOfLocalDay()
   const buckets = []
