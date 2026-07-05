@@ -196,6 +196,25 @@ export async function rejectStoreRegistration(storeId) {
 }
 
 // --- Products ---
+
+/** Tabelas de engajamento (migration 011) podem não existir em bancos antigos. */
+function isMissingEngagementTableError(error) {
+  const msg = error?.message ?? ''
+  const code = error?.code ?? ''
+  return code === 'PGRST205' || /could not find the table/i.test(msg)
+}
+
+const ENGAGEMENT_UNAVAILABLE = 'Recurso de curtidas/comentários indisponível. Rode a migration 011 no Supabase.'
+
+function withZeroEngagement(products) {
+  return products.map((product) => ({
+    ...product,
+    likes_count: 0,
+    comments_count: 0,
+    liked_by_user: false,
+  }))
+}
+
 async function attachProductEngagement(products, userId = null) {
   if (!products.length) return []
 
@@ -206,6 +225,13 @@ async function attachProductEngagement(products, userId = null) {
     client.from('product_likes').select('product_id, user_id').in('product_id', ids),
     client.from('product_comments').select('product_id').in('product_id', ids),
   ])
+  if (
+    (likesError && isMissingEngagementTableError(likesError)) ||
+    (commentsError && isMissingEngagementTableError(commentsError))
+  ) {
+    console.warn('[MaredeVendas] Tabelas product_likes/product_comments ausentes — execute supabase/migrations/011_product_engagement.sql')
+    return withZeroEngagement(products)
+  }
   if (likesError) throw likesError
   if (commentsError) throw commentsError
 
@@ -287,7 +313,10 @@ export async function toggleProductLike(userId, productId) {
     .eq('user_id', userId)
     .eq('product_id', productId)
     .maybeSingle()
-  if (readError) throw readError
+  if (readError) {
+    if (isMissingEngagementTableError(readError)) throw new Error(ENGAGEMENT_UNAVAILABLE)
+    throw readError
+  }
 
   if (existing) {
     const { error } = await client.from('product_likes').delete().eq('id', existing.id)
@@ -296,7 +325,10 @@ export async function toggleProductLike(userId, productId) {
   }
 
   const { error } = await client.from('product_likes').insert({ user_id: userId, product_id: productId })
-  if (error) throw error
+  if (error) {
+    if (isMissingEngagementTableError(error)) throw new Error(ENGAGEMENT_UNAVAILABLE)
+    throw error
+  }
   return true
 }
 
@@ -307,7 +339,10 @@ export async function fetchProductComments(productId) {
     .select('*, user:users(name)')
     .eq('product_id', productId)
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) {
+    if (isMissingEngagementTableError(error)) return []
+    throw error
+  }
   return data ?? []
 }
 
@@ -322,7 +357,10 @@ export async function addProductComment(userId, productId, content) {
     .insert({ user_id: userId, product_id: productId, content: trimmed })
     .select('*, user:users(name)')
     .single()
-  if (error) throw error
+  if (error) {
+    if (isMissingEngagementTableError(error)) throw new Error(ENGAGEMENT_UNAVAILABLE)
+    throw error
+  }
   return data
 }
 

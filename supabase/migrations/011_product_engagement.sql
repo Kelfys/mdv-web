@@ -1,6 +1,7 @@
 -- Curtidas e comentários de produtos
 
-CREATE TABLE public.product_likes (
+-- Idempotente: seguro rodar mesmo se tabelas já existirem
+CREATE TABLE IF NOT EXISTS public.product_likes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -11,7 +12,7 @@ CREATE TABLE public.product_likes (
 CREATE INDEX idx_product_likes_product ON public.product_likes(product_id);
 CREATE INDEX idx_product_likes_user ON public.product_likes(user_id);
 
-CREATE TABLE public.product_comments (
+CREATE TABLE IF NOT EXISTS public.product_comments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -26,21 +27,27 @@ ALTER TABLE public.product_likes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.product_comments ENABLE ROW LEVEL SECURITY;
 
 -- Curtidas: leitura pública, escrita só para usuário autenticado (próprio registro)
+DROP POLICY IF EXISTS "Anyone can read product likes" ON public.product_likes;
 CREATE POLICY "Anyone can read product likes" ON public.product_likes
   FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can like products" ON public.product_likes;
 CREATE POLICY "Authenticated users can like products" ON public.product_likes
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can unlike own likes" ON public.product_likes;
 CREATE POLICY "Users can unlike own likes" ON public.product_likes
   FOR DELETE USING (auth.uid() = user_id);
 
 -- Comentários: leitura pública, escrita só para usuário autenticado
+DROP POLICY IF EXISTS "Anyone can read product comments" ON public.product_comments;
 CREATE POLICY "Anyone can read product comments" ON public.product_comments
   FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can comment on products" ON public.product_comments;
 CREATE POLICY "Authenticated users can comment on products" ON public.product_comments
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own product comments" ON public.product_comments;
 CREATE POLICY "Users can delete own product comments" ON public.product_comments
   FOR DELETE USING (auth.uid() = user_id OR public.is_admin());
