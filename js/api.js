@@ -761,3 +761,51 @@ export async function fetchAdminMetrics() {
     pendingStores: pending.count ?? 0,
   }
 }
+
+function summarizeAdminOrders(orders) {
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const startOfWeek = new Date(startOfToday)
+  startOfWeek.setDate(startOfWeek.getDate() - 6)
+
+  let totalRevenue = 0
+  let ordersToday = 0
+  let ordersWeek = 0
+  const byStatus = { pending: 0, sent: 0, viewed: 0 }
+
+  for (const order of orders) {
+    totalRevenue += Number(order.total) || 0
+    const created = new Date(order.created_at)
+    if (created >= startOfToday) ordersToday++
+    if (created >= startOfWeek) ordersWeek++
+    if (order.status in byStatus) byStatus[order.status]++
+  }
+
+  return {
+    totalOrders: orders.length,
+    totalRevenue,
+    ordersToday,
+    ordersWeek,
+    byStatus,
+  }
+}
+
+export async function fetchAdminOrderMetrics() {
+  const client = await requireClient()
+  const { data, error } = await client
+    .from('orders')
+    .select('id, total, status, created_at')
+  if (error) throw error
+  return summarizeAdminOrders(data ?? [])
+}
+
+export async function fetchAdminOrders(limit = 200) {
+  const client = await requireClient()
+  const { data, error } = await client
+    .from('orders')
+    .select('*, store:stores(id, name, slug, city, state)')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return data ?? []
+}

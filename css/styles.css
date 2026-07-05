@@ -1495,6 +1495,57 @@ tr:last-child td { border-bottom: none; }
 .admin-stat-chip--approved { border-color: rgb(22 163 74 / 0.35); color: var(--green-700, #15803d); }
 .admin-stat-chip--pending { border-color: rgb(245 158 11 / 0.45); color: var(--amber-600, #d97706); }
 .admin-stat-chip--blocked { border-color: rgb(239 68 68 / 0.35); color: #b91c1c; }
+.admin-stat-chip--sent { border-color: rgb(59 130 246 / 0.35); color: #1d4ed8; }
+.admin-stat-chip--viewed { border-color: rgb(22 163 74 / 0.35); color: var(--green-700, #15803d); }
+.admin-stat-chip--order-pending { border-color: rgb(245 158 11 / 0.45); color: var(--amber-600, #d97706); }
+
+.admin-order-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.admin-order-metric {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+
+.admin-order-metric--highlight {
+  border-color: rgb(22 163 74 / 0.35);
+  background: rgb(22 163 74 / 0.05);
+}
+
+.admin-order-metric__value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.admin-order-metric--highlight .admin-order-metric__value {
+  color: var(--green-700, #15803d);
+}
+
+.admin-order-metric__label {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.metric-card--compact .metric-card__value {
+  font-size: 1.125rem;
+}
+
+.badge-order-pending { background: #fef3c7; color: #b45309; }
+.badge-order-sent { background: #dbeafe; color: #1d4ed8; }
+.badge-order-viewed { background: #dcfce7; color: #15803d; }
+
+.admin-orders-table table {
+  font-size: 0.875rem;
+}
 
 .admin-filter-bar {
   display: flex;

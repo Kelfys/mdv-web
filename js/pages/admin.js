@@ -2,7 +2,8 @@
  * Painel administrativo — conteúdo dinâmico; navegação no ícone ⚙️ do header.
  */
 import {
-  fetchAdminMetrics, fetchPendingStoreApprovals,
+  fetchAdminMetrics, fetchAdminOrderMetrics, fetchAdminOrders,
+  fetchPendingStoreApprovals,
   approveStoreRegistration, rejectStoreRegistration,
   updatePassword, fetchMerchants, fetchAllStoresAdmin,
   fetchAdminProducts, createStoreAsAdmin, createProduct, updateProduct,
@@ -123,6 +124,67 @@ function statusBadge(status) {
     blocked: '<span class="badge badge-blocked">Bloqueada</span>',
   }
   return map[status] ?? escapeHtml(status)
+}
+
+function orderStatusBadge(status) {
+  const map = {
+    pending: '<span class="badge badge-order-pending">Pendente</span>',
+    sent: '<span class="badge badge-order-sent">Enviado</span>',
+    viewed: '<span class="badge badge-order-viewed">Visualizado</span>',
+  }
+  return map[status] ?? escapeHtml(status)
+}
+
+function orderMetricsChips(metrics) {
+  return `
+    <div class="admin-order-metrics">
+      <div class="admin-order-metric">
+        <span class="admin-order-metric__value">${metrics.totalOrders}</span>
+        <span class="admin-order-metric__label">Total de pedidos</span>
+      </div>
+      <div class="admin-order-metric admin-order-metric--highlight">
+        <span class="admin-order-metric__value">${formatCurrency(metrics.totalRevenue)}</span>
+        <span class="admin-order-metric__label">Receita acumulada</span>
+      </div>
+      <div class="admin-order-metric">
+        <span class="admin-order-metric__value">${metrics.ordersToday}</span>
+        <span class="admin-order-metric__label">Hoje</span>
+      </div>
+      <div class="admin-order-metric">
+        <span class="admin-order-metric__value">${metrics.ordersWeek}</span>
+        <span class="admin-order-metric__label">Últimos 7 dias</span>
+      </div>
+    </div>
+    <div class="admin-stat-chips" style="margin-top:0.75rem">
+      <span class="admin-stat-chip admin-stat-chip--sent">${metrics.byStatus.sent} enviados</span>
+      <span class="admin-stat-chip admin-stat-chip--viewed">${metrics.byStatus.viewed} visualizados</span>
+      <span class="admin-stat-chip admin-stat-chip--order-pending">${metrics.byStatus.pending} pendentes</span>
+    </div>`
+}
+
+function renderAdminOrderRows(orders, { compact = false } = {}) {
+  const emptyColspan = compact ? 5 : 6
+  if (orders.length === 0) {
+    return `<tr><td colspan="${emptyColspan}">Nenhum pedido registrado</td></tr>`
+  }
+
+  return orders.map((o) => `
+    <tr
+      data-order-row
+      data-order-status="${escapeHtml(o.status)}"
+      data-order-search="${escapeHtml(`${o.customer_name} ${o.customer_phone} ${o.store?.name ?? ''} ${o.store?.city ?? ''}`.toLowerCase())}"
+    >
+      <td>${formatDate(o.created_at)}</td>
+      <td>
+        <strong>${escapeHtml(o.store?.name ?? '—')}</strong>
+        ${o.store?.city ? `<br><small>${escapeHtml(o.store.city)}, ${escapeHtml(o.store.state ?? '')}</small>` : ''}
+      </td>
+      <td>${escapeHtml(o.customer_name)}${compact && o.customer_phone ? `<br><small>${escapeHtml(o.customer_phone)}</small>` : ''}</td>
+      ${compact ? '' : `<td>${escapeHtml(o.customer_phone)}</td>`}
+      <td><strong>${formatCurrency(o.total)}</strong></td>
+      <td>${orderStatusBadge(o.status)}</td>
+    </tr>
+  `).join('')
 }
 
 function imagePreviewBlock(url, alt, variant = 'square') {
@@ -452,6 +514,11 @@ function quickActions() {
         <strong>Novo produto</strong>
         <span>Adicionar ao catálogo</span>
       </a>
+      <a href="#/admin/pedidos" class="admin-quick-card">
+        <span class="admin-quick-card__icon">🛒</span>
+        <strong>Pedidos</strong>
+        <span>Métricas e histórico</span>
+      </a>
       <a href="#/admin/aprovacoes" class="admin-quick-card">
         <span class="admin-quick-card__icon">✅</span>
         <strong>Aprovações</strong>
@@ -466,11 +533,12 @@ function quickActions() {
   `
 }
 
-function metricCards(metrics, pendingCount) {
+function metricCards(metrics, pendingCount, orderMetrics = null) {
   const items = [
     { label: 'Lojas', value: metrics.totalStores, href: '#/admin/lojas' },
     { label: 'Produtos', value: metrics.totalProducts, href: '#/admin/produtos' },
-    { label: 'Pedidos', value: metrics.totalOrders, href: null },
+    { label: 'Pedidos', value: orderMetrics?.totalOrders ?? metrics.totalOrders, href: '#/admin/pedidos' },
+    { label: 'Receita', value: formatCurrency(orderMetrics?.totalRevenue ?? 0), href: '#/admin/pedidos', compact: true },
     { label: 'Visualizações', value: metrics.totalViews, href: null },
     { label: 'Pendentes', value: pendingCount, href: '#/admin/aprovacoes', highlight: pendingCount > 0 },
   ]
@@ -479,11 +547,11 @@ function metricCards(metrics, pendingCount) {
     <div class="metrics admin-metrics">
       ${items.map((m) => `
         ${m.href
-          ? `<a href="${m.href}" class="metric-card metric-card--link ${m.highlight ? 'metric-card--alert' : ''}">
+          ? `<a href="${m.href}" class="metric-card metric-card--link ${m.highlight ? 'metric-card--alert' : ''} ${m.compact ? 'metric-card--compact' : ''}">
               <div class="metric-card__value">${m.value}</div>
               <div class="metric-card__label">${m.label}</div>
             </a>`
-          : `<div class="metric-card">
+          : `<div class="metric-card ${m.compact ? 'metric-card--compact' : ''}">
               <div class="metric-card__value">${m.value}</div>
               <div class="metric-card__label">${m.label}</div>
             </div>`}
@@ -499,10 +567,12 @@ export async function renderAdminDashboard(main, tab = 'overview', selectedStore
   const menuItem = getAdminMenuItem(tab)
 
   if (tab === 'overview') {
-    const [metrics, pending, stores] = await Promise.all([
+    const [metrics, pending, stores, orderMetrics, recentOrders] = await Promise.all([
       fetchAdminMetrics(),
       fetchPendingStoreApprovals(),
       fetchAllStoresAdmin(),
+      fetchAdminOrderMetrics(),
+      fetchAdminOrders(5),
     ])
 
     setAdminPendingCount(pending.length)
@@ -515,7 +585,22 @@ export async function renderAdminDashboard(main, tab = 'overview', selectedStore
       'Resumo da plataforma e atalhos rápidos',
       `
         ${quickActions()}
-        ${metricCards(metrics, pending.length)}
+        ${metricCards(metrics, pending.length, orderMetrics)}
+        <section class="admin-section">
+          <div class="admin-section__head">
+            <h2>Pedidos</h2>
+            <a href="#/admin/pedidos" class="btn btn-outline btn-sm">Ver todos</a>
+          </div>
+          ${orderMetricsChips(orderMetrics)}
+          ${recentOrders.length === 0
+            ? adminEmptyState('🛒', 'Sem pedidos', 'Nenhum pedido foi registrado na plataforma ainda.')
+            : `<div class="table-wrap admin-orders-table" style="margin-top:1rem">
+                <table>
+                  <thead><tr><th>Data</th><th>Loja</th><th>Cliente</th><th>Total</th><th>Status</th></tr></thead>
+                  <tbody>${renderAdminOrderRows(recentOrders, { compact: true })}</tbody>
+                </table>
+              </div>`}
+        </section>
         <section class="admin-section">
           <div class="admin-section__head">
             <h2>Status das lojas</h2>
@@ -850,6 +935,53 @@ export async function renderAdminDashboard(main, tab = 'overview', selectedStore
     bindStoreProductsNav(main)
     bindProductSearch(main)
     bindProductForm(main, selectedStoreId)
+    return
+  }
+
+  if (tab === 'pedidos') {
+    const [orders, orderMetrics, pending] = await Promise.all([
+      fetchAdminOrders(),
+      fetchAdminOrderMetrics(),
+      fetchPendingStoreApprovals(),
+    ])
+
+    setAdminPendingCount(pending.length)
+    import('../ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
+
+    main.innerHTML = adminPage(
+      menuItem.label,
+      `${orderMetrics.totalOrders} pedido(s) · ${formatCurrency(orderMetrics.totalRevenue)} em vendas`,
+      `
+        ${orderMetricsChips(orderMetrics)}
+        ${orders.length > 0 ? adminFilterBar({
+          searchId: 'admin-orders-search',
+          searchPlaceholder: 'Buscar cliente, telefone ou loja...',
+          chips: [
+            { id: 'all', label: 'Todos', active: true },
+            { id: 'sent', label: 'Enviados', active: false },
+            { id: 'viewed', label: 'Visualizados', active: false },
+            { id: 'pending', label: 'Pendentes', active: false },
+          ],
+        }) : ''}
+        <div class="table-wrap admin-orders-table" style="margin-top:1rem">
+          <table>
+            <thead><tr><th>Data</th><th>Loja</th><th>Cliente</th><th>Telefone</th><th>Total</th><th>Status</th></tr></thead>
+            <tbody>
+              ${orders.length === 0
+                ? `<tr><td colspan="6">${adminEmptyState('🛒', 'Nenhum pedido', 'Os pedidos feitos pelos clientes aparecerão aqui.')}</td></tr>`
+                : renderAdminOrderRows(orders)}
+            </tbody>
+          </table>
+        </div>
+      `
+    )
+
+    bindListFilters(main, {
+      searchId: 'admin-orders-search',
+      rowSelector: '[data-order-row]',
+      getSearchText: (row) => row.dataset.orderSearch ?? '',
+      getFilterValue: (row) => row.dataset.orderStatus ?? '',
+    })
     return
   }
 

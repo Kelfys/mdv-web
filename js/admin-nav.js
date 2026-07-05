@@ -5,6 +5,7 @@ export const ADMIN_MENU = [
   { id: 'overview', label: 'Visão Geral', icon: '📊', href: '#/admin' },
   { id: 'stores', label: 'Lojas', icon: '🏪', href: '#/admin/lojas', action: 'store' },
   { id: 'products', label: 'Produtos', icon: '📦', href: '#/admin/produtos', action: 'product' },
+  { id: 'pedidos', label: 'Pedidos', icon: '🛒', href: '#/admin/pedidos' },
   { id: 'approvals', label: 'Aprovações', icon: '✅', href: '#/admin/aprovacoes' },
   { id: 'account', label: 'Minha Conta', icon: '🔑', href: '#/admin/conta' },
 ]
