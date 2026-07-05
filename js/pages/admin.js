@@ -1420,8 +1420,25 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
               </div>
               <div class="table-wrap admin-moderators-table">
                 <table>
-                  <thead><tr><th>Nome</th><th>Email</th><th>Desde</th><th></th></tr></thead>
-                  <tbody>
+                  <thead><tr>
+                    <th class="admin-table-sortable">
+                      <button type="button" class="admin-table-sort" id="admin-moderators-sort-name" data-moderator-sort="name" aria-label="Ordenar por nome, A–Z">
+                        Nome <span class="admin-table-sort__icon" aria-hidden="true"></span>
+                      </button>
+                    </th>
+                    <th class="admin-table-sortable">
+                      <button type="button" class="admin-table-sort" id="admin-moderators-sort-email" data-moderator-sort="email" aria-label="Ordenar por email, A–Z">
+                        Email <span class="admin-table-sort__icon" aria-hidden="true"></span>
+                      </button>
+                    </th>
+                    <th class="admin-table-sortable">
+                      <button type="button" class="admin-table-sort active" id="admin-moderators-sort-created" data-moderator-sort="created" data-moderator-sort-dir="desc" aria-label="Ordenar por data, mais recentes primeiro">
+                        Desde <span class="admin-table-sort__icon" aria-hidden="true">↓</span>
+                      </button>
+                    </th>
+                    <th></th>
+                  </tr></thead>
+                  <tbody id="admin-moderators-tbody">
                     ${renderModeratorTableRows(moderators)}
                     <tr data-moderators-empty hidden>
                       <td colspan="4">${adminEmptyState('🔍', 'Nenhum resultado', 'Nenhum moderador corresponde à busca.')}</td>
@@ -1713,6 +1730,62 @@ function bindProductEdits(main, selectedStoreId = null) {
 
 const MODERATORS_PAGE_SIZE = 10
 
+const MODERATOR_SORT_DEFAULTS = {
+  name: 'asc',
+  email: 'asc',
+  created: 'desc',
+}
+
+function sortModeratorRows(rows, field = 'created', direction = 'desc') {
+  return [...rows].sort((a, b) => {
+    let diff = 0
+    if (field === 'created') {
+      diff = new Date(a.dataset.moderatorCreated).getTime() - new Date(b.dataset.moderatorCreated).getTime()
+    } else if (field === 'email') {
+      diff = (a.dataset.moderatorEmail ?? '').localeCompare(b.dataset.moderatorEmail ?? '', 'pt-BR', { sensitivity: 'base' })
+    } else {
+      diff = (a.dataset.moderatorName ?? '').localeCompare(b.dataset.moderatorName ?? '', 'pt-BR', { sensitivity: 'base' })
+    }
+    return direction === 'asc' ? diff : -diff
+  })
+}
+
+function reorderModeratorRowsInDom(tbody, matchedRows, emptyRow) {
+  if (!tbody) return
+  const anchor = emptyRow ?? null
+  for (const row of matchedRows) tbody.insertBefore(row, anchor)
+  tbody.querySelectorAll('[data-moderator-row]').forEach((row) => {
+    if (row.dataset.moderatorMatch !== '1') tbody.insertBefore(row, anchor)
+  })
+}
+
+function updateModeratorsSortButtons(main, sortField, sortDirection) {
+  const labels = {
+    name: {
+      asc: 'Ordenar por nome, A–Z',
+      desc: 'Ordenar por nome, Z–A',
+    },
+    email: {
+      asc: 'Ordenar por email, A–Z',
+      desc: 'Ordenar por email, Z–A',
+    },
+    created: {
+      asc: 'Ordenar por data, mais antigos primeiro',
+      desc: 'Ordenar por data, mais recentes primeiro',
+    },
+  }
+
+  main.querySelectorAll('[data-moderator-sort]').forEach((button) => {
+    const field = button.dataset.moderatorSort
+    const isActive = field === sortField
+    button.classList.toggle('active', isActive)
+    button.dataset.moderatorSortDir = isActive ? sortDirection : ''
+    const icon = button.querySelector('.admin-table-sort__icon')
+    if (icon) icon.textContent = isActive ? (sortDirection === 'asc' ? '↑' : '↓') : ''
+    button.setAttribute('aria-label', labels[field]?.[isActive ? sortDirection : MODERATOR_SORT_DEFAULTS[field]] ?? '')
+  })
+}
+
 function renderModeratorTableRows(moderators) {
   if (moderators.length === 0) return ''
 
@@ -1720,6 +1793,9 @@ function renderModeratorTableRows(moderators) {
     <tr
       data-moderator-row
       data-moderator-search="${escapeHtml(`${m.name} ${m.email}`.toLowerCase())}"
+      data-moderator-name="${escapeHtml(m.name)}"
+      data-moderator-email="${escapeHtml(m.email)}"
+      data-moderator-created="${m.created_at}"
     >
       <td><strong>${escapeHtml(m.name)}</strong></td>
       <td>${escapeHtml(m.email)}</td>
@@ -1760,9 +1836,13 @@ function renderModeratorsPaginationHtml({ currentPage, totalPages, matchedCount 
 
 function bindModeratorsList(main) {
   const search = main.querySelector('#admin-moderators-search')
+  const tbody = main.querySelector('#admin-moderators-tbody')
   const emptyRow = main.querySelector('[data-moderators-empty]')
   const countEl = main.querySelector('#admin-moderators-count')
   const paginationWrap = main.querySelector('#admin-moderators-pagination-wrap')
+  const sortButtons = main.querySelectorAll('[data-moderator-sort]')
+  let sortField = 'created'
+  let sortDirection = 'desc'
   let currentPage = 1
   let matchedRows = []
 
@@ -1798,6 +1878,9 @@ function bindModeratorsList(main) {
       else row.hidden = true
     })
 
+    matchedRows = sortModeratorRows(matchedRows, sortField, sortDirection)
+    reorderModeratorRowsInDom(tbody, matchedRows, emptyRow)
+
     if (emptyRow) emptyRow.hidden = matchedRows.length > 0
     if (countEl) {
       countEl.textContent = term && matchedRows.length !== rows.length
@@ -1809,6 +1892,20 @@ function bindModeratorsList(main) {
   }
 
   search?.addEventListener('input', () => apply({ resetPage: true }))
+
+  sortButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const field = button.dataset.moderatorSort
+      if (field === sortField) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'
+      } else {
+        sortField = field
+        sortDirection = MODERATOR_SORT_DEFAULTS[field] ?? 'asc'
+      }
+      updateModeratorsSortButtons(main, sortField, sortDirection)
+      apply()
+    })
+  })
 
   paginationWrap?.addEventListener('click', (event) => {
     const totalPages = Math.max(1, Math.ceil(matchedRows.length / MODERATORS_PAGE_SIZE))
@@ -1824,6 +1921,7 @@ function bindModeratorsList(main) {
     }
   })
 
+  updateModeratorsSortButtons(main, sortField, sortDirection)
   apply()
 }
 
