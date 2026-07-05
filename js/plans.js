@@ -125,6 +125,17 @@ export function getPlanById(planId) {
   return SUBSCRIPTION_PLANS.find((p) => p.id === planId) ?? SUBSCRIPTION_PLANS[0]
 }
 
+const PLAN_FEED_WEIGHT = {
+  free: 1,
+  starter: 2,
+  growth: 3,
+  premium: 4,
+}
+
+export function getPlanFeedWeight(planId) {
+  return PLAN_FEED_WEIGHT[planId] ?? PLAN_FEED_WEIGHT.free
+}
+
 export function getPlanPriceCooldownHours(planId) {
   const plan = getPlanById(planId)
   return plan.priceCooldownHours ?? PLAN_COOLDOWN_HOURS[plan.id] ?? null

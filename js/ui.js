@@ -15,6 +15,7 @@
 import { APP_NAME } from './config.js'
 import { getStoreThemeColor } from './config.js'
 import { escapeHtml, formatCurrency, formatPhone } from './utils.js'
+import { getPlanById } from './plans.js'
 import {
   getUser, logout, onAuthChange, toggleTheme, getTheme, getAdminPendingCount,
   getMerchantNewOrdersCount,
@@ -240,13 +241,19 @@ export function initHeader() {
   onAuthChange(() => renderHeader())
 }
 
-export function renderStoreCard(store) {
+export function renderStoreCard(store, options = {}) {
+  const { showPlanBadge = false } = options
   const theme = getStoreThemeColor(store.theme_color)
   const bannerStyle = `background: linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo})`
+  const plan = getPlanById(store.plan_id)
+  const planBadge = showPlanBadge && store.plan_id && store.plan_id !== 'free'
+    ? `<span class="store-card__plan-badge store-card__plan-badge--${escapeHtml(store.plan_id)}">${escapeHtml(plan.name)}</span>`
+    : ''
 
   return `
     <article class="store-card">
       <div class="store-card__banner">
+        ${planBadge}
         ${store.banner
           ? `<img src="${escapeHtml(store.banner)}" alt="" loading="lazy" />`
           : `<div style="${bannerStyle};width:100%;height:100%"></div>`}
@@ -269,13 +276,50 @@ export function renderStoreCard(store) {
   `
 }
 
+/** Anúncio patrocinado no feed da home. */
+export function renderFeedAdCard(ad) {
+  const store = ad.store
+  const theme = getStoreThemeColor(store?.theme_color)
+  const bannerStyle = `background: linear-gradient(135deg, ${theme?.gradientFrom ?? '#448AFF'}, ${theme?.gradientTo ?? '#1565C0'})`
+
+  return `
+    <article class="feed-ad-card">
+      <div class="feed-ad-card__label">Patrocinado</div>
+      <div class="feed-ad-card__inner">
+        <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="feed-ad-card__media">
+          ${ad.image_url
+            ? `<img src="${escapeHtml(ad.image_url)}" alt="" loading="lazy" />`
+            : store?.logo
+              ? `<img src="${escapeHtml(store.logo)}" alt="" loading="lazy" />`
+              : `<div class="feed-ad-card__placeholder" style="${bannerStyle}">📣</div>`}
+        </a>
+        <div class="feed-ad-card__body">
+          <p class="feed-ad-card__store">🏪 ${escapeHtml(store?.name ?? 'Loja')}</p>
+          <h3 class="feed-ad-card__title">${escapeHtml(ad.title)}</h3>
+          <p class="feed-ad-card__message">${escapeHtml(ad.message)}</p>
+          <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="btn btn-primary btn-sm">Ver loja</a>
+        </div>
+      </div>
+    </article>
+  `
+}
+
 /** Card horizontal de produto no feed da home. */
 export function renderFeedProductCard(product, options = {}) {
   const { badge = 'new' } = options
   const oos = product.stock <= 0
   const likesCount = product.likes_count ?? 0
-  const badgeLabel = badge === 'liked' ? 'Mais curtido' : 'Novo produto'
-  const badgeClass = badge === 'liked' ? 'feed-product-card__badge--liked' : 'feed-product-card__badge--new'
+  const badgeLabels = {
+    liked: 'Mais curtido',
+    new: 'Novo produto',
+    pick: 'Destaque',
+  }
+  const badgeLabel = badgeLabels[badge] ?? badgeLabels.new
+  const badgeClass = badge === 'liked'
+    ? 'feed-product-card__badge--liked'
+    : badge === 'pick'
+      ? 'feed-product-card__badge--pick'
+      : 'feed-product-card__badge--new'
   const store = product.store
 
   return `

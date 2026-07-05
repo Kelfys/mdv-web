@@ -1,9 +1,10 @@
 /**
  * Página inicial — feed misto de lojas, produtos novos e mais curtidos.
  */
-import { fetchCategories, fetchStores, fetchNewProducts, fetchTopLikedProducts } from '../api.js'
-import { renderStoreCard, renderFeedProductCard, openCart } from '../ui.js'
-import { escapeHtml, buildHomeFeed } from '../utils.js'
+import { fetchCategories, fetchStores, fetchNewProducts, fetchTopLikedProducts, fetchActiveFeedAds } from '../api.js'
+import { renderStoreCard, renderFeedProductCard, renderFeedAdCard, openCart } from '../ui.js'
+import { escapeHtml } from '../utils.js'
+import { buildHomeFeed } from '../feed.js'
 import { setStore, addItem, getUser } from '../state.js'
 
 const FEED_PRODUCT_LIMIT = 12
@@ -17,6 +18,7 @@ export async function renderHome(main) {
   let likedProducts = []
   let feedItems = []
   let productMap = new Map()
+  let feedAds = []
 
   async function load() {
     const feed = main.querySelector('#feed')
@@ -31,7 +33,7 @@ export async function renderHome(main) {
         userId: user?.id,
       }
 
-      ;[categories, stores, newProducts, likedProducts] = await Promise.all([
+      ;[categories, stores, newProducts, likedProducts, feedAds] = await Promise.all([
         fetchCategories(),
         fetchStores({
           search: search || undefined,
@@ -40,9 +42,13 @@ export async function renderHome(main) {
         }),
         fetchNewProducts(productFilters),
         fetchTopLikedProducts(productFilters),
+        fetchActiveFeedAds(6),
       ])
 
-      feedItems = buildHomeFeed(stores, newProducts, likedProducts)
+      feedItems = buildHomeFeed(stores, newProducts, likedProducts, feedAds, {
+        search,
+        categoryId,
+      })
       productMap = new Map(
         [...newProducts, ...likedProducts].map((product) => [product.id, product])
       )
@@ -74,7 +80,8 @@ export async function renderHome(main) {
   }
 
   function renderFeedItem(item) {
-    if (item.kind === 'store') return renderStoreCard(item.store)
+    if (item.kind === 'store') return renderStoreCard(item.store, { showPlanBadge: true })
+    if (item.kind === 'ad') return renderFeedAdCard(item.ad)
     return renderFeedProductCard(item.product, { badge: item.badge })
   }
 
@@ -104,8 +111,8 @@ export async function renderHome(main) {
       </div>
       <div class="container">
         <p class="feed-label">${escapeHtml(label)}</p>
-        ${!hasFilters && (newProducts.length > 0 || likedProducts.length > 0) ? `
-          <p class="feed-hint">Lojas intercaladas com produtos novos e mais curtidos</p>
+        ${!hasFilters ? `
+          <p class="feed-hint">Ordenado por plano, engajamento e novidades — com diversidade entre lojas</p>
         ` : ''}
         <div class="feed" id="feed">
           ${feedItems.length === 0 ? emptyMessage : feedItems.map(renderFeedItem).join('')}

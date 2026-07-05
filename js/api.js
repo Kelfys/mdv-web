@@ -1058,6 +1058,22 @@ export async function fetchProductPriceHistory(productId, limit = 10) {
   return data ?? []
 }
 
+export async function fetchActiveFeedAds(limit = 6) {
+  const client = await requireClient()
+  const { data, error } = await client
+    .from('store_ads')
+    .select('*, store:stores(id, name, slug, theme_color, logo, plan_id, city, state)')
+    .eq('status', 'approved')
+    .gt('expires_at', new Date().toISOString())
+    .order('approved_at', { ascending: false })
+    .limit(limit)
+  if (error) {
+    if (error.code === '42P01') return []
+    throw error
+  }
+  return data ?? []
+}
+
 export async function fetchStoreAds(storeId) {
   const client = await requireClient()
   const { data, error } = await client

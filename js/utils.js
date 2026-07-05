@@ -122,67 +122,6 @@ export function rankProductsByEngagement(products) {
   return ranked
 }
 
-/**
- * Monta feed misto: lojas intercaladas com produtos novos e mais curtidos.
- * A cada 2 lojas → produto novo; a cada 3 lojas → produto curtido.
- */
-export function buildHomeFeed(stores, newProducts, likedProducts) {
-  const items = []
-  const seenProductIds = new Set()
-  let newIdx = 0
-  let likedIdx = 0
-
-  const takeNew = () => {
-    while (newIdx < newProducts.length) {
-      const product = newProducts[newIdx++]
-      if (!seenProductIds.has(product.id)) {
-        seenProductIds.add(product.id)
-        return product
-      }
-    }
-    return null
-  }
-
-  const takeLiked = () => {
-    while (likedIdx < likedProducts.length) {
-      const product = likedProducts[likedIdx++]
-      if (!seenProductIds.has(product.id)) {
-        seenProductIds.add(product.id)
-        return product
-      }
-    }
-    return null
-  }
-
-  stores.forEach((store, index) => {
-    items.push({ kind: 'store', store })
-
-    if ((index + 1) % 2 === 0) {
-      const product = takeNew()
-      if (product) items.push({ kind: 'product', product, badge: 'new' })
-    }
-
-    if ((index + 1) % 3 === 0) {
-      const product = takeLiked()
-      if (product) items.push({ kind: 'product', product, badge: 'liked' })
-    }
-  })
-
-  let product = takeNew()
-  while (product) {
-    items.push({ kind: 'product', product, badge: 'new' })
-    product = takeNew()
-  }
-
-  product = takeLiked()
-  while (product) {
-    items.push({ kind: 'product', product, badge: 'liked' })
-    product = takeLiked()
-  }
-
-  return items
-}
-
 export function showToast(message, duration = 3000) {
   const el = document.getElementById('toast')
   if (!el) return
