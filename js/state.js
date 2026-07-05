@@ -14,6 +14,7 @@
  * - Validar estoque/preço ao reabrir carrinho salvo
  */
 import { CART_STORAGE_KEY, THEME_STORAGE_KEY } from './config.js'
+import { DEFAULT_PAYMENT_METHOD_IDS, normalizeStorePaymentMethods } from './payment.js'
 import { getCurrentUser, signOut as apiSignOut } from './api.js'
 
 // --- Theme ---
@@ -91,14 +92,27 @@ export async function logout() {
 // --- Cart ---
 function loadCart() {
   try {
-    return JSON.parse(localStorage.getItem(CART_STORAGE_KEY) ?? 'null') ?? defaultCart()
+    const parsed = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) ?? 'null')
+    if (!parsed) return defaultCart()
+    return {
+      ...defaultCart(),
+      ...parsed,
+      storePaymentMethods: normalizeStorePaymentMethods(parsed.storePaymentMethods),
+    }
   } catch {
     return defaultCart()
   }
 }
 
 function defaultCart() {
-  return { storeId: null, storeName: null, storeWhatsapp: null, items: [], isOpen: false }
+  return {
+    storeId: null,
+    storeName: null,
+    storeWhatsapp: null,
+    storePaymentMethods: [...DEFAULT_PAYMENT_METHOD_IDS],
+    items: [],
+    isOpen: false,
+  }
 }
 
 function saveCart(cart) {
@@ -121,11 +135,12 @@ export function getCart() {
   return cart
 }
 
-export function setStore(storeId, storeName, whatsapp) {
+export function setStore(storeId, storeName, whatsapp, paymentMethods = DEFAULT_PAYMENT_METHOD_IDS) {
+  const methods = [...paymentMethods]
   if (cart.storeId && cart.storeId !== storeId) {
-    cart = { ...cart, storeId, storeName, storeWhatsapp: whatsapp, items: [] }
+    cart = { ...cart, storeId, storeName, storeWhatsapp: whatsapp, storePaymentMethods: methods, items: [] }
   } else {
-    cart = { ...cart, storeId, storeName, storeWhatsapp: whatsapp }
+    cart = { ...cart, storeId, storeName, storeWhatsapp: whatsapp, storePaymentMethods: methods }
   }
   saveCart(cart)
   notifyCart()

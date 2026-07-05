@@ -6,6 +6,7 @@ import { renderStoreCard, renderFeedProductCard, renderFeedAdCard, openCart } fr
 import { escapeHtml } from '../utils.js'
 import { buildHomeFeed } from '../feed.js'
 import { setStore, addItem, getUser } from '../state.js'
+import { normalizeStorePaymentMethods } from '../payment.js'
 
 const FEED_PRODUCT_LIMIT = 12
 
@@ -72,7 +73,12 @@ export async function renderHome(main) {
         const product = productMap.get(btn.dataset.feedAddProduct)
         if (!product?.store) return
 
-        setStore(product.store.id, product.store.name, product.store.whatsapp)
+        setStore(
+          product.store.id,
+          product.store.name,
+          product.store.whatsapp,
+          normalizeStorePaymentMethods(product.store.payment_methods),
+        )
         addItem(product)
         openCart()
       })

@@ -23,7 +23,9 @@ import {
   getCartTotal, getCartItemCount, clearCart,
 } from './state.js'
 import { buildOrderMessage, buildWhatsAppUrl } from './whatsapp.js'
-import { PAYMENT_METHODS, DEFAULT_PAYMENT_METHOD, isValidPaymentMethod } from './payment.js'
+import {
+  getPaymentMethod, getDefaultPaymentMethod, isValidPaymentMethod,
+} from './payment.js'
 import { createOrder } from './api.js'
 import { navigate, render as rerenderRoute, getCurrentPath, routeHref } from './router.js'
 import { showToast } from './utils.js'
@@ -427,6 +429,88 @@ export function renderProductCard(product, options = {}) {
   `
 }
 
+let cartCheckoutOpen = false
+
+function renderCartItem(item) {
+  const subtotal = item.product.price * item.quantity
+  return `
+    <li class="cart-item">
+      <div class="cart-item__media">
+        ${item.product.image
+          ? `<img src="${escapeHtml(item.product.image)}" alt="" loading="lazy" />`
+          : '<span class="cart-item__placeholder" aria-hidden="true">📦</span>'}
+      </div>
+      <div class="cart-item__content">
+        <div class="cart-item__top">
+          <h4 class="cart-item__name">${escapeHtml(item.product.name)}</h4>
+          <button type="button" class="cart-item__remove" data-remove="${item.product.id}" aria-label="Remover item">✕</button>
+        </div>
+        <p class="cart-item__unit">${formatCurrency(item.product.price)} cada</p>
+        <div class="cart-item__bottom">
+          <div class="cart-qty">
+            <button type="button" class="cart-qty__btn" data-qty-minus="${item.product.id}" aria-label="Diminuir quantidade">−</button>
+            <span class="cart-qty__value">${item.quantity}</span>
+            <button type="button" class="cart-qty__btn" data-qty-plus="${item.product.id}" aria-label="Aumentar quantidade">+</button>
+          </div>
+          <span class="cart-item__subtotal">${formatCurrency(subtotal)}</span>
+        </div>
+      </div>
+    </li>
+  `
+}
+
+function renderPaymentOptions(allowedIds, selected) {
+  const defaultMethod = getDefaultPaymentMethod(allowedIds)
+  const active = selected ?? defaultMethod
+
+  return `
+    <fieldset class="checkout-payment">
+      <legend class="checkout-payment__label">Como você prefere pagar?</legend>
+      <div class="checkout-payment__options">
+        ${allowedIds.map((id) => {
+          const method = getPaymentMethod(id)
+          if (!method) return ''
+          return `
+            <label class="checkout-payment__option ${active === method.id ? 'active' : ''}">
+              <input
+                type="radio"
+                name="payment"
+                value="${escapeHtml(method.id)}"
+                ${active === method.id ? 'checked' : ''}
+                required
+              />
+              <span class="checkout-payment__icon" aria-hidden="true">${method.icon}</span>
+              <span class="checkout-payment__copy">
+                <span class="checkout-payment__title">${escapeHtml(method.label)}</span>
+                <span class="checkout-payment__hint">${escapeHtml(method.hint)}</span>
+              </span>
+            </label>
+          `
+        }).join('')}
+      </div>
+    </fieldset>
+  `
+}
+
+function renderCheckoutSummary(cart, total, count) {
+  return `
+    <div class="cart-summary">
+      <div class="cart-summary__row">
+        <span>Itens (${count})</span>
+        <span>${formatCurrency(total)}</span>
+      </div>
+      <div class="cart-summary__row cart-summary__row--total">
+        <span>Total</span>
+        <span class="cart-summary__total">${formatCurrency(total)}</span>
+      </div>
+    </div>
+    <button type="button" class="btn btn-green btn-block cart-checkout-btn" id="checkout-start">
+      Finalizar pedido
+    </button>
+    <p class="cart-checkout-hint">Pagamento combinado com a loja via WhatsApp</p>
+  `
+}
+
 export function renderCartDrawer() {
   const root = document.getElementById('cart-root')
   if (!root) return
@@ -434,67 +518,92 @@ export function renderCartDrawer() {
   const cart = getCart()
   if (!cart.isOpen) {
     root.innerHTML = ''
+    cartCheckoutOpen = false
     return
   }
 
   const total = getCartTotal()
   const count = getCartItemCount()
+  const allowedPayments = cart.storePaymentMethods ?? []
+  const hasItems = cart.items.length > 0
 
   root.innerHTML = `
     <div class="cart-overlay" id="cart-overlay"></div>
-    <aside class="cart-drawer">
+    <aside class="cart-drawer ${cartCheckoutOpen ? 'cart-drawer--checkout' : ''}" role="dialog" aria-label="Carrinho">
       <div class="cart-drawer__header">
-        <div style="display:flex;align-items:center;gap:0.5rem">
-          <span>🛒</span>
-          <strong>Carrinho</strong>
-          ${count > 0 ? `<span style="background:var(--primary-100);color:var(--primary-600);padding:0.125rem 0.5rem;border-radius:999px;font-size:0.75rem">${count}</span>` : ''}
+        <div class="cart-drawer__title-group">
+          <span class="cart-drawer__eyebrow">${cartCheckoutOpen ? 'Checkout' : 'Seu pedido'}</span>
+          <strong class="cart-drawer__title">${cartCheckoutOpen ? 'Finalizar pedido' : 'Carrinho'}</strong>
+          ${cart.storeName && !cartCheckoutOpen ? `<span class="cart-drawer__store">🏪 ${escapeHtml(cart.storeName)}</span>` : ''}
         </div>
-        <button type="button" class="icon-btn" id="cart-close">✕</button>
+        <div class="cart-drawer__header-actions">
+          ${count > 0 ? `<span class="cart-drawer__count">${count}</span>` : ''}
+          <button type="button" class="cart-drawer__close icon-btn" id="cart-close" aria-label="Fechar carrinho">✕</button>
+        </div>
       </div>
 
-      ${cart.items.length === 0 ? `
+      ${!hasItems ? `
         <div class="cart-empty">
-          <div style="font-size:3rem;margin-bottom:1rem">🛒</div>
-          <p>Seu carrinho está vazio</p>
-          <p style="font-size:0.875rem;color:var(--text-muted);margin-top:0.25rem">Adicione produtos para continuar</p>
+          <div class="cart-empty__icon" aria-hidden="true">🛒</div>
+          <h3 class="cart-empty__title">Carrinho vazio</h3>
+          <p class="cart-empty__text">Adicione produtos de uma loja para começar seu pedido.</p>
+        </div>
+      ` : cartCheckoutOpen ? `
+        <div class="cart-drawer__checkout-scroll">
+          <form id="checkout-form" class="cart-checkout-form">
+            ${renderPaymentOptions(allowedPayments)}
+            <div class="cart-checkout-form__section">
+              <p class="cart-checkout-form__section-title">Dados para entrega</p>
+              <div class="form-group">
+                <label class="form-label" for="checkout-name">Nome</label>
+                <input class="form-input" id="checkout-name" name="name" placeholder="Seu nome completo" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="checkout-phone">Telefone</label>
+                <input class="form-input" id="checkout-phone" name="phone" placeholder="(21) 99999-9999" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="checkout-address">Endereço</label>
+                <textarea class="form-input" id="checkout-address" name="address" placeholder="Rua, número, bairro, complemento" rows="3" required></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="cart-drawer__footer cart-drawer__footer--checkout">
+          <div class="cart-checkout-total">
+            <span>Total do pedido</span>
+            <strong>${formatCurrency(total)}</strong>
+          </div>
+          <div class="cart-checkout-actions">
+            <button type="button" class="btn btn-outline" id="checkout-back">Voltar</button>
+            <button type="submit" form="checkout-form" class="btn btn-green" id="checkout-submit">
+              Enviar via WhatsApp
+            </button>
+          </div>
         </div>
       ` : `
-        <ul class="cart-drawer__items" id="cart-items">
-          ${cart.items.map((item) => `
-            <li class="cart-item">
-              ${item.product.image
-                ? `<img class="cart-item__img" src="${escapeHtml(item.product.image)}" alt="" />`
-                : '<div class="cart-item__img" style="display:grid;place-items:center">📦</div>'}
-              <div class="cart-item__body">
-                <div style="display:flex;justify-content:space-between;gap:0.5rem">
-                  <span class="cart-item__name">${escapeHtml(item.product.name)}</span>
-                  <button type="button" class="icon-btn" data-remove="${item.product.id}" style="width:1.5rem;height:1.5rem">🗑</button>
-                </div>
-                <span class="cart-item__price">${formatCurrency(item.product.price)}</span>
-                <div class="qty-controls">
-                  <button type="button" data-qty-minus="${item.product.id}">−</button>
-                  <span>${item.quantity}</span>
-                  <button type="button" data-qty-plus="${item.product.id}">+</button>
-                </div>
-              </div>
-            </li>
-          `).join('')}
-        </ul>
+        <div class="cart-drawer__body">
+          <ul class="cart-drawer__items" id="cart-items">
+            ${cart.items.map(renderCartItem).join('')}
+          </ul>
+        </div>
         <div class="cart-drawer__footer">
-          <div class="cart-total">
-            <span>Total</span>
-            <span class="cart-total__value">${formatCurrency(total)}</span>
-          </div>
           <div id="checkout-area">
-            <button type="button" class="btn btn-green btn-block" id="checkout-start">Finalizar Pedido</button>
+            ${renderCheckoutSummary(cart, total, count)}
           </div>
         </div>
       `}
     </aside>
   `
 
-  document.getElementById('cart-overlay')?.addEventListener('click', closeCart)
-  document.getElementById('cart-close')?.addEventListener('click', closeCart)
+  document.getElementById('cart-overlay')?.addEventListener('click', () => {
+    cartCheckoutOpen = false
+    closeCart()
+  })
+  document.getElementById('cart-close')?.addEventListener('click', () => {
+    cartCheckoutOpen = false
+    closeCart()
+  })
 
   root.querySelectorAll('[data-remove]').forEach((btn) => {
     btn.addEventListener('click', () => removeItem(btn.dataset.remove))
@@ -509,74 +618,43 @@ export function renderCartDrawer() {
   })
 
   document.getElementById('checkout-start')?.addEventListener('click', showCheckoutForm)
+
+  if (cartCheckoutOpen) bindCheckoutForm(root, allowedPayments)
 }
 
-function renderPaymentOptions(selected = DEFAULT_PAYMENT_METHOD) {
-  return `
-    <fieldset class="checkout-payment">
-      <legend class="checkout-payment__label">Forma de pagamento</legend>
-      <div class="checkout-payment__options">
-        ${PAYMENT_METHODS.map((method) => `
-          <label class="checkout-payment__option ${selected === method.id ? 'active' : ''}">
-            <input
-              type="radio"
-              name="payment"
-              value="${escapeHtml(method.id)}"
-              ${selected === method.id ? 'checked' : ''}
-              required
-            />
-            <span class="checkout-payment__title">${escapeHtml(method.label)}</span>
-            <span class="checkout-payment__hint">${escapeHtml(method.hint)}</span>
-          </label>
-        `).join('')}
-      </div>
-    </fieldset>
-  `
-}
+function bindCheckoutForm(root, allowedPayments) {
+  const form = root.querySelector('#checkout-form')
+  if (!form) return
 
-function showCheckoutForm() {
-  const area = document.getElementById('checkout-area')
   const user = getUser()
-  const defaults = user?.role === 'customer'
-    ? { name: user.name ?? '', phone: user.phone ?? '', address: user.address ?? '' }
-    : { name: '', phone: '', address: '' }
+  if (user?.role === 'customer') {
+    if (form.name && !form.name.value) form.name.value = user.name ?? ''
+    if (form.phone && !form.phone.value) form.phone.value = user.phone ?? ''
+    if (form.address && !form.address.value) form.address.value = user.address ?? ''
+  }
 
-  area.innerHTML = `
-    <form id="checkout-form">
-      ${renderPaymentOptions()}
-      <div class="form-group">
-        <input class="form-input" name="name" placeholder="Seu nome" required value="${escapeHtml(defaults.name)}" />
-      </div>
-      <div class="form-group">
-        <input class="form-input" name="phone" placeholder="Telefone" required value="${escapeHtml(defaults.phone)}" />
-      </div>
-      <div class="form-group">
-        <textarea class="form-input" name="address" placeholder="Endereço de entrega" rows="2" required>${escapeHtml(defaults.address)}</textarea>
-      </div>
-      <div style="display:flex;gap:0.5rem">
-        <button type="button" class="btn btn-outline" style="flex:1" id="checkout-back">Voltar</button>
-        <button type="submit" class="btn btn-green" style="flex:1" id="checkout-submit">Enviar via WhatsApp</button>
-      </div>
-    </form>
-  `
-
-  area.querySelectorAll('.checkout-payment__option input').forEach((input) => {
+  form.querySelectorAll('.checkout-payment__option input').forEach((input) => {
     input.addEventListener('change', () => {
-      area.querySelectorAll('.checkout-payment__option').forEach((label) => {
+      form.querySelectorAll('.checkout-payment__option').forEach((label) => {
         label.classList.toggle('active', label.querySelector('input')?.checked)
       })
     })
   })
 
   document.getElementById('checkout-back')?.addEventListener('click', () => {
-    area.innerHTML = '<button type="button" class="btn btn-green btn-block" id="checkout-start">Finalizar Pedido</button>'
-    document.getElementById('checkout-start')?.addEventListener('click', showCheckoutForm)
+    cartCheckoutOpen = false
+    renderCartDrawer()
   })
 
-  document.getElementById('checkout-form')?.addEventListener('submit', handleCheckout)
+  form.addEventListener('submit', (e) => handleCheckout(e, allowedPayments))
 }
 
-async function handleCheckout(e) {
+function showCheckoutForm() {
+  cartCheckoutOpen = true
+  renderCartDrawer()
+}
+
+async function handleCheckout(e, allowedPayments) {
   e.preventDefault()
   const cart = getCart()
   if (!cart.storeId || !cart.storeWhatsapp) return
@@ -586,7 +664,8 @@ async function handleCheckout(e) {
   const phone = form.phone.value.trim()
   const address = form.address.value.trim()
   const paymentMethod = form.payment?.value
-  if (!isValidPaymentMethod(paymentMethod)) return
+  const allowed = allowedPayments ?? cart.storePaymentMethods ?? []
+  if (!isValidPaymentMethod(paymentMethod, allowed)) return
   const total = getCartTotal()
   const user = getUser()
 
@@ -618,6 +697,7 @@ async function handleCheckout(e) {
   }
 
   window.open(buildWhatsAppUrl(cart.storeWhatsapp, message), '_blank')
+  cartCheckoutOpen = false
   clearCart()
   closeCart()
   showToast('Pedido enviado! Confirme no WhatsApp.')

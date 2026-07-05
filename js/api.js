@@ -214,7 +214,7 @@ export async function createStore(ownerId, form) {
 export async function updateStore(storeId, form) {
   const client = await requireClient()
   const updates = {}
-  for (const key of ['name', 'description', 'whatsapp', 'address', 'city', 'state', 'opening_hours', 'category_id', 'theme_color']) {
+  for (const key of ['name', 'description', 'whatsapp', 'address', 'city', 'state', 'opening_hours', 'category_id', 'theme_color', 'payment_methods']) {
     if (form[key] !== undefined) updates[key] = form[key]
   }
 
@@ -230,7 +230,11 @@ export async function updateStore(storeId, form) {
     updates.banner = await uploadImage(STORAGE_BUCKETS.banners, `${storeId}/banner`, form.banner)
   }
 
-  const { data, error } = await client.from('stores').update(updates).eq('id', storeId).select().single()
+  let { data, error } = await client.from('stores').update(updates).eq('id', storeId).select().single()
+  if (error?.code === 'PGRST204' && updates.payment_methods) {
+    delete updates.payment_methods
+    ;({ data, error } = await client.from('stores').update(updates).eq('id', storeId).select().single())
+  }
   if (error) throw error
   return data
 }
@@ -422,7 +426,7 @@ export async function fetchMarketplaceProducts(filters = {}) {
 
   let query = client
     .from('products')
-    .select('*, category:categories(*), store:stores!inner(id, name, slug, whatsapp, theme_color, city, state, plan_id, status, subscription_status, category_id, category:categories(id, name))')
+    .select('*, category:categories(*), store:stores!inner(id, name, slug, whatsapp, theme_color, city, state, plan_id, status, subscription_status, category_id, payment_methods, category:categories(id, name))')
     .eq('active', true)
     .eq('stores.status', 'approved')
     .order('created_at', { ascending: false })

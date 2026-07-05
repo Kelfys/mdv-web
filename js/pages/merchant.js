@@ -30,7 +30,9 @@ import { MERCHANT_PANEL, getMerchantMenuItem, merchantHref } from '../merchant-n
 import { renderOrdersChart, bindOrdersChart } from '../order-charts.js'
 import { bindPaginatedSortableList } from '../list-utils.js'
 import { routeHref } from '../router.js'
-import { getPaymentMethodLabel } from '../payment.js'
+import {
+  getPaymentMethodLabel, PAYMENT_METHODS, normalizeStorePaymentMethods,
+} from '../payment.js'
 
 const ORDER_STATUS_LABELS = {
   pending: 'Pendente',
@@ -824,6 +826,14 @@ function bindSettingsForm(main, store) {
   form?.name?.addEventListener('input', updatePreview)
   form?.theme_color?.addEventListener('change', updatePreview)
 
+  form?.querySelectorAll('.merchant-payment-toggle input').forEach((input) => {
+    input.addEventListener('change', () => {
+      form.querySelectorAll('.merchant-payment-toggle').forEach((label) => {
+        label.classList.toggle('active', label.querySelector('input')?.checked)
+      })
+    })
+  })
+
   if (planAllowsStoreBranding(store.plan_id)) {
     bindImagePreview(form.querySelector('input[name="logo"]'), form.querySelector('[data-preview-logo]'))
     bindImagePreview(form.querySelector('input[name="banner"]'), form.querySelector('[data-preview-banner]'))
@@ -835,6 +845,11 @@ function bindSettingsForm(main, store) {
     const submitBtn = f.querySelector('button[type="submit"]')
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Salvando...' }
     try {
+      const paymentMethods = [...f.querySelectorAll('input[name="payment_methods"]:checked')].map((el) => el.value)
+      if (paymentMethods.length === 0) {
+        throw new Error('Selecione pelo menos uma forma de pagamento.')
+      }
+
       const payload = {
         name: f.name.value.trim(),
         whatsapp: f.whatsapp.value.trim(),
@@ -842,6 +857,7 @@ function bindSettingsForm(main, store) {
         category_id: f.category_id.value,
         theme_color: f.theme_color.value,
         opening_hours: f.opening_hours.value.trim(),
+        payment_methods: paymentMethods,
       }
 
       if (planAllowsStoreBranding(store.plan_id)) {
@@ -1347,6 +1363,25 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
                     ${STORE_THEME_COLORS.map((c) => `<option value="${c.id}" ${store.theme_color === c.id ? 'selected' : ''}>${c.id}</option>`).join('')}
                   </select>
                 </div>
+              </div>
+            </section>
+            <section class="merchant-settings-section">
+              <h2>Formas de pagamento</h2>
+              <p class="form-hint">Escolha quais opções o cliente vê ao finalizar o pedido no carrinho.</p>
+              <div class="merchant-payment-toggles" id="merchant-payment-toggles">
+                ${PAYMENT_METHODS.map((method) => {
+                  const enabled = normalizeStorePaymentMethods(store.payment_methods).includes(method.id)
+                  return `
+                    <label class="merchant-payment-toggle ${enabled ? 'active' : ''}">
+                      <input type="checkbox" name="payment_methods" value="${escapeHtml(method.id)}" ${enabled ? 'checked' : ''} />
+                      <span class="merchant-payment-toggle__icon" aria-hidden="true">${method.icon}</span>
+                      <span class="merchant-payment-toggle__text">
+                        <strong>${escapeHtml(method.label)}</strong>
+                        <small>${escapeHtml(method.hint)}</small>
+                      </span>
+                    </label>
+                  `
+                }).join('')}
               </div>
             </section>
             ${merchantBrandingSection(store)}

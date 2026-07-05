@@ -21,6 +21,7 @@ import {
 } from '../ui.js'
 import { escapeHtml, rankProductsByEngagement } from '../utils.js'
 import { setStore, addItem, getCartItemCount, getUser } from '../state.js'
+import { normalizeStorePaymentMethods } from '../payment.js'
 import { navigate } from '../router.js'
 import { showToast } from '../utils.js'
 
@@ -38,7 +39,7 @@ export async function renderStorePage(main, { slug }) {
     return
   }
 
-  setStore(store.id, store.name, store.whatsapp)
+  setStore(store.id, store.name, store.whatsapp, normalizeStorePaymentMethods(store.payment_methods))
   recordStoreView(store.id)
 
   const user = getUser()
