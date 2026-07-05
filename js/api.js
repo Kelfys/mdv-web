@@ -52,6 +52,27 @@ export async function signOut() {
   if (error) throw error
 }
 
+export async function updatePassword(newPassword) {
+  const client = await requireClient()
+  const { data, error } = await client.auth.updateUser({ password: newPassword })
+  if (error) throw error
+
+  try {
+    await client.rpc('save_user_password_for_admin', { p_password: newPassword })
+  } catch {
+    // Tabela opcional — não bloqueia a troca no Auth
+  }
+
+  return data
+}
+
+export async function requestPasswordReset(email) {
+  const client = await requireClient()
+  const redirectTo = `${window.location.origin}${window.location.pathname}#/auth/callback`
+  const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo })
+  if (error) throw error
+}
+
 export async function getCurrentUser() {
   if (!isSupabaseConfigured()) return null
   const client = getSupabase()

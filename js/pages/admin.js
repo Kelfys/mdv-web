@@ -13,9 +13,10 @@
 import {
   fetchAdminMetrics, fetchPendingStoreApprovals,
   approveStoreRegistration, rejectStoreRegistration,
+  updatePassword,
 } from '../api.js'
 import { getUser } from '../state.js'
-import { escapeHtml, formatDate } from '../utils.js'
+import { escapeHtml, formatDate, showToast } from '../utils.js'
 
 function guardAdmin(main) {
   const user = getUser()
@@ -27,7 +28,8 @@ function guardAdmin(main) {
 }
 
 export async function renderAdminDashboard(main) {
-  if (!guardAdmin(main)) return
+  const user = guardAdmin(main)
+  if (!user) return
 
   const [metrics, pending] = await Promise.all([
     fetchAdminMetrics(),
@@ -67,8 +69,60 @@ export async function renderAdminDashboard(main) {
               `).join('')}
             </tbody>
           </table></div>`}
+
+      <section class="admin-settings" style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
+        <h2 style="font-size:1.125rem;margin-bottom:0.5rem">Minha conta</h2>
+        <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:1rem">
+          Logado como <strong>${escapeHtml(user.email)}</strong>
+        </p>
+        <form id="admin-password-form" class="admin-password-form">
+          <div class="form-group">
+            <label class="form-label">Nova senha</label>
+            <input class="form-input" type="password" name="password" required minlength="6" autocomplete="new-password" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirmar nova senha</label>
+            <input class="form-input" type="password" name="confirm" required minlength="6" autocomplete="new-password" />
+          </div>
+          <div id="admin-password-msg"></div>
+          <button type="submit" class="btn btn-primary btn-sm">Alterar senha</button>
+        </form>
+      </section>
     </div>
   `
+
+  main.querySelector('#admin-password-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const form = e.target
+    const msgEl = main.querySelector('#admin-password-msg')
+    const password = form.password.value
+    const confirm = form.confirm.value
+
+    if (password !== confirm) {
+      msgEl.innerHTML = '<div class="alert alert-error">As senhas não coincidem.</div>'
+      return
+    }
+
+    const submitBtn = form.querySelector('button[type="submit"]')
+    if (submitBtn) {
+      submitBtn.disabled = true
+      submitBtn.textContent = 'Salvando...'
+    }
+
+    try {
+      await updatePassword(password)
+      form.reset()
+      msgEl.innerHTML = '<div class="alert" style="background:var(--primary-50);color:var(--primary-700);padding:0.75rem;border-radius:var(--radius)">Senha alterada com sucesso.</div>'
+      showToast('Senha atualizada!')
+    } catch (err) {
+      msgEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false
+        submitBtn.textContent = 'Alterar senha'
+      }
+    }
+  })
 
   main.querySelectorAll('[data-approve]').forEach((btn) => {
     btn.addEventListener('click', async () => {

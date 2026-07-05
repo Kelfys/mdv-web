@@ -1128,3 +1128,10 @@ tr:last-child td { border-bottom: none; }
 .plan-payment-info ol {
   margin-bottom: 1rem;
 }
+
+.admin-password-form {
+  max-width: 22rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
