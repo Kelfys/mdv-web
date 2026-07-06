@@ -13,19 +13,13 @@ import { renderStoreCard, renderFeedProductCard } from '../ui.js'
 import { escapeHtml, formatCurrency, formatDate, showToast } from '../utils.js'
 import { routeHref } from '../router.js'
 import { normalizeStorePaymentMethods, getPaymentMethodLabel } from '../payment.js'
-import { t } from '../strings.js'
+import { t, deliveryPeriodLabel, orderStatusLabel } from '../strings.js'
 
 const DELIVERY_LABELS = {
-  manha: 'Manhã',
-  tarde: 'Tarde',
-  noite: 'Noite',
-  madrugada: 'Madrugada',
-}
-
-const ORDER_STATUS_LABELS = {
-  pending: 'Pendente',
-  sent: 'Enviado',
-  viewed: 'Visualizado',
+  manha: deliveryPeriodLabel('manha'),
+  tarde: deliveryPeriodLabel('tarde'),
+  noite: deliveryPeriodLabel('noite'),
+  madrugada: deliveryPeriodLabel('madrugada'),
 }
 
 const TABS = [
@@ -67,7 +61,7 @@ function orderStatusBadge(status) {
     sent: 'badge-order-sent',
     viewed: 'badge-order-viewed',
   }
-  const label = ORDER_STATUS_LABELS[status] ?? status
+  const label = orderStatusLabel(status)
   return `<span class="badge ${map[status] ?? ''}">${escapeHtml(label)}</span>`
 }
 
@@ -82,7 +76,7 @@ function renderOrderCard(order) {
       <div class="customer-order-card__head">
         <div>
           <h3 class="customer-order-card__store">
-            <a href="#/loja/${escapeHtml(order.store?.slug ?? '')}">${escapeHtml(order.store?.name ?? 'Loja')}</a>
+            <a href="#/loja/${escapeHtml(order.store?.slug ?? '')}">${escapeHtml(order.store?.name ?? t('common.defaultStore'))}</a>
           </h3>
           <p class="customer-order-card__meta">${formatDate(order.created_at)}${order.store?.city ? ` · ${escapeHtml(order.store.city)}` : ''}</p>
         </div>
@@ -92,7 +86,7 @@ function renderOrderCard(order) {
         </div>
       </div>
       ${items ? `<p class="customer-order-card__items">${escapeHtml(items)}</p>` : ''}
-      ${payment ? `<p class="customer-order-card__payment">Pagamento: ${escapeHtml(payment)}</p>` : ''}
+      ${payment ? `<p class="customer-order-card__payment">${t('customer.paymentLabel')} ${escapeHtml(payment)}</p>` : ''}
     </article>
   `
 }
@@ -143,21 +137,21 @@ function renderOverview({ user, favorites, likedProducts, orders, cart }) {
       <button type="button" class="admin-quick-card" data-customer-tab="favorites">
         <span class="admin-quick-card__icon">❤️</span>
         <strong>${t('customer.viewFavorites')}</strong>
-        <span>${favorites.length ? `${favorites.length} loja(s) salva(s)` : 'Salve lojas que gostar'}</span>
+        <span>${favorites.length ? t('customer.savedStoresCount', { count: favorites.length }) : t('customer.savedStoresHint')}</span>
       </button>
       ${cartCount > 0 ? `
         <button type="button" class="admin-quick-card" data-open-cart>
           <span class="admin-quick-card__icon">🛒</span>
           <strong>${t('customer.openCart')}</strong>
-          <span>${cartCount} item(ns) · ${escapeHtml(cart.storeName ?? 'Loja')}</span>
+          <span>${t('customer.cartItemsHint', { count: cartCount, store: cart.storeName ?? t('common.defaultStore') })}</span>
         </button>
       ` : ''}
     </div>
     ${previewStores.length ? `
       <section class="admin-section">
         <div class="admin-section__head">
-          <h2>Lojas favoritas recentes</h2>
-          ${favorites.length > 2 ? '<button type="button" class="btn btn-ghost btn-sm" data-customer-tab="favorites">Ver todas</button>' : ''}
+          <h2>${t('customer.recentFavorites')}</h2>
+          ${favorites.length > 2 ? `<button type="button" class="btn btn-ghost btn-sm" data-customer-tab="favorites">${t('customer.viewAllFeminine')}</button>` : ''}
         </div>
         <div class="feed customer-feed-preview">${previewStores.map((store) => renderStoreCard(store)).join('')}</div>
       </section>
@@ -165,17 +159,17 @@ function renderOverview({ user, favorites, likedProducts, orders, cart }) {
     ${previewLiked.length ? `
       <section class="admin-section">
         <div class="admin-section__head">
-          <h2>Produtos curtidos</h2>
-          ${likedProducts.length > 2 ? '<button type="button" class="btn btn-ghost btn-sm" data-customer-tab="liked">Ver todos</button>' : ''}
+          <h2>${t('customer.likedProductsSection')}</h2>
+          ${likedProducts.length > 2 ? `<button type="button" class="btn btn-ghost btn-sm" data-customer-tab="liked">${t('customer.viewAllMasculine')}</button>` : ''}
         </div>
         <div class="feed customer-feed-preview">${previewLiked.map((product) => renderFeedProductCard(product, { badge: 'liked' })).join('')}</div>
       </section>
     ` : ''}
     ${!previewStores.length && !previewLiked.length ? customerEmpty(
       '✨',
-      `Olá, ${user.name?.split(' ')[0] ?? 'cliente'}!`,
-      'Explore lojas no início, favorite as que mais gostar e curta produtos para montar sua lista.',
-      `<a href="${routeHref('/')}" class="btn btn-primary">Ir para o início</a>`,
+      t('customer.greeting', { name: user.name?.split(' ')[0] ?? t('customer.defaultName') }),
+      t('customer.emptyOverviewBody'),
+      `<a href="${routeHref('/')}" class="btn btn-primary">${t('customer.goToHome')}</a>`,
     ) : ''}
   `
 }
@@ -198,7 +192,7 @@ function renderLikedTab(products) {
       '👍',
       t('customer.noLikedProductsTitle'),
       t('customer.noLikedProductsBody'),
-      `<a href="${routeHref('/')}" class="btn btn-primary">Ver produtos</a>`,
+      `<a href="${routeHref('/')}" class="btn btn-primary">${t('customer.viewProducts')}</a>`,
     )
   }
   return `<div class="feed">${products.map((product) => renderFeedProductCard(product, { badge: 'liked' })).join('')}</div>`
@@ -210,7 +204,7 @@ function renderOrdersTab(orders) {
       '📦',
       t('customer.noOrdersTitle'),
       t('customer.noOrdersBody'),
-      `<a href="${routeHref('/')}" class="btn btn-primary">Fazer um pedido</a>`,
+      `<a href="${routeHref('/')}" class="btn btn-primary">${t('customer.placeOrder')}</a>`,
     )
   }
   return `<div class="customer-orders-list">${orders.map(renderOrderCard).join('')}</div>`
@@ -224,19 +218,19 @@ function renderProfileTab(user) {
       <form class="admin-form customer-profile__form" id="customer-profile-form">
         <div class="admin-form-grid">
           <label class="form-group">
-            <span class="form-label">Nome</span>
+            <span class="form-label">${t('labels.name')}</span>
             <input class="form-input" name="name" required value="${escapeHtml(user.name ?? '')}" />
           </label>
           <label class="form-group">
-            <span class="form-label">Telefone</span>
+            <span class="form-label">${t('labels.phone')}</span>
             <input class="form-input" name="phone" required value="${escapeHtml(user.phone ?? '')}" />
           </label>
           <label class="form-group admin-form-grid__full">
-            <span class="form-label">Endereço</span>
+            <span class="form-label">${t('labels.address')}</span>
             <input class="form-input" name="address" required value="${escapeHtml(user.address ?? '')}" />
           </label>
           <label class="form-group">
-            <span class="form-label">Horário preferido de entrega</span>
+            <span class="form-label">${t('customer.deliveryPeriodPreferred')}</span>
             <select class="form-input" name="delivery_period" required>
               ${Object.entries(DELIVERY_LABELS).map(([value, label]) => `
                 <option value="${value}" ${user.delivery_period === value ? 'selected' : ''}>${label}</option>
@@ -244,32 +238,32 @@ function renderProfileTab(user) {
             </select>
           </label>
           <div class="form-group">
-            <span class="form-label">E-mail</span>
+            <span class="form-label">${t('labels.email')}</span>
             <input class="form-input" value="${escapeHtml(user.email ?? '')}" disabled />
           </div>
           <div class="form-group">
-            <span class="form-label">Data de nascimento</span>
+            <span class="form-label">${t('labels.birthDate')}</span>
             <input class="form-input" value="${escapeHtml(birthLabel)}" disabled />
           </div>
         </div>
-        <button type="submit" class="btn btn-primary" id="customer-profile-save">Salvar perfil</button>
+        <button type="submit" class="btn btn-primary" id="customer-profile-save">${t('customer.saveProfile')}</button>
       </form>
 
       <section class="customer-profile__password">
-        <h2>Alterar senha</h2>
-        <p class="form-hint">Use uma senha forte com pelo menos 8 caracteres.</p>
+        <h2>${t('customer.changePasswordTitle')}</h2>
+        <p class="form-hint">${t('customer.passwordHint')}</p>
         <form id="customer-password-form" class="admin-form">
           <div class="admin-form-grid">
             <label class="form-group admin-form-grid__full">
-              <span class="form-label">Nova senha</span>
+              <span class="form-label">${t('labels.newPassword')}</span>
               <input class="form-input" type="password" name="password" minlength="8" required autocomplete="new-password" />
             </label>
             <label class="form-group admin-form-grid__full">
-              <span class="form-label">Confirmar nova senha</span>
+              <span class="form-label">${t('labels.confirmNewPassword')}</span>
               <input class="form-input" type="password" name="password_confirm" minlength="8" required autocomplete="new-password" />
             </label>
           </div>
-          <button type="submit" class="btn btn-secondary" id="customer-password-save">Atualizar senha</button>
+          <button type="submit" class="btn btn-secondary" id="customer-password-save">${t('customer.updatePassword')}</button>
         </form>
       </section>
     </div>
@@ -310,7 +304,7 @@ export async function renderFavorites(main) {
       ])
       productMap = new Map(likedProducts.map((product) => [product.id, product]))
     } catch (err) {
-      showToast(err.message ?? 'Erro ao carregar dados')
+      showToast(err.message ?? t('customer.loadError'))
     } finally {
       loading = false
       paint()
@@ -368,18 +362,18 @@ export async function renderFavorites(main) {
 
   function paint() {
     const tabLabels = {
-      overview: 'Visão geral',
-      favorites: 'Lojas favoritas',
-      liked: 'Produtos curtidos',
-      orders: 'Meus pedidos',
-      profile: 'Meu perfil',
+      overview: t('customer.tabOverview'),
+      favorites: t('customer.tabFavorites'),
+      liked: t('customer.tabLiked'),
+      orders: t('customer.tabOrders'),
+      profile: t('customer.tabProfile'),
     }
 
     main.innerHTML = customerPage(
-      tabLabels[activeTab] ?? 'Minha conta',
-      activeTab === 'overview' ? `Olá, ${user.name?.split(' ')[0] ?? 'cliente'}!` : '',
+      tabLabels[activeTab] ?? t('customer.myAccountTitle'),
+      activeTab === 'overview' ? t('customer.greeting', { name: user.name?.split(' ')[0] ?? t('customer.defaultName') }) : '',
       `
-        <nav class="customer-tabs tabs" aria-label="Seções da conta">
+        <nav class="customer-tabs tabs" aria-label="${t('customer.accountSectionsAria')}">
           ${TABS.map((tab) => `
             <button
               type="button"
@@ -413,7 +407,7 @@ export async function renderFavorites(main) {
       const submitBtn = main.querySelector('#customer-profile-save')
       if (submitBtn) {
         submitBtn.disabled = true
-        submitBtn.textContent = 'Salvando...'
+        submitBtn.textContent = t('common.saving')
       }
 
       try {
@@ -428,12 +422,12 @@ export async function renderFavorites(main) {
         setUser({ ...user, ...updated })
         showToast(t('customer.profileUpdated'))
       } catch (err) {
-        showToast(err.message ?? 'Erro ao salvar perfil')
+        showToast(err.message ?? t('customer.saveProfileError'))
       } finally {
         profileSaving = false
         if (submitBtn) {
           submitBtn.disabled = false
-          submitBtn.textContent = 'Salvar perfil'
+          submitBtn.textContent = t('customer.saveProfile')
         }
       }
     })
@@ -447,7 +441,7 @@ export async function renderFavorites(main) {
       const password = form.password.value
       const confirm = form.password_confirm.value
       if (password !== confirm) {
-        showToast('As senhas não coincidem')
+        showToast(t('customer.passwordsMismatch'))
         return
       }
 
@@ -455,7 +449,7 @@ export async function renderFavorites(main) {
       const submitBtn = main.querySelector('#customer-password-save')
       if (submitBtn) {
         submitBtn.disabled = true
-        submitBtn.textContent = 'Atualizando...'
+        submitBtn.textContent = t('common.saving')
       }
 
       try {
@@ -463,12 +457,12 @@ export async function renderFavorites(main) {
         form.reset()
         showToast(t('customer.passwordUpdated'))
       } catch (err) {
-        showToast(err.message ?? 'Erro ao atualizar senha')
+        showToast(err.message ?? t('customer.updatePasswordError'))
       } finally {
         passwordSaving = false
         if (submitBtn) {
           submitBtn.disabled = false
-          submitBtn.textContent = 'Atualizar senha'
+          submitBtn.textContent = t('customer.updatePassword')
         }
       }
     })

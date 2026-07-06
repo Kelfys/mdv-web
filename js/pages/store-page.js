@@ -65,7 +65,7 @@ export async function renderStorePage(main, { slug }) {
 
   function requireAuthForEngagement() {
     navigate(`/conta/entrar?redirect=${encodeURIComponent(`/loja/${slug}`)}`)
-    showToast('Entre na sua conta para curtir ou comentar.')
+    showToast(t('store.loginToEngage'))
   }
 
   async function loadComments(productId) {
@@ -75,7 +75,7 @@ export async function renderStorePage(main, { slug }) {
       const comments = await fetchProductComments(productId)
       commentsByProduct.set(productId, comments)
     } catch (err) {
-      showToast(err.message ?? 'Erro ao carregar comentários.')
+      showToast(err.message ?? t('store.commentsLoadError'))
     } finally {
       commentsLoading.delete(productId)
       paint()
@@ -93,7 +93,7 @@ export async function renderStorePage(main, { slug }) {
           ? `<img src="${escapeHtml(store.banner)}" alt="" />`
           : `<div style="${bannerStyle};width:100%;height:100%"></div>`}
         <div class="store-hero__overlay"></div>
-        <a href="#/" class="store-hero__back">← Voltar</a>
+        <a href="#/" class="store-hero__back">${t('store.backShort')}</a>
       </div>
 
       <div class="container-wide" style="padding-bottom:3rem">
@@ -127,10 +127,10 @@ export async function renderStorePage(main, { slug }) {
 
         <div class="products-header">
           <h2 class="section-title">${t('store.productsAndServices')}</h2>
-          <p class="products-header__hint">Ordenados por popularidade — os mais curtidos aparecem com mais destaque.</p>
+          <p class="products-header__hint">${t('store.productsSortHint')}</p>
         </div>
         ${products.length === 0
-          ? '<div class="empty-state"><h2>Nenhum item disponível no catálogo</h2></div>'
+          ? `<div class="empty-state"><h2>${t('store.emptyCatalog')}</h2></div>`
           : `<div class="product-grid" id="products">${products.map((product) => renderProductCard(product, {
               user: currentUser,
               commentsOpen: openComments.has(product.id),
@@ -144,7 +144,7 @@ export async function renderStorePage(main, { slug }) {
             ${reviews.map((r) => `
               <div class="review-card">
                 <div style="display:flex;justify-content:space-between">
-                  <strong>${escapeHtml(r.user?.name ?? 'Anônimo')}</strong>
+                  <strong>${escapeHtml(r.user?.name ?? t('common.anonymous'))}</strong>
                   <span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
                 </div>
                 ${r.comment ? `<p style="margin-top:0.5rem;font-size:0.875rem;color:var(--text-secondary)">${escapeHtml(r.comment)}</p>` : ''}
@@ -172,7 +172,7 @@ export async function renderStorePage(main, { slug }) {
         return
       }
       if (currentUser.role !== 'customer') {
-        showToast('Apenas clientes podem favoritar lojas.')
+        showToast(t('store.customersOnlyFavorite'))
         return
       }
       favorited = await toggleFavorite(currentUser.id, store.id)
@@ -207,7 +207,7 @@ export async function renderStorePage(main, { slug }) {
           product.likes_count = Math.max(0, (product.likes_count ?? 0) + (liked ? 1 : -1))
           paint()
         } catch (err) {
-          showToast(err.message ?? 'Não foi possível curtir este produto.')
+          showToast(err.message ?? t('store.likeError'))
         }
       })
     })
@@ -243,7 +243,7 @@ export async function renderStorePage(main, { slug }) {
         const submitBtn = form.querySelector('button[type="submit"]')
         if (submitBtn) {
           submitBtn.disabled = true
-          submitBtn.textContent = 'Enviando...'
+          submitBtn.textContent = t('checkout.submitting')
         }
 
         try {
@@ -256,7 +256,7 @@ export async function renderStorePage(main, { slug }) {
           paint()
           showToast(t('store.commentPublished'))
         } catch (err) {
-          showToast(err.message ?? 'Não foi possível publicar o comentário.')
+          showToast(err.message ?? t('store.commentError'))
           paint()
         }
       })

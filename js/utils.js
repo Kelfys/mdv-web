@@ -9,6 +9,8 @@
  * - Validação de telefone brasileiro mais rigorosa
  * - i18n se expandir para outros países
  */
+import { t } from './strings.js'
+
 export function formatCurrency(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
 }
@@ -33,7 +35,7 @@ export function validateInstagramHandle(raw) {
   const handle = normalizeInstagramHandle(raw)
   if (!handle) return { ok: true, handle: '' }
   if (!/^[A-Za-z0-9._]{1,30}$/.test(handle)) {
-    return { ok: false, message: 'Usuário do Instagram inválido. Use letras, números, ponto ou underscore (até 30 caracteres).' }
+    return { ok: false, message: t('errors.instagramInvalid') }
   }
   return { ok: true, handle }
 }
@@ -171,13 +173,13 @@ export function calculateAge(birthDate, now = new Date()) {
 
 export function validateRegistrationBirthDate(birthDate, now = new Date()) {
   const value = birthDate?.trim()
-  if (!value) return { ok: false, message: 'Informe sua data de nascimento.' }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return { ok: false, message: 'Data de nascimento inválida.' }
+  if (!value) return { ok: false, message: t('errors.birthDateRequired') }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return { ok: false, message: t('errors.birthDateInvalid') }
 
   const birth = new Date(`${value}T12:00:00`)
-  if (Number.isNaN(birth.getTime())) return { ok: false, message: 'Data de nascimento inválida.' }
+  if (Number.isNaN(birth.getTime())) return { ok: false, message: t('errors.birthDateInvalid') }
   if (value > getMaxBirthDateForRegistration(now)) {
-    return { ok: false, message: `É necessário ter ${MIN_REGISTRATION_AGE} anos ou mais para se cadastrar.` }
+    return { ok: false, message: t('errors.minAgeRegistrationWithAge', { age: MIN_REGISTRATION_AGE }) }
   }
 
   return { ok: true, birthDate: value }

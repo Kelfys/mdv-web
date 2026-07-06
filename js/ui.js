@@ -7,7 +7,7 @@
  * Também: store-card, feed-product-card, cart-drawer e checkout com pagamentos por loja.
  */
 import { APP_NAME } from './config.js'
-import { t } from './strings.js'
+import { t, deliveryPeriodLabel } from './strings.js'
 import { getStoreThemeColor } from './config.js'
 import { escapeHtml, formatCurrency, formatPhone } from './utils.js'
 import { isCatalogItemAvailable, getCatalogItemIcon, getCatalogItemLabel } from './catalog.js'
@@ -162,7 +162,7 @@ export function renderHeader() {
               </a>`
             }).join('')}
           </div>
-          <button type="button" class="btn btn-outline btn-sm" id="admin-refresh" title="Atualizar dados">${t('nav.refresh')}</button>
+          <button type="button" class="btn btn-outline btn-sm" id="admin-refresh" title="${t('common.refreshDataTitle')}">${t('nav.refresh')}</button>
         </div>
       </div>
     ` : ''}
@@ -179,7 +179,7 @@ export function renderHeader() {
               </a>`
             }).join('')}
           </div>
-          <button type="button" class="btn btn-outline btn-sm" id="merchant-refresh" title="Atualizar dados">${t('nav.refresh')}</button>
+          <button type="button" class="btn btn-outline btn-sm" id="merchant-refresh" title="${t('common.refreshDataTitle')}">${t('nav.refresh')}</button>
         </div>
       </div>
     ` : ''}
@@ -306,7 +306,7 @@ export function renderFeedAdCard(ad) {
               : `<div class="feed-ad-card__placeholder" style="${bannerStyle}">📣</div>`}
         </a>
         <div class="feed-ad-card__body">
-          <p class="feed-ad-card__store">🏪 ${escapeHtml(store?.name ?? 'Loja')}</p>
+          <p class="feed-ad-card__store">🏪 ${escapeHtml(store?.name ?? t('common.defaultStore'))}</p>
           <h3 class="feed-ad-card__title">${escapeHtml(ad.title)}</h3>
           <p class="feed-ad-card__message">${escapeHtml(ad.message)}</p>
           <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="btn btn-primary btn-sm">${t('home.viewStore')}</a>
@@ -407,13 +407,13 @@ export function renderProductCard(product, options = {}) {
         ${commentsOpen ? `
           <div class="product-comments" data-comments-panel="${product.id}">
             ${commentsLoading
-              ? '<p class="product-comments__status">Carregando comentários...</p>'
+              ? `<p class="product-comments__status">${t('common.loadingComments')}</p>`
               : comments.length === 0
                 ? `<p class="product-comments__status">${t('store.noCommentsYet')}</p>`
                 : comments.map((comment) => `
                     <div class="product-comment">
                       <div class="product-comment__meta">
-                        <strong>${escapeHtml(comment.user?.name ?? 'Usuário')}</strong>
+                        <strong>${escapeHtml(comment.user?.name ?? t('common.defaultUser'))}</strong>
                         <span>${new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(comment.created_at))}</span>
                       </div>
                       <p>${escapeHtml(comment.content)}</p>
@@ -426,7 +426,7 @@ export function renderProductCard(product, options = {}) {
               </form>
             ` : `
               <p class="product-comments__login-hint">
-                <a href="#/conta/entrar">Entre</a> ou <a href="#/conta/criar">crie uma conta</a> para comentar.
+                ${t('common.loginOrRegisterToComment')}
               </p>
             `}
           </div>
@@ -454,14 +454,14 @@ function renderCartItem(item) {
       <div class="cart-item__content">
         <div class="cart-item__top">
           <h4 class="cart-item__name">${escapeHtml(item.product.name)}</h4>
-          <button type="button" class="cart-item__remove" data-remove="${item.product.id}" aria-label="Remover item">✕</button>
+          <button type="button" class="cart-item__remove" data-remove="${item.product.id}" aria-label="${t('common.removeItem')}">✕</button>
         </div>
-        <p class="cart-item__unit">${formatCurrency(item.product.price)} cada</p>
+        <p class="cart-item__unit">${t('common.priceEach', { price: formatCurrency(item.product.price) })}</p>
         <div class="cart-item__bottom">
           <div class="cart-qty">
-            <button type="button" class="cart-qty__btn" data-qty-minus="${item.product.id}" aria-label="Diminuir quantidade">−</button>
+            <button type="button" class="cart-qty__btn" data-qty-minus="${item.product.id}" aria-label="${t('common.decreaseQty')}">−</button>
             <span class="cart-qty__value">${item.quantity}</span>
-            <button type="button" class="cart-qty__btn" data-qty-plus="${item.product.id}" aria-label="Aumentar quantidade">+</button>
+            <button type="button" class="cart-qty__btn" data-qty-plus="${item.product.id}" aria-label="${t('common.increaseQty')}">+</button>
           </div>
           <span class="cart-item__subtotal">${formatCurrency(subtotal)}</span>
         </div>
@@ -549,7 +549,7 @@ export function renderCartDrawer() {
         </div>
         <div class="cart-drawer__header-actions">
           ${count > 0 ? `<span class="cart-drawer__count">${count}</span>` : ''}
-          <button type="button" class="cart-drawer__close icon-btn" id="cart-close" aria-label="Fechar carrinho">✕</button>
+          <button type="button" class="cart-drawer__close icon-btn" id="cart-close" aria-label="${t('common.closeCart')}">✕</button>
         </div>
       </div>
 
@@ -567,7 +567,7 @@ export function renderCartDrawer() {
               <p class="cart-checkout-form__section-title">${t('checkout.deliverySectionTitle')}</p>
               <div class="form-group">
                 <label class="form-label" for="checkout-name">${t('labels.name')}</label>
-                <input class="form-input" id="checkout-name" name="name" placeholder="Seu nome completo" required />
+                <input class="form-input" id="checkout-name" name="name" placeholder="${t('checkout.namePlaceholder')}" required />
               </div>
               <div class="form-group">
                 <label class="form-label" for="checkout-phone">${t('labels.phone')}</label>
@@ -575,7 +575,7 @@ export function renderCartDrawer() {
               </div>
               <div class="form-group">
                 <label class="form-label" for="checkout-address">${t('labels.address')}</label>
-                <textarea class="form-input" id="checkout-address" name="address" placeholder="Rua, número, bairro, complemento" rows="3" required></textarea>
+                <textarea class="form-input" id="checkout-address" name="address" placeholder="${t('checkout.addressPlaceholder')}" rows="3" required></textarea>
               </div>
             </div>
           </form>
@@ -680,8 +680,7 @@ async function handleCheckout(e, allowedPayments) {
   const total = getCartTotal()
   const user = getUser()
 
-  const deliveryLabels = { manha: 'Manhã', tarde: 'Tarde', noite: 'Noite', madrugada: 'Madrugada' }
-  const deliveryPeriod = user?.delivery_period ? deliveryLabels[user.delivery_period] : undefined
+  const deliveryPeriod = user?.delivery_period ? deliveryPeriodLabel(user.delivery_period) : undefined
 
   const message = buildOrderMessage({
     items: cart.items,
@@ -694,7 +693,7 @@ async function handleCheckout(e, allowedPayments) {
   })
 
   const submitBtn = document.getElementById('checkout-submit')
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Enviando...' }
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('checkout.submitting') }
 
   try {
     await createOrder(cart.storeId, {

@@ -2,6 +2,7 @@
  * Upload de imagens para Supabase Storage.
  */
 import { requireClient } from './db.js'
+import { t } from './strings.js'
 
 export const STORAGE_BUCKETS = {
   logos: 'store-logos',
@@ -20,12 +21,13 @@ const BUCKET_LIMITS = {
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 /** Hints do painel lojista/admin — logo em todos os planos; banner exige plano pago. */
-export const STORE_LOGO_UPLOAD_HINT = 'JPG, PNG, WebP ou GIF — máx. 2 MB.'
-export const STORE_BANNER_UPLOAD_HINT = 'JPG, PNG, WebP ou GIF — planos pagos, máx. 5 MB.'
+export const STORE_LOGO_UPLOAD_HINT = t('uploads.logoHint')
+export const STORE_BANNER_UPLOAD_HINT = t('uploads.bannerHint')
 /** @deprecated Use STORE_LOGO_UPLOAD_HINT ou STORE_BANNER_UPLOAD_HINT */
 export const STORE_BRANDING_UPLOAD_HINT = STORE_BANNER_UPLOAD_HINT
-export const PRODUCT_IMAGE_UPLOAD_HINT =
-  `JPG, PNG, WebP ou GIF — máx. ${Math.round(PRODUCT_IMAGE_MAX_BYTES / 1024)} KB.`
+export const PRODUCT_IMAGE_UPLOAD_HINT = t('uploads.productHint', {
+  maxKb: Math.round(PRODUCT_IMAGE_MAX_BYTES / 1024),
+})
 
 /** @deprecated Use PRODUCT_IMAGE_UPLOAD_HINT ou STORE_BRANDING_UPLOAD_HINT */
 export const IMAGE_UPLOAD_HINT = PRODUCT_IMAGE_UPLOAD_HINT
@@ -36,11 +38,11 @@ function formatMaxSize(bytes) {
 }
 
 export function validateImageFile(file, bucket = STORAGE_BUCKETS.products) {
-  if (!file?.type?.startsWith('image/')) return 'Selecione um arquivo de imagem válido.'
-  if (!ALLOWED_TYPES.includes(file.type)) return 'Formato não suportado. Use JPG, PNG, WebP ou GIF.'
+  if (!file?.type?.startsWith('image/')) return t('uploads.invalidImage')
+  if (!ALLOWED_TYPES.includes(file.type)) return t('uploads.unsupportedFormat')
   const max = BUCKET_LIMITS[bucket] ?? PRODUCT_IMAGE_MAX_BYTES
   if (file.size > max) {
-    return `Imagem muito grande. Máximo ${formatMaxSize(max)}.`
+    return t('uploads.imageTooLarge', { max: formatMaxSize(max) })
   }
   return null
 }

@@ -4,21 +4,26 @@
  */
 import { formatCurrency, escapeHtml } from './utils.js'
 import { buildWhatsAppUrl } from './whatsapp.js'
+import { t } from './strings.js'
 
 /** WhatsApp para envio de comprovante de pagamento do plano */
 export const PAYMENT_WHATSAPP = '5521975286720'
 
 function priceCooldownLabel(hours) {
-  if (hours === null) return 'Alteração de preços a qualquer momento'
-  if (hours === 24) return 'Alteração de preços a cada 24h'
-  if (hours < 24) return `Alteração de preços a cada ${hours}h`
+  if (hours === null) return t('plans.priceChangeAnytime')
+  if (hours < 24) return t('plans.priceChangeEveryHours', { hours })
   const days = Math.round(hours / 24)
-  return `Alteração de preços a cada ${days} dia${days > 1 ? 's' : ''}`
+  return t('plans.priceChangeEveryDays', { days })
+}
+
+function buildPlanFeatures(featureKeys, cooldownHours, cooldownAfterIndex) {
+  const features = featureKeys.map((key) => t(key))
+  features.splice(cooldownAfterIndex, 0, priceCooldownLabel(cooldownHours))
+  return features
 }
 
 /** Mensagem exibida quando lojista free tenta enviar banner personalizado. */
-export const FREE_PLAN_BANNER_MESSAGE =
-  'O plano Gratuito não inclui banner personalizado. Assine um plano pago para personalizar o banner da vitrine.'
+export const FREE_PLAN_BANNER_MESSAGE = t('plans.freeBannerMessage')
 
 /** @deprecated Use FREE_PLAN_BANNER_MESSAGE */
 export const FREE_PLAN_BRANDING_MESSAGE = FREE_PLAN_BANNER_MESSAGE
@@ -57,13 +62,13 @@ export function getPlanProductImageLimit(planId) {
 export function planProductLimitMessage(planId) {
   const plan = getPlanById(planId)
   const limit = getPlanProductLimit(planId)
-  return `O plano ${plan.name} permite até ${limit} itens no catálogo (produtos e serviços). Assine um plano superior para ampliar.`
+  return t('plans.productLimitMessage', { plan: plan.name, limit })
 }
 
 export function planProductImageLimitMessage(planId) {
   const plan = getPlanById(planId)
   const limit = getPlanProductImageLimit(planId)
-  return `O plano ${plan.name} permite imagens em até ${limit} produto${limit === 1 ? '' : 's'}. Assine um plano superior para liberar mais.`
+  return t('plans.productImageLimitMessage', { plan: plan.name, limit })
 }
 
 export function countProductsWithImages(products) {
@@ -91,14 +96,16 @@ export function formatProductLimitHint(planId, productCount) {
   const plan = getPlanById(planId)
   const limit = getPlanProductLimit(planId)
   const remaining = planProductsRemaining(planId, productCount)
-  return `${plan.name}: ${productCount}/${limit} itens no catálogo${remaining > 0 ? ` — restam ${remaining}` : ''}`
+  const hint = t('plans.productLimitHint', { plan: plan.name, count: productCount, limit })
+  return remaining > 0 ? `${hint}${t('plans.productLimitRemaining', { remaining })}` : hint
 }
 
 export function formatProductImageLimitHint(planId, productsWithImages) {
   const plan = getPlanById(planId)
   const limit = getPlanProductImageLimit(planId)
   const remaining = planProductImagesRemaining(planId, productsWithImages)
-  return `${plan.name}: ${productsWithImages}/${limit} produtos com imagem${remaining > 0 ? ` — restam ${remaining}` : ''}`
+  const hint = t('plans.productImageLimitHint', { plan: plan.name, count: productsWithImages, limit })
+  return remaining > 0 ? `${hint}${t('plans.productLimitRemaining', { remaining })}` : hint
 }
 
 const PLAN_COOLDOWN_HOURS = {
@@ -108,72 +115,87 @@ const PLAN_COOLDOWN_HOURS = {
   premium: null,
 }
 
-export const SUBSCRIPTION_PLANS = [
+const PLAN_CONFIGS = [
   {
     id: 'free',
-    name: 'Gratuito',
-    description: 'Para testar a vitrine com catálogo enxuto.',
+    nameKey: 'plans.planFree',
+    descriptionKey: 'plans.planFreeDesc',
     priceMonthly: 0,
     priceCooldownHours: PLAN_COOLDOWN_HOURS.free,
-    features: [
-      'Até 6 itens (produtos ou serviços)',
-      'Imagens em até 2 produtos (500 KB cada)',
-      'Logo da loja (foto de perfil)',
-      'Banner padrão por cor (sem banner personalizado)',
-      priceCooldownLabel(24),
-      'Ativar ou ocultar produtos à venda',
-      'Pedidos via WhatsApp',
+    featureKeys: [
+      'plans.featureFreeItems6',
+      'plans.featureFreeImages2',
+      'plans.featureStoreLogo',
+      'plans.featureDefaultBanner',
+      'plans.featureToggleProducts',
+      'plans.featureWhatsappOrders',
     ],
+    cooldownAfterIndex: 4,
   },
   {
     id: 'starter',
-    name: 'Starter',
-    description: 'Catálogo inicial com branding e mais flexibilidade de preços.',
+    nameKey: 'plans.planStarter',
+    descriptionKey: 'plans.planStarterDesc',
     priceMonthly: 5,
     priceCooldownHours: PLAN_COOLDOWN_HOURS.starter,
-    features: [
-      'Até 15 itens (produtos ou serviços)',
-      'Imagens em até 10 produtos (500 KB cada)',
-      'Banner personalizado da vitrine',
-      priceCooldownLabel(12),
-      'Destaque visual na página inicial',
-      'Ativar ou ocultar produtos à venda',
+    featureKeys: [
+      'plans.featureStarterItems15',
+      'plans.featureStarterImages10',
+      'plans.featureCustomBanner',
+      'plans.featureHomeHighlight',
+      'plans.featureToggleProducts',
     ],
+    cooldownAfterIndex: 3,
   },
   {
     id: 'plus',
-    name: 'Plus',
-    description: 'Para lojas em crescimento com vitrine completa.',
+    nameKey: 'plans.planPlus',
+    descriptionKey: 'plans.planPlusDesc',
     priceMonthly: 15,
     priceCooldownHours: PLAN_COOLDOWN_HOURS.plus,
-    features: [
-      'Até 30 itens (produtos ou serviços)',
-      'Imagens em todos os produtos (500 KB cada)',
-      'Banner personalizado da vitrine',
-      priceCooldownLabel(4),
-      'Anúncio ampliado na vitrine principal',
-      'Prioridade nas buscas',
+    featureKeys: [
+      'plans.featurePlusItems30',
+      'plans.featurePlusImagesAll',
+      'plans.featureCustomBanner',
+      'plans.featureExpandedAd',
+      'plans.featureSearchPriority',
     ],
+    cooldownAfterIndex: 3,
   },
   {
     id: 'premium',
-    name: 'Premium',
-    description: 'Catálogo ampliado para lojas consolidadas.',
+    nameKey: 'plans.planPremium',
+    descriptionKey: 'plans.planPremiumDesc',
     priceMonthly: 35,
     priceCooldownHours: PLAN_COOLDOWN_HOURS.premium,
-    features: [
-      'Até 80 itens (produtos ou serviços)',
-      'Imagens em todos os produtos (500 KB cada)',
-      'Banner personalizado da vitrine',
-      priceCooldownLabel(null),
-      'Máximo destaque na página inicial',
-      'Rotação de prioridade a cada 15 min',
+    featureKeys: [
+      'plans.featurePremiumItems80',
+      'plans.featurePlusImagesAll',
+      'plans.featureCustomBanner',
+      'plans.featureMaxHighlight',
+      'plans.featureRotationPriority',
     ],
+    cooldownAfterIndex: 3,
   },
 ]
 
+function buildSubscriptionPlans() {
+  return PLAN_CONFIGS.map((cfg) => ({
+    id: cfg.id,
+    name: t(cfg.nameKey),
+    description: t(cfg.descriptionKey),
+    priceMonthly: cfg.priceMonthly,
+    priceCooldownHours: cfg.priceCooldownHours,
+    features: buildPlanFeatures(cfg.featureKeys, cfg.priceCooldownHours, cfg.cooldownAfterIndex),
+  }))
+}
+
+export const SUBSCRIPTION_PLANS = buildSubscriptionPlans()
+
 export function formatPlanPrice(priceMonthly) {
-  return priceMonthly === 0 ? 'Grátis' : `${formatCurrency(priceMonthly)}/mês`
+  return priceMonthly === 0
+    ? t('app.freePlanPrice')
+    : `${formatCurrency(priceMonthly)}${t('app.perMonth')}`
 }
 
 export function getPlanById(planId) {
@@ -192,7 +214,7 @@ function renderPlanCardAction(plan, currentPlanId, { requestMode = false, infoOn
 
   if (infoOnly && !isDashboard) {
     if (plan.priceMonthly === 0) {
-      return `<p class="plan-card__note">Incluso na aprovação do cadastro</p>`
+      return `<p class="plan-card__note">${escapeHtml(t('plans.includedOnApproval'))}</p>`
     }
     return ''
   }
@@ -206,31 +228,31 @@ function renderPlanCardAction(plan, currentPlanId, { requestMode = false, infoOn
       if (requestMode) {
         return `
           <button type="button" class="btn btn-green btn-block btn-sm" data-request-plan="${plan.id}">
-            Solicitar renovação
+            ${escapeHtml(t('plans.requestRenewal'))}
           </button>
-          ${whatsappBtn('Enviar comprovante no WhatsApp')}
-          <p class="plan-card__note">Seu plano atual</p>`
+          ${whatsappBtn(escapeHtml(t('plans.sendReceiptWhatsapp')))}
+          <p class="plan-card__note">${escapeHtml(t('plans.yourCurrentPlan'))}</p>`
       }
       return `
         <a href="${buildPlanPaymentUrl(plan)}" target="_blank" rel="noopener noreferrer" class="btn btn-green btn-block btn-sm">
-          Renovar — ${escapeHtml(plan.name)}
+          ${escapeHtml(t('plans.renewPlan', { plan: plan.name }))}
         </a>
-        <p class="plan-card__note">Seu plano atual</p>`
+        <p class="plan-card__note">${escapeHtml(t('plans.yourCurrentPlan'))}</p>`
     }
-    return `<p class="plan-card__note plan-card__note--current">Seu plano atual</p>`
+    return `<p class="plan-card__note plan-card__note--current">${escapeHtml(t('plans.yourCurrentPlan'))}</p>`
   }
 
   if (isDashboard && plan.priceMonthly > 0 && planRank(plan.id) > planRank(currentPlanId)) {
     if (requestMode) {
       return `
         <button type="button" class="btn btn-green btn-block btn-sm" data-request-plan="${plan.id}">
-          Solicitar — ${escapeHtml(plan.name)}
+          ${escapeHtml(t('plans.requestPlan', { plan: plan.name }))}
         </button>
-        ${whatsappBtn('Enviar comprovante no WhatsApp')}`
+        ${whatsappBtn(escapeHtml(t('plans.sendReceiptWhatsapp')))}`
     }
     return `
       <a href="${buildPlanPaymentUrl(plan)}" target="_blank" rel="noopener noreferrer" class="btn btn-green btn-block btn-sm">
-        Assinar — ${escapeHtml(plan.name)}
+        ${escapeHtml(t('plans.subscribePlan', { plan: plan.name }))}
       </a>`
   }
 
@@ -238,10 +260,10 @@ function renderPlanCardAction(plan, currentPlanId, { requestMode = false, infoOn
     if (plan.priceMonthly > 0) {
       return `
         <a href="${buildPlanPaymentUrl(plan)}" target="_blank" rel="noopener noreferrer" class="btn btn-green btn-block btn-sm">
-          Enviar comprovante — ${escapeHtml(plan.name)}
+          ${escapeHtml(t('plans.sendReceiptPlan', { plan: plan.name }))}
         </a>`
     }
-    return `<p class="plan-card__note">Incluso na aprovação do cadastro</p>`
+    return `<p class="plan-card__note">${escapeHtml(t('plans.includedOnApproval'))}</p>`
   }
 
   return ''
@@ -303,20 +325,21 @@ export function formatPriceCooldownRemaining(remainingMs) {
   const totalMinutes = Math.ceil(remainingMs / 60000)
   const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60
-  if (hours > 0) return `${hours}h ${minutes}min`
-  return `${minutes}min`
+  if (hours > 0) return t('plans.cooldownRemainingHours', { hours, minutes })
+  return t('plans.cooldownRemainingMinutes', { minutes })
 }
 
 function buildPaymentMessage(planName, planPrice) {
+  const priceSuffix = planPrice ? ` (${planPrice})` : ''
   return [
-    'Olá!',
+    t('plans.paymentWhatsappGreeting'),
     '',
-    `Sou lojista do MaredeVendas e quero assinar o plano *${planName}*${planPrice ? ` (${planPrice})` : ''}.`,
+    t('plans.paymentWhatsappBody', { plan: planName, price: priceSuffix }),
     '',
-    'Segue o comprovante de pagamento em anexo.',
+    t('plans.paymentWhatsappReceipt'),
     '',
-    'Nome da loja:',
-    'Email cadastrado:',
+    t('plans.paymentWhatsappStoreName'),
+    t('plans.paymentWhatsappEmail'),
   ].join('\n')
 }
 
@@ -325,5 +348,8 @@ export function buildPlanPaymentUrl(plan) {
 }
 
 export function buildGenericPaymentUrl() {
-  return buildWhatsAppUrl(PAYMENT_WHATSAPP, buildPaymentMessage('(informar plano)', ''))
+  return buildWhatsAppUrl(
+    PAYMENT_WHATSAPP,
+    buildPaymentMessage(t('plans.paymentWhatsappPlanPlaceholder'), ''),
+  )
 }

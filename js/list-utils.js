@@ -1,6 +1,7 @@
 /**
  * Paginação e ordenação reutilizáveis para listas do painel.
  */
+import { t } from './strings.js'
 
 export function renderPaginationHtml({
   currentPage,
@@ -27,11 +28,11 @@ export function renderPaginationHtml({
 
   return `
     <div class="admin-pagination">
-      <p class="admin-pagination__info">${start}–${end} de ${matchedCount} ${label}</p>
+      <p class="admin-pagination__info">${t('pagination.rangeOf', { start, end, count: matchedCount, label })}</p>
       <div class="admin-pagination__controls">
-        <button type="button" class="btn btn-outline btn-sm" ${prevAttr} ${currentPage <= 1 ? 'disabled' : ''}>← Anterior</button>
-        <span class="admin-pagination__status">Página ${currentPage} de ${totalPages}</span>
-        <button type="button" class="btn btn-outline btn-sm" ${nextAttr} ${currentPage >= totalPages ? 'disabled' : ''}>Próxima →</button>
+        <button type="button" class="btn btn-outline btn-sm" ${prevAttr} ${currentPage <= 1 ? 'disabled' : ''}>${t('pagination.previous')}</button>
+        <span class="admin-pagination__status">${t('pagination.pageStatus', { current: currentPage, total: totalPages })}</span>
+        <button type="button" class="btn btn-outline btn-sm" ${nextAttr} ${currentPage >= totalPages ? 'disabled' : ''}>${t('pagination.next')}</button>
       </div>
     </div>`
 }
@@ -93,8 +94,8 @@ export function bindPaginatedSortableList(main, {
         totalPages,
         matchedCount: matchedRows.length,
         pageSize,
-        labelSingular: 'item',
-        labelPlural: 'itens',
+        labelSingular: t('pagination.itemSingular'),
+        labelPlural: t('pagination.itemPlural'),
         prevAttr,
         nextAttr,
       })

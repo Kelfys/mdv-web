@@ -125,7 +125,7 @@ export async function renderHome(main) {
       const ads = filterAds(feedAds)
       if (ads.length === 0) {
         return search
-          ? '<div class="empty-state"><h2>Nenhum anúncio encontrado</h2><p>Tente outro termo de busca.</p></div>'
+          ? `<div class="empty-state"><h2>${t('home.noAdsFoundTitle')}</h2><p>${t('home.noAdsFoundBody')}</p></div>`
           : `<div class="empty-state"><h2>${t('home.noAdsTitle')}</h2><p>${t('home.noAdsBody')}</p></div>`
       }
       return ads.map((ad) => renderFeedAdCard(ad)).join('')
@@ -146,12 +146,12 @@ export async function renderHome(main) {
     const hasFilters = Boolean(search || categoryId)
     const label = activeTab === 'feed' && (search || categoryId)
       ? search
-        ? `Resultados para "${search}"`
-        : `${categories.find((c) => c.id === categoryId)?.name ?? 'Categoria'}`
+        ? t('home.resultsFor', { term: search })
+        : `${categories.find((c) => c.id === categoryId)?.name ?? t('labels.category')}`
       : activeTab === 'ads' && search
-        ? `Anúncios para "${search}"`
+        ? t('home.adsFor', { term: search })
         : neighborhoodLabel
-          ? `Bairro: ${neighborhoodLabel}`
+          ? t('home.neighborhoodLabel', { name: neighborhoodLabel })
           : ''
 
     main.innerHTML = `

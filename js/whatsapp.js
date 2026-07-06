@@ -12,6 +12,7 @@
 import { formatCurrency } from './utils.js'
 import { getPaymentMethodLabel } from './payment.js'
 import { isService } from './catalog.js'
+import { t } from './strings.js'
 
 export function buildOrderMessage({
   items,
@@ -23,28 +24,33 @@ export function buildOrderMessage({
   paymentMethod,
 }) {
   const lines = items.map((item) => {
-    const kind = isService(item.product) ? 'Serviço' : 'Produto'
-    return `${kind}: ${item.product.name} (${item.quantity}x) - ${formatCurrency(item.product.price * item.quantity)}`
+    const kind = isService(item.product) ? t('catalog.service') : t('catalog.product')
+    return t('whatsapp.lineItem', {
+      kind,
+      name: item.product.name,
+      qty: item.quantity,
+      price: formatCurrency(item.product.price * item.quantity),
+    })
   })
 
   return [
-    'Olá!',
+    t('whatsapp.greeting'),
     '',
-    'Gostaria de fazer o seguinte pedido (produtos e/ou serviços):',
+    t('whatsapp.orderIntro'),
     '',
     ...lines,
     '',
-    `Total: ${formatCurrency(total)}`,
-    ...(paymentMethod ? ['', `Forma de pagamento: ${getPaymentMethodLabel(paymentMethod)}`] : []),
+    t('whatsapp.total', { amount: formatCurrency(total) }),
+    ...(paymentMethod ? ['', t('whatsapp.paymentMethod', { method: getPaymentMethodLabel(paymentMethod) })] : []),
     '',
-    `Nome: ${customerName}`,
-    `Telefone: ${customerPhone}`,
+    t('whatsapp.customerName', { name: customerName }),
+    t('whatsapp.customerPhone', { phone: customerPhone }),
     '',
-    'Endereço:',
+    t('whatsapp.addressLabel'),
     customerAddress,
-    ...(deliveryPeriod ? ['', `Melhor horário para entrega: ${deliveryPeriod}`] : []),
+    ...(deliveryPeriod ? ['', t('whatsapp.deliveryPeriod', { period: deliveryPeriod })] : []),
     '',
-    'Obrigado.',
+    t('whatsapp.thanks'),
   ].join('\n')
 }
 

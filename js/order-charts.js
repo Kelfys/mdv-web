@@ -3,6 +3,7 @@
  */
 import { escapeHtml, formatCurrency } from './utils.js'
 import { buildOrderPeriodSeries } from './api.js'
+import { t } from './strings.js'
 
 function formatChartValue(value, metric) {
   return metric === 'revenue' ? formatCurrency(value) : String(value)
@@ -17,8 +18,8 @@ export function renderOrdersChartPlot(series, metric = 'orders') {
         const value = metric === 'orders' ? bucket.orders : bucket.revenue
         const height = Math.round((value / max) * 100)
         const tooltip = metric === 'orders'
-          ? `${bucket.label}: ${value} pedido${value === 1 ? '' : 's'}`
-          : `${bucket.label}: ${formatCurrency(value)}`
+          ? t('admin.chartOrdersTooltip', { label: bucket.label, count: value })
+          : t('admin.chartRevenueTooltip', { label: bucket.label, value: formatCurrency(value) })
         return `
           <div class="admin-chart__column">
             <span class="admin-chart__value">${value > 0 ? formatChartValue(value, metric) : ''}</span>
@@ -44,25 +45,25 @@ export function renderOrdersChart(series, {
     <section class="admin-chart-panel ${compact ? 'admin-chart-panel--compact' : ''}">
       <div class="admin-chart-panel__head">
         <div>
-          <h3>Pedidos por período</h3>
+          <h3>${t('admin.ordersByPeriod')}</h3>
           <p class="admin-chart-panel__summary">
-            ${totalOrders} pedido${totalOrders === 1 ? '' : 's'} · ${formatCurrency(totalRevenue)} no período
+            ${t('admin.periodOrdersSummary', { count: totalOrders, revenue: formatCurrency(totalRevenue) })}
           </p>
         </div>
         ${compact ? '' : `
           <div class="admin-chart-panel__controls">
             <div class="admin-filter-chips" role="group" data-chart-period-group>
-              <button type="button" class="admin-filter-chip ${period === '7d' ? 'active' : ''}" data-chart-period="7d">7 dias</button>
-              <button type="button" class="admin-filter-chip ${period === '30d' ? 'active' : ''}" data-chart-period="30d">30 dias</button>
-              <button type="button" class="admin-filter-chip ${period === '12m' ? 'active' : ''}" data-chart-period="12m">12 meses</button>
+              <button type="button" class="admin-filter-chip ${period === '7d' ? 'active' : ''}" data-chart-period="7d">${t('labels.days7')}</button>
+              <button type="button" class="admin-filter-chip ${period === '30d' ? 'active' : ''}" data-chart-period="30d">${t('labels.days30')}</button>
+              <button type="button" class="admin-filter-chip ${period === '12m' ? 'active' : ''}" data-chart-period="12m">${t('labels.months12')}</button>
             </div>
             <div class="admin-filter-chips" role="group" data-chart-metric-group>
-              <button type="button" class="admin-filter-chip ${metric === 'orders' ? 'active' : ''}" data-chart-metric="orders">Pedidos</button>
-              <button type="button" class="admin-filter-chip ${metric === 'revenue' ? 'active' : ''}" data-chart-metric="revenue">Receita</button>
+              <button type="button" class="admin-filter-chip ${metric === 'orders' ? 'active' : ''}" data-chart-metric="orders">${t('admin.metricOrders')}</button>
+              <button type="button" class="admin-filter-chip ${metric === 'revenue' ? 'active' : ''}" data-chart-metric="revenue">${t('admin.metricRevenue')}</button>
             </div>
           </div>`}
       </div>
-      <div class="admin-chart" id="${chartId}" role="img" aria-label="Gráfico de pedidos por período">
+      <div class="admin-chart" id="${chartId}" role="img" aria-label="${escapeHtml(t('admin.ordersChartAria'))}">
         ${renderOrdersChartPlot(series, metric)}
       </div>
     </section>`
@@ -78,7 +79,10 @@ export function updateOrdersChart(main, timeline, period, metric, chartId = 'ord
   const totalRevenue = series.reduce((sum, b) => sum + b.revenue, 0)
 
   if (summary) {
-    summary.textContent = `${totalOrders} pedido${totalOrders === 1 ? '' : 's'} · ${formatCurrency(totalRevenue)} no período`
+    summary.textContent = t('admin.periodOrdersSummary', {
+      count: totalOrders,
+      revenue: formatCurrency(totalRevenue),
+    })
   }
 
   body.innerHTML = renderOrdersChartPlot(series, metric)

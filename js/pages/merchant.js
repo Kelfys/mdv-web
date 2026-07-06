@@ -42,17 +42,20 @@ import {
 } from '../payment.js'
 import { t } from '../strings.js'
 
-const ORDER_STATUS_LABELS = {
-  pending: 'Pendente',
-  sent: 'Enviado',
-  viewed: 'Visualizado',
-}
-
 const LOW_STOCK_THRESHOLD = 3
 const PRODUCTS_PAGE_SIZE = 15
 const ORDERS_PAGE_SIZE = 15
 
 const PRODUCT_SORT_DEFAULTS = { name: 'asc', price: 'asc', stock: 'desc' }
+
+function orderStatusLabel(status) {
+  const map = {
+    pending: t('orderStatus.pending'),
+    sent: t('orderStatus.sent'),
+    viewed: t('orderStatus.viewed'),
+  }
+  return map[status] ?? status
+}
 
 function imagePreviewBlock(url, alt, variant = 'square') {
   if (!url) {
@@ -68,7 +71,7 @@ function bindImagePreview(input, previewEl) {
     if (!file) return
     const reader = new FileReader()
     reader.onload = () => {
-      previewEl.innerHTML = `<img class="admin-image-preview" src="${reader.result}" alt="Prévia" />`
+      previewEl.innerHTML = `<img class="admin-image-preview" src="${reader.result}" alt="${escapeHtml(t('common.preview'))}" />`
     }
     reader.readAsDataURL(file)
   })
@@ -120,28 +123,28 @@ function storeStatusBadge(status) {
 
 function orderStatusBadge(status) {
   const map = {
-    pending: '<span class="badge badge-order-pending">Pendente</span>',
-    sent: '<span class="badge badge-order-sent">Enviado</span>',
-    viewed: '<span class="badge badge-order-viewed">Visualizado</span>',
+    pending: `<span class="badge badge-order-pending">${t('orderStatus.pending')}</span>`,
+    sent: `<span class="badge badge-order-sent">${t('orderStatus.sent')}</span>`,
+    viewed: `<span class="badge badge-order-viewed">${t('orderStatus.viewed')}</span>`,
   }
   return map[status] ?? escapeHtml(status)
 }
 
 function adStatusBadge(status) {
   const map = {
-    pending: '<span class="badge badge-pending">Aguardando aprovação</span>',
-    approved: '<span class="badge badge-approved">Ativo</span>',
-    rejected: '<span class="badge badge-blocked">Rejeitado</span>',
-    expired: '<span class="badge badge-order-pending">Expirado</span>',
+    pending: `<span class="badge badge-pending">${t('adStatus.pending')}</span>`,
+    approved: `<span class="badge badge-approved">${t('adStatus.approved')}</span>`,
+    rejected: `<span class="badge badge-blocked">${t('adStatus.rejected')}</span>`,
+    expired: `<span class="badge badge-order-pending">${t('adStatus.expired')}</span>`,
   }
   return map[status] ?? escapeHtml(status)
 }
 
 function storeStatusBanner(store) {
   const messages = {
-    pending: 'Sua loja está em análise. Você já pode cadastrar produtos; a vitrine pública ficará visível após aprovação.',
-    approved: 'Sua loja está ativa no marketplace.',
-    blocked: 'Sua loja está bloqueada. Entre em contato com o suporte para mais informações.',
+    pending: t('merchant.statusPendingBanner'),
+    approved: t('merchant.statusApprovedBanner'),
+    blocked: t('merchant.statusBlockedBanner'),
   }
   const tone = store.status === 'approved' ? 'approved' : store.status === 'blocked' ? 'blocked' : 'pending'
   return `
@@ -171,15 +174,15 @@ function merchantMetrics({ products, orders, store, viewStats }) {
       </a>
       <div class="metric-card">
         <div class="metric-card__value">${formatCurrency(revenue)}</div>
-        <div class="metric-card__label">Volume de pedidos</div>
+        <div class="metric-card__label">${t('merchant.orderVolume')}</div>
       </div>
       <div class="metric-card">
         <div class="metric-card__value">${viewStats?.total ?? 0}</div>
-        <div class="metric-card__label">Visualizações${viewStats?.week ? ` · ${viewStats.week} na semana` : ''}</div>
+        <div class="metric-card__label">${t('merchant.views')}${viewStats?.week ? t('merchant.viewsThisWeek', { count: viewStats.week }) : ''}</div>
       </div>
       <a href="${merchantHref('planos')}" class="metric-card metric-card--link">
         <div class="metric-card__value">${escapeHtml(plan.name)}</div>
-        <div class="metric-card__label">${formatPlanPrice(plan.priceMonthly)} · Ver planos</div>
+        <div class="metric-card__label">${t('merchant.planPriceLabel', { price: formatPlanPrice(plan.priceMonthly) })}</div>
       </a>
     </div>`
 }
@@ -189,39 +192,39 @@ function merchantQuickActions(store) {
     <div class="admin-quick-actions">
       <a href="${merchantHref('produtos')}" class="admin-quick-card">
         <span class="admin-quick-card__icon">📦</span>
-        <strong>Produtos</strong>
-        <span>Gerenciar catálogo</span>
+        <strong>${t('merchant.productsTitle')}</strong>
+        <span>${t('merchant.manageCatalog')}</span>
       </a>
       <a href="${merchantHref('pedidos')}" class="admin-quick-card">
         <span class="admin-quick-card__icon">🛒</span>
-        <strong>Pedidos</strong>
-        <span>Ver solicitações</span>
+        <strong>${t('merchant.orders')}</strong>
+        <span>${t('merchant.viewRequests')}</span>
       </a>
       <a href="${merchantHref('anuncios')}" class="admin-quick-card">
         <span class="admin-quick-card__icon">📣</span>
-        <strong>Anúncios</strong>
-        <span>Divulgar no feed</span>
+        <strong>${t('merchant.adsTitle')}</strong>
+        <span>${t('merchant.promoteInFeed')}</span>
       </a>
       <a href="${merchantHref('planos')}" class="admin-quick-card">
         <span class="admin-quick-card__icon">💎</span>
-        <strong>Planos</strong>
-        <span>Assinar ou renovar</span>
+        <strong>${t('merchant.plansTitle')}</strong>
+        <span>${t('merchant.subscribeOrRenew')}</span>
       </a>
       <a href="${merchantHref('configuracoes')}" class="admin-quick-card">
         <span class="admin-quick-card__icon">⚙️</span>
-        <strong>Configurações</strong>
-        <span>Dados da loja</span>
+        <strong>${t('merchant.settingsTitle')}</strong>
+        <span>${t('merchant.storeData')}</span>
       </a>
       ${store.status === 'approved' ? `
         <a href="${routeHref(`/loja/${store.slug}`)}" class="admin-quick-card">
           <span class="admin-quick-card__icon">🏪</span>
-          <strong>Vitrine</strong>
-          <span>Ver como cliente</span>
+          <strong>${t('merchant.storefront')}</strong>
+          <span>${t('merchant.viewAsCustomer')}</span>
         </a>` : `
         <span class="admin-quick-card admin-quick-card--muted">
           <span class="admin-quick-card__icon">🏪</span>
-          <strong>Vitrine</strong>
-          <span>Após aprovação</span>
+          <strong>${t('merchant.storefront')}</strong>
+          <span>${t('merchant.afterApproval')}</span>
         </span>`}
     </div>`
 }
@@ -231,19 +234,19 @@ function merchantOnboardingChecklist(store, products) {
   const items = [
     {
       done: Boolean(store.whatsapp?.trim()),
-      label: 'WhatsApp preenchido',
-      action: `<a href="${merchantHref('configuracoes')}" class="btn btn-outline btn-sm">Configurar</a>`,
+      label: t('merchant.whatsappFilled'),
+      action: `<a href="${merchantHref('configuracoes')}" class="btn btn-outline btn-sm">${t('common.configure')}</a>`,
     },
     {
       done: activeCount >= 3,
-      label: 'Pelo menos 3 itens ativos no catálogo',
-      action: `<a href="${merchantHref('produtos')}" class="btn btn-outline btn-sm">Cadastrar</a>`,
+      label: t('merchant.threeActiveItems'),
+      action: `<a href="${merchantHref('produtos')}" class="btn btn-outline btn-sm">${t('common.register')}</a>`,
     },
     {
       done: store.status === 'approved',
-      label: 'Loja aprovada pelo admin',
+      label: t('merchant.storeApprovedByAdmin'),
       action: store.status === 'pending'
-        ? '<span class="badge badge-pending">Em análise</span>'
+        ? `<span class="badge badge-pending">${t('merchant.underReview')}</span>`
         : '',
     },
   ]
@@ -254,14 +257,14 @@ function merchantOnboardingChecklist(store, products) {
   return `
     <section class="admin-section">
       <div class="admin-section__head">
-        <h2>Primeiros passos</h2>
-        <span class="admin-stat-chip admin-stat-chip--sent">${doneCount}/${items.length} concluídos</span>
+        <h2>${t('merchant.firstSteps')}</h2>
+        <span class="admin-stat-chip admin-stat-chip--sent">${t('merchant.stepsCompleted', { done: doneCount, total: items.length })}</span>
       </div>
       <div class="merchant-alert-list">
         ${items.map((item) => `
           <div class="merchant-alert-item">
             <strong>${item.done ? '✅' : '⭕'} ${escapeHtml(item.label)}</strong>
-            ${!item.done ? item.action : '<span class="badge badge-approved">Concluído</span>'}
+            ${!item.done ? item.action : `<span class="badge badge-approved">${t('common.completed')}</span>`}
           </div>
         `).join('')}
       </div>
@@ -270,19 +273,19 @@ function merchantOnboardingChecklist(store, products) {
 
 function renderRecentOrders(orders) {
   if (orders.length === 0) {
-    return merchantEmptyState('🛒', 'Nenhum pedido ainda', 'Quando clientes pedirem pelo WhatsApp, os pedidos aparecerão aqui.')
+    return merchantEmptyState('🛒', t('customer.noOrdersTitle'), t('merchant.noOrdersYetBody'))
   }
 
   return `
     <div class="table-wrap admin-orders-table">
       <table>
-        <thead><tr><th>Data</th><th>Cliente</th><th>Pagamento</th><th>Total</th><th>Status</th></tr></thead>
+        <thead><tr><th>${t('common.date')}</th><th>${t('common.customer')}</th><th>${t('common.payment')}</th><th>${t('common.total')}</th><th>${t('labels.status')}</th></tr></thead>
         <tbody>
           ${orders.slice(0, 5).map((o) => `
             <tr>
               <td>${formatDate(o.created_at)}</td>
               <td>${escapeHtml(o.customer_name)}</td>
-              <td>${escapeHtml(o.payment_method ? getPaymentMethodLabel(o.payment_method) : '—')}</td>
+              <td>${escapeHtml(o.payment_method ? getPaymentMethodLabel(o.payment_method) : t('app.dashPlaceholder'))}</td>
               <td>${formatCurrency(o.total)}</td>
               <td>${orderStatusBadge(o.status)}</td>
             </tr>
@@ -299,14 +302,14 @@ function renderLowStockAlert(products) {
   return `
     <section class="admin-section">
       <div class="admin-section__head">
-        <h2>Estoque baixo</h2>
-        <a href="${merchantHref('produtos')}" class="btn btn-outline btn-sm">Ver produtos</a>
+        <h2>${t('merchant.lowStock')}</h2>
+        <a href="${merchantHref('produtos')}" class="btn btn-outline btn-sm">${t('common.viewProducts')}</a>
       </div>
       <div class="merchant-alert-list">
         ${lowStock.slice(0, 5).map((p) => `
           <div class="merchant-alert-item">
             <strong>${escapeHtml(p.name)}</strong>
-            <span class="badge badge-pending">${p.stock} un.</span>
+            <span class="badge badge-pending">${t('merchant.unitsShort', { count: p.stock })}</span>
           </div>
         `).join('')}
       </div>
@@ -317,8 +320,8 @@ function renderReviewsSection(reviews) {
   if (reviews.length === 0) {
     return `
       <section class="admin-section">
-        <div class="admin-section__head"><h2>Avaliações</h2></div>
-        ${merchantEmptyState('⭐', 'Nenhuma avaliação', 'Quando clientes avaliarem sua loja, as notas aparecerão aqui.')}
+        <div class="admin-section__head"><h2>${t('merchant.reviews')}</h2></div>
+        ${merchantEmptyState('⭐', t('merchant.noReviewsTitle'), t('merchant.noReviewsBody'))}
       </section>`
   }
 
@@ -327,14 +330,14 @@ function renderReviewsSection(reviews) {
   return `
     <section class="admin-section">
       <div class="admin-section__head">
-        <h2>Avaliações</h2>
-        <span class="stars">★ ${avgRating.toFixed(1)} · ${reviews.length} avaliação${reviews.length === 1 ? '' : 'ões'}</span>
+        <h2>${t('merchant.reviews')}</h2>
+        <span class="stars">★ ${avgRating.toFixed(1)} · ${reviews.length} ${reviews.length === 1 ? t('merchant.ratingSingular') : t('merchant.ratingPlural')}</span>
       </div>
       <div class="merchant-alert-list">
         ${reviews.slice(0, 3).map((r) => `
           <div class="merchant-alert-item" style="align-items:flex-start;flex-direction:column;gap:0.375rem">
             <div style="display:flex;justify-content:space-between;width:100%;gap:0.75rem">
-              <strong>${escapeHtml(r.user?.name ?? 'Anônimo')}</strong>
+              <strong>${escapeHtml(r.user?.name ?? t('common.anonymous'))}</strong>
               <span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
             </div>
             ${r.comment ? `<p style="font-size:0.8125rem;color:var(--text-secondary);margin:0">${escapeHtml(r.comment)}</p>` : ''}
@@ -352,16 +355,16 @@ function renderAdsSummary(ads) {
   return `
     <section class="admin-section">
       <div class="admin-section__head">
-        <h2>Anúncios</h2>
-        <a href="${merchantHref('anuncios')}" class="btn btn-outline btn-sm">Gerenciar</a>
+        <h2>${t('merchant.adsTitle')}</h2>
+        <a href="${merchantHref('anuncios')}" class="btn btn-outline btn-sm">${t('common.manage')}</a>
       </div>
       ${ads.length === 0
-        ? merchantEmptyState('📣', 'Nenhum anúncio', 'Crie anúncios para aparecer no feed principal do marketplace.')
+        ? merchantEmptyState('📣', t('merchant.noAdsTitle'), t('merchant.noAdsBody'))
         : `
           <div class="admin-stat-chips">
-            <span class="admin-stat-chip admin-stat-chip--approved">${active} ativo${active === 1 ? '' : 's'}</span>
-            <span class="admin-stat-chip admin-stat-chip--pending">${pending} pendente${pending === 1 ? '' : 's'}</span>
-            <span class="admin-stat-chip admin-stat-chip--sent">${ads.length} no total</span>
+            <span class="admin-stat-chip admin-stat-chip--approved">${active === 1 ? t('merchant.adActiveOne', { count: active }) : t('merchant.adActiveMany', { count: active })}</span>
+            <span class="admin-stat-chip admin-stat-chip--pending">${pending === 1 ? t('merchant.adPendingOne', { count: pending }) : t('merchant.adPendingMany', { count: pending })}</span>
+            <span class="admin-stat-chip admin-stat-chip--sent">${t('merchant.adsTotal', { count: ads.length })}</span>
           </div>`}
     </section>`
 }
@@ -373,21 +376,21 @@ function priceCooldownHintHtml(planId, product) {
 
   if (cooldown.allowed) {
     if (hours === null) return ''
-    return `<small class="form-hint">No seu plano, o preço pode ser alterado a cada ${hours}h.</small>`
+    return `<small class="form-hint">${t('merchant.priceChangeInterval', { hours })}</small>`
   }
 
-  return `<small class="form-hint form-hint--info">Aguarde ${formatPriceCooldownRemaining(cooldown.remainingMs)} para alterar o preço novamente.</small>`
+  return `<small class="form-hint form-hint--info">${t('merchant.priceCooldownWait', { remaining: formatPriceCooldownRemaining(cooldown.remainingMs) })}</small>`
 }
 
 function renderPriceHistoryHtml(history) {
   if (!history.length) {
-    return '<p class="form-hint">Nenhuma alteração de preço registrada.</p>'
+    return `<p class="form-hint">${t('merchant.noPriceChanges')}</p>`
   }
 
   return `
     <div class="table-wrap" style="margin-top:0.25rem">
       <table>
-        <thead><tr><th>Data</th><th>De</th><th>Para</th></tr></thead>
+        <thead><tr><th>${t('common.date')}</th><th>${t('common.from')}</th><th>${t('common.to')}</th></tr></thead>
         <tbody>
           ${history.map((entry) => `
             <tr>
@@ -408,7 +411,7 @@ function productImageLimitHintHtml(store, products, product = null) {
   const allowed = canAddProductImage(store.plan_id, withImages, Boolean(product?.image))
 
   if (!allowed) {
-    return `<p class="form-hint form-hint--info">${escapeHtml(planProductImageLimitMessage(store.plan_id))} <a href="${routeHref('/conta/entrar?sec=planos')}">Ver planos</a></p>`
+    return `<p class="form-hint form-hint--info">${escapeHtml(planProductImageLimitMessage(store.plan_id))} <a href="${routeHref('/conta/entrar?sec=planos')}">${t('merchant.viewPlansLink')}</a></p>`
   }
 
   return `<p class="form-hint">${escapeHtml(formatProductImageLimitHint(store.plan_id, withImages))}</p>`
@@ -437,47 +440,47 @@ function renderProductTableRows(products, categories, store) {
           <br><small class="form-hint">${escapeHtml(getCatalogItemLabel(p))}</small>
         </td>
         <td>${formatCurrency(p.price)}</td>
-        <td>${isService(p) ? '—' : ((p.stock ?? 0) <= LOW_STOCK_THRESHOLD ? `<span class="badge badge-pending">${p.stock}</span>` : p.stock)}</td>
-        <td>${p.active ? '<span class="badge badge-approved">Ativo</span>' : '<span class="badge badge-blocked">Inativo</span>'}</td>
+        <td>${isService(p) ? t('app.dashPlaceholder') : ((p.stock ?? 0) <= LOW_STOCK_THRESHOLD ? `<span class="badge badge-pending">${p.stock}</span>` : p.stock)}</td>
+        <td>${p.active ? `<span class="badge badge-approved">${t('common.active')}</span>` : `<span class="badge badge-blocked">${t('common.inactive')}</span>`}</td>
         <td style="white-space:nowrap">
-          <button type="button" class="btn btn-outline btn-sm" data-edit-product="${p.id}">Editar</button>
-          <button type="button" class="btn btn-outline btn-sm" data-del-product="${p.id}">Excluir</button>
+          <button type="button" class="btn btn-outline btn-sm" data-edit-product="${p.id}">${t('labels.edit')}</button>
+          <button type="button" class="btn btn-outline btn-sm" data-del-product="${p.id}">${t('labels.delete')}</button>
         </td>
       </tr>
       <tr class="admin-edit-row" id="edit-product-row-${p.id}" hidden>
         <td colspan="5">
           <form class="admin-edit-panel admin-form-grid" data-product-edit="${p.id}">
             <div class="form-group">
-              <label class="form-label">Nome</label>
+              <label class="form-label">${t('labels.name')}</label>
               <input class="form-input" name="name" value="${escapeHtml(p.name)}" required />
             </div>
             ${catalogItemTypeFieldHtml(p.item_type)}
             <div class="form-group">
-              <label class="form-label">Preço (R$)</label>
+              <label class="form-label">${t('common.priceWithCurrency')}</label>
               <input class="form-input" name="price" type="number" step="0.01" min="0" value="${p.price}" required />
               ${priceCooldownHintHtml(store.plan_id, p)}
             </div>
             ${catalogStockFieldHtml(p.stock ?? 0, p.item_type)}
             <div class="form-group">
-              <label class="form-label">Categoria</label>
+              <label class="form-label">${t('labels.category')}</label>
               <select class="form-input" name="category_id">
-                <option value="">Sem categoria</option>
+                <option value="">${t('common.noCategory')}</option>
                 ${categories.map((c) => `<option value="${c.id}" ${p.category_id === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Ativo</label>
+              <label class="form-label">${t('labels.active')}</label>
               <select class="form-input" name="active">
-                <option value="true" ${p.active ? 'selected' : ''}>Sim</option>
-                <option value="false" ${!p.active ? 'selected' : ''}>Não</option>
+                <option value="true" ${p.active ? 'selected' : ''}>${t('common.yes')}</option>
+                <option value="false" ${!p.active ? 'selected' : ''}>${t('common.no')}</option>
               </select>
             </div>
             <div class="form-group admin-form-grid__full">
-              <label class="form-label">Descrição</label>
+              <label class="form-label">${t('labels.description')}</label>
               <textarea class="form-input" name="description" rows="2">${escapeHtml(p.description ?? '')}</textarea>
             </div>
             <div class="form-group admin-form-grid__full">
-              <label class="form-label">Imagem</label>
+              <label class="form-label">${t('common.image')}</label>
               <div class="admin-image-field">
                 <div data-preview-product="${p.id}">${imagePreviewBlock(p.image, p.name, 'square')}</div>
                 ${productImageLimitHintHtml(store, products, p)}
@@ -486,12 +489,12 @@ function renderProductTableRows(products, categories, store) {
               </div>
             </div>
             <div class="form-group admin-form-grid__full" data-price-history-panel="${p.id}">
-              <label class="form-label">Histórico de preços</label>
-              <p class="form-hint">Carregando histórico...</p>
+              <label class="form-label">${t('labels.priceHistory')}</label>
+              <p class="form-hint">${t('merchant.loadingPriceHistory')}</p>
             </div>
             <div class="admin-edit-panel__actions admin-form-grid__full">
-              <button type="submit" class="btn btn-primary btn-sm">Salvar</button>
-              <button type="button" class="btn btn-outline btn-sm" data-cancel-product="${p.id}">Cancelar</button>
+              <button type="submit" class="btn btn-primary btn-sm">${t('labels.save')}</button>
+              <button type="button" class="btn btn-outline btn-sm" data-cancel-product="${p.id}">${t('labels.cancel')}</button>
             </div>
           </form>
         </td>
@@ -511,13 +514,13 @@ function renderOrderRows(orders) {
       <td>${formatDate(o.created_at)}</td>
       <td><strong>${escapeHtml(o.customer_name)}</strong></td>
       <td>${escapeHtml(o.customer_phone)}</td>
-      <td>${escapeHtml(o.payment_method ? getPaymentMethodLabel(o.payment_method) : '—')}</td>
+      <td>${escapeHtml(o.payment_method ? getPaymentMethodLabel(o.payment_method) : t('app.dashPlaceholder'))}</td>
       <td>${formatCurrency(o.total)}</td>
       <td>${orderStatusBadge(o.status)}</td>
       <td style="white-space:nowrap">
         ${o.status === 'sent'
-          ? `<button type="button" class="btn btn-outline btn-sm" data-mark-viewed="${escapeHtml(o.id)}">Marcar como visto</button>`
-          : '—'}
+          ? `<button type="button" class="btn btn-outline btn-sm" data-mark-viewed="${escapeHtml(o.id)}">${t('merchant.markAsViewed')}</button>`
+          : t('app.dashPlaceholder')}
       </td>
     </tr>
   `).join('')
@@ -533,8 +536,8 @@ function renderStoreAdRows(ads) {
         </div>
         <p>${escapeHtml(ad.message)}</p>
         <p class="admin-list-card__meta">
-          Criado em ${formatDate(ad.created_at)}
-          ${ad.expires_at ? ` · Expira em ${formatDate(ad.expires_at)}` : ''}
+          ${t('merchant.adCreatedAt', { date: formatDate(ad.created_at) })}
+          ${ad.expires_at ? t('merchant.adExpiresAt', { date: formatDate(ad.expires_at) }) : ''}
         </p>
       </div>
       ${ad.image_url ? `<div class="admin-table-thumb" style="width:3rem;height:3rem;flex-shrink:0"><img src="${escapeHtml(ad.image_url)}" alt="" /></div>` : ''}
@@ -548,36 +551,36 @@ function merchantBrandingSection(store) {
 
   return `
     <section class="merchant-branding">
-      <h2 class="merchant-branding__title">Imagem da loja</h2>
+      <h2 class="merchant-branding__title">${t('merchant.storeImage')}</h2>
       <div class="form-group">
-        <label class="form-label">Logo da loja (foto de perfil)</label>
+        <label class="form-label">${t('merchant.storeLogo')}</label>
         <p style="font-size:0.8125rem;color:var(--text-secondary);margin-bottom:0.5rem">${STORE_LOGO_UPLOAD_HINT}</p>
         <div class="admin-image-field">
           <div data-preview-logo>${imagePreviewBlock(store.logo, store.name, 'square')}</div>
           <input class="form-input" type="file" name="logo" accept="image/*" />
         </div>
-        ${store.logo ? '<label class="admin-check"><input type="checkbox" name="remove_logo" /> Remover logo atual</label>' : ''}
+        ${store.logo ? `<label class="admin-check"><input type="checkbox" name="remove_logo" /> ${t('merchant.removeLogo')}</label>` : ''}
       </div>
       ${canBanner ? `
         <div class="form-group">
-          <label class="form-label">Banner da loja</label>
+          <label class="form-label">${t('merchant.storeBanner')}</label>
           <p style="font-size:0.8125rem;color:var(--text-secondary);margin-bottom:0.5rem">${STORE_BANNER_UPLOAD_HINT}</p>
           <div class="admin-image-field">
             <div data-preview-banner>${imagePreviewBlock(store.banner, store.name, 'banner')}</div>
             <input class="form-input" type="file" name="banner" accept="image/*" />
           </div>
-          ${store.banner ? '<label class="admin-check"><input type="checkbox" name="remove_banner" /> Remover banner atual</label>' : ''}
+          ${store.banner ? `<label class="admin-check"><input type="checkbox" name="remove_banner" /> ${t('merchant.removeBanner')}</label>` : ''}
         </div>
       ` : `
         <div class="merchant-branding merchant-branding--locked" style="margin-top:0.5rem">
-          <h3 class="merchant-branding__title" style="font-size:1rem">Banner da loja</h3>
+          <h3 class="merchant-branding__title" style="font-size:1rem">${t('merchant.storeBanner')}</h3>
           <p class="form-hint form-hint--info">${escapeHtml(FREE_PLAN_BANNER_MESSAGE)}</p>
           <p style="margin-top:0.75rem;font-size:0.875rem">
-            <a href="${merchantHref('planos')}">Ver planos e fazer upgrade</a>
+            <a href="${merchantHref('planos')}">${t('merchant.viewPlansUpgrade')}</a>
           </p>
           ${store.banner ? `
             <div class="merchant-branding__readonly" style="margin-top:1rem">
-              <p style="font-size:0.8125rem;color:var(--text-secondary);margin-bottom:0.5rem">Banner atual (somente leitura no plano Gratuito):</p>
+              <p style="font-size:0.8125rem;color:var(--text-secondary);margin-bottom:0.5rem">${t('merchant.bannerReadonlyHint')}</p>
               <div>${imagePreviewBlock(store.banner, store.name, 'banner')}</div>
             </div>
           ` : ''}
@@ -591,8 +594,10 @@ async function renderMerchantPlansPanel(store) {
   const pendingRequest = await fetchStorePendingPlanChangeRequest(store.id)
   const pendingBanner = pendingRequest
     ? `<div class="alert alert-info" style="margin-bottom:1rem">
-        Pedido de mudança para <strong>${escapeHtml(getPlanById(pendingRequest.requested_plan_id).name)}</strong>
-        aguardando aprovação desde ${formatDate(pendingRequest.created_at)}.
+        ${t('merchant.planChangePending', {
+          planName: escapeHtml(getPlanById(pendingRequest.requested_plan_id).name),
+          date: formatDate(pendingRequest.created_at),
+        })}
       </div>`
     : ''
 
@@ -600,22 +605,22 @@ async function renderMerchantPlansPanel(store) {
     ${pendingBanner}
     <div class="merchant-plans-current">
       <div>
-        <p class="merchant-plans-current__eyebrow">Plano ativo</p>
+        <p class="merchant-plans-current__eyebrow">${t('merchant.activePlan')}</p>
         <h2>${escapeHtml(plan.name)} · ${escapeHtml(formatPlanPrice(plan.priceMonthly))}</h2>
-        <p class="form-hint">Loja: ${escapeHtml(store.name)}</p>
+        <p class="form-hint">${t('merchant.storeLabel', { name: escapeHtml(store.name) })}</p>
       </div>
-      ${store.status === 'approved' ? `<span class="badge badge-approved">Loja aprovada</span>` : storeStatusBadge(store.status)}
+      ${store.status === 'approved' ? `<span class="badge badge-approved">${t('merchant.storeApprovedBadge')}</span>` : storeStatusBadge(store.status)}
     </div>
     <div class="plan-grid">${renderSubscriptionPlanCards({ currentPlanId: store.plan_id, requestMode: true })}</div>
     <div class="plan-payment-info">
-      <p><strong>Como assinar ou renovar:</strong></p>
+      <p><strong>${t('merchant.howToSubscribe')}</strong></p>
       <ol>
-        <li>Realize o pagamento do plano escolhido.</li>
-        <li>Clique em <strong>Solicitar</strong> no card do plano para enviar o pedido ao administrador.</li>
-        <li>Use o botão do WhatsApp para enviar o comprovante com o nome da loja e o email cadastrado.</li>
-        <li>Após aprovação, o plano é ativado automaticamente na sua conta.</li>
+        <li>${t('merchant.subscribeStep1')}</li>
+        <li>${t('merchant.subscribeStep2')}</li>
+        <li>${t('merchant.subscribeStep3')}</li>
+        <li>${t('merchant.subscribeStep4')}</li>
       </ol>
-      <p class="form-hint">Dúvidas sobre limites? <a href="${routeHref('/conta/entrar?sec=regras')}">Leia as regras</a> ou <a href="${merchantHref('planos')}">gerencie seu plano</a>.</p>
+      <p class="form-hint">${t('merchant.planLimitsQuestion')} <a href="${routeHref('/conta/entrar?sec=regras')}">${t('merchant.readRules')}</a> ${t('common.or')} <a href="${merchantHref('planos')}">${t('merchant.manageYourPlan')}</a>.</p>
     </div>`
 }
 
@@ -624,15 +629,17 @@ function bindPlanRequestActions(main, store) {
     btn.addEventListener('click', async () => {
       const planId = btn.dataset.requestPlan
       const plan = getPlanById(planId)
-      const actionLabel = planId === store.plan_id ? 'renovação' : `upgrade para ${plan.name}`
-      if (!confirm(`Enviar pedido de ${actionLabel}?`)) return
+      const actionLabel = planId === store.plan_id
+        ? t('merchant.planRenewal')
+        : t('merchant.planUpgradeTo', { planName: plan.name })
+      if (!confirm(t('merchant.confirmPlanRequest', { action: actionLabel }))) return
 
       const originalText = btn.textContent
       btn.disabled = true
-      btn.textContent = 'Enviando...'
+      btn.textContent = t('common.sending')
       try {
         await createPlanChangeRequest(store.id, planId)
-        showToast('Pedido enviado! Aguarde aprovação do administrador.')
+        showToast(t('merchant.planRequestSent'))
         renderMerchantDashboard(main, 'plans')
       } catch (err) {
         showToast(err.message)
@@ -655,13 +662,13 @@ function renderSettingsPreviewCard(store, plan) {
       <h3 data-preview-name>${escapeHtml(store.name)}</h3>
       <p>${escapeHtml(store.city ?? '')}${store.state ? ` · ${escapeHtml(store.state)}` : ''}</p>
       <div style="margin-top:0.75rem">${storeStatusBadge(store.status)}</div>
-      <p class="merchant-store-card__plan">Plano ${escapeHtml(plan.name)} · ${formatPlanPrice(plan.priceMonthly)}</p>
-      ${store.status === 'approved' ? `<a href="${routeHref(`/loja/${store.slug}`)}" class="btn btn-outline btn-sm" style="margin-top:0.75rem">Ver vitrine</a>` : ''}
+      <p class="merchant-store-card__plan">${t('merchant.planSummary', { planName: escapeHtml(plan.name), price: formatPlanPrice(plan.priceMonthly) })}</p>
+      ${store.status === 'approved' ? `<a href="${routeHref(`/loja/${store.slug}`)}" class="btn btn-outline btn-sm" style="margin-top:0.75rem">${t('merchant.viewStorefront')}</a>` : ''}
       <a
         href="${merchantHref('planos')}"
         class="btn btn-green btn-sm"
         style="margin-top:0.75rem;display:block;text-align:center"
-      >${plan.id === 'premium' ? 'Ver planos' : 'Assinar ou fazer upgrade'}</a>
+      >${plan.id === 'premium' ? t('common.viewPlans') : t('merchant.subscribeOrUpgrade')}</a>
     </div>`
 }
 
@@ -709,12 +716,21 @@ function updateMerchantOrdersSortButton(main, _sortField, sortDirection) {
   if (icon) icon.textContent = sortDirection === 'asc' ? '↑' : '↓'
   button.setAttribute(
     'aria-label',
-    sortDirection === 'asc' ? 'Ordenar por data, mais antigos primeiro' : 'Ordenar por data, mais recentes primeiro',
+    sortDirection === 'asc' ? t('common.sortByDateOldest') : t('common.sortByDateRecent'),
   )
 }
 
 function ordersToCsv(orders) {
-  const headers = ['Data', 'Cliente', 'Telefone', 'Endereço', 'Pagamento', 'Total (R$)', 'Status', 'ID']
+  const headers = [
+    t('common.date'),
+    t('common.customer'),
+    t('labels.phone'),
+    t('labels.address'),
+    t('common.payment'),
+    t('common.totalWithCurrency'),
+    t('labels.status'),
+    t('common.id'),
+  ]
   const rows = orders.map((o) => [
     formatDateTimeCsv(o.created_at),
     o.customer_name,
@@ -722,7 +738,7 @@ function ordersToCsv(orders) {
     o.customer_address ?? '',
     o.payment_method ? getPaymentMethodLabel(o.payment_method) : '',
     Number(o.total).toFixed(2),
-    ORDER_STATUS_LABELS[o.status] ?? o.status,
+    orderStatusLabel(o.status),
     o.id,
   ])
   return buildCsv(headers, rows)
@@ -740,13 +756,13 @@ function exportOrdersCsv(main, orders) {
       .filter(Boolean)
 
     if (toExport.length === 0) {
-      showToast('Nenhum pedido para exportar')
+      showToast(t('merchant.noOrdersExport'))
       return
     }
 
     const date = new Date().toISOString().slice(0, 10)
     downloadTextFile(`pedidos-loja-${date}.csv`, ordersToCsv(toExport))
-    showToast(`${toExport.length} pedido(s) exportado(s)`)
+    showToast(t('merchant.ordersExported', { count: toExport.length }))
   })
 }
 
@@ -767,16 +783,16 @@ function bindProductEdits(main, store) {
       const historyPanel = main.querySelector(`[data-price-history-panel="${id}"]`)
       if (historyPanel) {
         historyPanel.innerHTML = `
-          <label class="form-label">Histórico de preços</label>
-          <p class="form-hint">Carregando histórico...</p>`
+          <label class="form-label">${t('labels.priceHistory')}</label>
+          <p class="form-hint">${t('merchant.loadingPriceHistory')}</p>`
         try {
           const history = await fetchProductPriceHistory(id)
           historyPanel.innerHTML = `
-            <label class="form-label">Histórico de preços</label>
+            <label class="form-label">${t('labels.priceHistory')}</label>
             ${renderPriceHistoryHtml(history)}`
         } catch (err) {
           historyPanel.innerHTML = `
-            <label class="form-label">Histórico de preços</label>
+            <label class="form-label">${t('labels.priceHistory')}</label>
             <p class="form-hint form-hint--info">${escapeHtml(err.message)}</p>`
         }
       }
@@ -800,7 +816,7 @@ function bindProductEdits(main, store) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault()
       const submitBtn = form.querySelector('button[type="submit"]')
-      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Salvando...' }
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('common.saving') }
       try {
         const imageFile = imageInput?.files?.[0]
         if (imageFile) {
@@ -823,16 +839,16 @@ function bindProductEdits(main, store) {
       } catch (err) {
         showToast(err.message)
       } finally {
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Salvar' }
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = t('labels.save') }
       }
     })
   })
 
   main.querySelectorAll('[data-del-product]').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      if (!confirm('Excluir este produto?')) return
+      if (!confirm(t('merchant.confirmDeleteProduct'))) return
       await deleteProduct(btn.dataset.delProduct)
-      showToast('Produto excluído')
+      showToast(t('merchant.productDeleted'))
       renderMerchantDashboard(main, 'products')
     })
   })
@@ -850,7 +866,7 @@ function bindProductForm(main, store) {
     e.preventDefault()
     const f = e.target
     const submitBtn = f.querySelector('button[type="submit"]')
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Salvando...' }
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('common.saving') }
     try {
       const imageFile = f.image?.files?.[0]
       if (imageFile) {
@@ -868,12 +884,12 @@ function bindProductForm(main, store) {
         active: true,
         image: imageFile,
       })
-      showToast('Item cadastrado!')
+      showToast(t('merchant.itemRegistered'))
       renderMerchantDashboard(main, 'products')
     } catch (err) {
       main.querySelector('#product-msg').innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
     } finally {
-      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Salvar produto' }
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = t('merchant.saveProduct') }
     }
   })
 }
@@ -915,11 +931,11 @@ function bindSettingsForm(main, store) {
     e.preventDefault()
     const f = e.target
     const submitBtn = f.querySelector('button[type="submit"]')
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Salvando...' }
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('common.saving') }
     try {
       const paymentMethods = [...f.querySelectorAll('input[name="payment_methods"]:checked')].map((el) => el.value)
       if (paymentMethods.length === 0) {
-        throw new Error('Selecione pelo menos uma forma de pagamento.')
+        throw new Error(t('merchant.selectPaymentMethod'))
       }
 
       const { validateInstagramHandle } = await import('../utils.js')
@@ -956,7 +972,7 @@ function bindSettingsForm(main, store) {
     } catch (err) {
       main.querySelector('#settings-msg').innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
     } finally {
-      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Salvar alterações' }
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = t('merchant.saveChanges') }
     }
   })
 }
@@ -970,7 +986,7 @@ function bindAdForm(main, store) {
     const f = e.target
     const msgEl = main.querySelector('#ad-msg')
     const submitBtn = f.querySelector('button[type="submit"]')
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Enviando...' }
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('common.sending') }
     try {
       const imageFile = f.image?.files?.[0]
       if (imageFile) {
@@ -982,12 +998,12 @@ function bindAdForm(main, store) {
         message: f.message.value,
         image: imageFile,
       })
-      showToast('Anúncio enviado para aprovação!')
+      showToast(t('merchant.adSentForApproval'))
       renderMerchantDashboard(main, 'ads')
     } catch (err) {
       msgEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
     } finally {
-      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Criar anúncio' }
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = t('merchant.createAd') }
     }
   })
 }
@@ -1001,22 +1017,22 @@ function bindPasswordForm(main) {
     const confirm = form.confirm.value
 
     if (password !== confirm) {
-      msgEl.innerHTML = '<div class="alert alert-error">As senhas não coincidem.</div>'
+      msgEl.innerHTML = `<div class="alert alert-error">${t('merchant.passwordsMismatch')}</div>`
       return
     }
 
     const submitBtn = form.querySelector('button[type="submit"]')
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Salvando...' }
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('common.saving') }
 
     try {
       await updatePassword(password)
       form.reset()
-      msgEl.innerHTML = '<div class="alert alert-success">Senha alterada com sucesso.</div>'
-      showToast('Senha atualizada!')
+      msgEl.innerHTML = `<div class="alert alert-success">${t('merchant.passwordChangedSuccess')}</div>`
+      showToast(t('customer.passwordUpdated'))
     } catch (err) {
       msgEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
     } finally {
-      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Alterar senha' }
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = t('merchant.changePassword') }
     }
   })
 }
@@ -1030,7 +1046,7 @@ function bindMarkViewedActions(main, store) {
         const count = await countUnreadMerchantOrders(store.id)
         setMerchantNewOrdersCount(count)
         refreshHeader()
-        showToast('Pedido marcado como visualizado')
+        showToast(t('merchant.orderMarkedViewed'))
         renderMerchantDashboard(main, 'orders')
       } catch (err) {
         showToast(err.message)
@@ -1049,7 +1065,7 @@ function buildOrdersSubscription(store, tab, main) {
     const count = await countUnreadMerchantOrders(store.id)
     setMerchantNewOrdersCount(count)
     refreshHeader()
-    showToast('Novo pedido recebido!')
+    showToast(t('merchant.newOrderReceived'))
     renderMerchantDashboard(main, tab)
   })
 }
@@ -1061,9 +1077,9 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
   const store = await fetchStoreByOwner(user.id)
   if (!store) {
     main.innerHTML = merchantPage(
-      'Sua loja',
-      'Cadastre sua loja para começar a vender',
-      merchantEmptyState('🏪', t('merchant.noStoreRegistered'), 'Complete o cadastro para acessar o painel.', `<a href="${routeHref('/lojista/cadastro')}" class="btn btn-primary btn-sm">${t('auth.registerMyStore')}</a>`),
+      t('merchant.yourStore'),
+      t('merchant.registerStoreSubtitle'),
+      merchantEmptyState('🏪', t('merchant.noStoreRegistered'), t('merchant.completeRegistrationHint'), `<a href="${routeHref('/lojista/cadastro')}" class="btn btn-primary btn-sm">${t('auth.registerMyStore')}</a>`),
     )
     return
   }
@@ -1099,8 +1115,8 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
         ${renderLowStockAlert(products)}
         <section class="admin-section">
           <div class="admin-section__head">
-            <h2>Pedidos recentes</h2>
-            <a href="${merchantHref('pedidos')}" class="btn btn-outline btn-sm">Ver todos</a>
+            <h2>${t('merchant.recentOrders')}</h2>
+            <a href="${merchantHref('pedidos')}" class="btn btn-outline btn-sm">${t('common.viewAll')}</a>
           </div>
           ${renderRecentOrders(orders)}
         </section>
@@ -1122,53 +1138,55 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
     const canCreate = canCreateProduct(store.plan_id, products.length)
     const imageLimitHint = canAddImage
       ? `<p class="form-hint">${escapeHtml(formatProductImageLimitHint(store.plan_id, withImages))}</p>`
-      : `<p class="form-hint form-hint--info">${escapeHtml(planProductImageLimitMessage(store.plan_id))} <a href="${merchantHref('planos')}">Ver planos</a></p>`
+      : `<p class="form-hint form-hint--info">${escapeHtml(planProductImageLimitMessage(store.plan_id))} <a href="${merchantHref('planos')}">${t('merchant.viewPlansLink')}</a></p>`
     const productLimitHint = canCreate
       ? `<p class="form-hint">${escapeHtml(formatProductLimitHint(store.plan_id, products.length))}</p>`
-      : `<p class="form-hint form-hint--info">${escapeHtml(planProductLimitMessage(store.plan_id))} <a href="${merchantHref('planos')}">Ver planos</a></p>`
+      : `<p class="form-hint form-hint--info">${escapeHtml(planProductLimitMessage(store.plan_id))} <a href="${merchantHref('planos')}">${t('merchant.viewPlansLink')}</a></p>`
 
     main.innerHTML = merchantPage(
       menuItem.label,
-      `${products.length} item${products.length === 1 ? '' : 's'} no catálogo`,
+      products.length === 1
+        ? t('merchant.catalogItemCount', { count: products.length })
+        : t('merchant.catalogItemsCount', { count: products.length }),
       `
         <div id="product-msg"></div>
         ${canCreate ? `
         <details class="admin-form-panel" open>
-          <summary>Novo item do catálogo</summary>
+          <summary>${t('merchant.newCatalogItem')}</summary>
           ${productLimitHint}
           <form id="product-form" class="admin-form-grid" style="margin-top:1rem">
             ${catalogItemTypeFieldHtml('product')}
             <div class="form-group admin-form-grid__full">
-              <label class="form-label">Nome</label>
-              <input class="form-input" name="name" placeholder="Nome do produto ou serviço" required />
+              <label class="form-label">${t('labels.name')}</label>
+              <input class="form-input" name="name" placeholder="${t('merchant.productNamePlaceholder')}" required />
             </div>
             <div class="form-group admin-form-grid__full">
-              <label class="form-label">Descrição</label>
-              <textarea class="form-input" name="description" placeholder="Descrição" rows="2"></textarea>
+              <label class="form-label">${t('labels.description')}</label>
+              <textarea class="form-input" name="description" placeholder="${t('merchant.descriptionPlaceholder')}" rows="2"></textarea>
             </div>
             <div class="form-group">
-              <label class="form-label">Preço (R$)</label>
+              <label class="form-label">${t('common.priceWithCurrency')}</label>
               <input class="form-input" name="price" type="number" step="0.01" min="0" required />
             </div>
             ${catalogStockFieldHtml(0, 'product')}
             <div class="form-group admin-form-grid__full">
-              <label class="form-label">Categoria</label>
+              <label class="form-label">${t('labels.category')}</label>
               <select class="form-input" name="category_id">
-                <option value="">Sem categoria</option>
+                <option value="">${t('common.noCategory')}</option>
                 ${categories.map((c) => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
               </select>
             </div>
             <div class="form-group admin-form-grid__full">
-              <label class="form-label">Imagem</label>
+              <label class="form-label">${t('common.image')}</label>
               <div class="admin-image-field">
-                <div data-preview-product-create>${imagePreviewBlock(null, 'Novo produto', 'square')}</div>
+                <div data-preview-product-create>${imagePreviewBlock(null, t('merchant.newProductPreview'), 'square')}</div>
                 ${imageLimitHint}
                 <input class="form-input" type="file" name="image" accept="image/*" ${canAddImage ? '' : 'disabled'} />
                 ${canAddImage ? `<small class="form-hint">${PRODUCT_IMAGE_UPLOAD_HINT}</small>` : ''}
               </div>
             </div>
             <div class="admin-form-grid__full">
-              <button type="submit" class="btn btn-primary btn-sm">Salvar item</button>
+              <button type="submit" class="btn btn-primary btn-sm">${t('merchant.saveItem')}</button>
             </div>
           </form>
         </details>
@@ -1179,45 +1197,45 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
 
         <section class="admin-section">
           <div class="admin-section__head">
-            <h2>Catálogo</h2>
-            <span class="admin-stat-chip admin-stat-chip--sent">${products.filter((p) => p.active).length} ativos</span>
+            <h2>${t('merchant.catalog')}</h2>
+            <span class="admin-stat-chip admin-stat-chip--sent">${t('merchant.activeItemsCount', { count: products.filter((p) => p.active).length })}</span>
           </div>
           ${products.length === 0
-            ? merchantEmptyState('📦', 'Catálogo vazio', 'Cadastre seu primeiro produto ou serviço usando o formulário acima.')
+            ? merchantEmptyState('📦', t('merchant.emptyCatalogTitle'), t('merchant.emptyCatalogBody'))
             : `
               <div class="admin-filter-bar admin-filter-bar--compact">
-                <input type="search" class="form-input admin-filter-bar__search" id="merchant-products-search" placeholder="Buscar no catálogo..." autocomplete="off" />
+                <input type="search" class="form-input admin-filter-bar__search" id="merchant-products-search" placeholder="${t('merchant.searchCatalog')}" autocomplete="off" />
                 <div class="admin-filter-chips" role="group">
-                  <button type="button" class="admin-filter-chip active" data-filter="all">Todos</button>
-                  <button type="button" class="admin-filter-chip" data-filter="1">Ativos</button>
-                  <button type="button" class="admin-filter-chip" data-filter="0">Inativos</button>
+                  <button type="button" class="admin-filter-chip active" data-filter="all">${t('common.all')}</button>
+                  <button type="button" class="admin-filter-chip" data-filter="1">${t('common.activePlural')}</button>
+                  <button type="button" class="admin-filter-chip" data-filter="0">${t('common.inactivePlural')}</button>
                 </div>
               </div>
               <div class="table-wrap" id="merchant-products-table">
                 <table>
                   <thead><tr>
                     <th class="admin-table-sortable">
-                      <button type="button" class="admin-table-sort active" data-sort-field="name" aria-label="Ordenar por nome">
-                        Item <span class="admin-table-sort__icon" aria-hidden="true">↑</span>
+                      <button type="button" class="admin-table-sort active" data-sort-field="name" aria-label="${t('common.sortByName')}">
+                        ${t('common.item')} <span class="admin-table-sort__icon" aria-hidden="true">↑</span>
                       </button>
                     </th>
                     <th class="admin-table-sortable">
-                      <button type="button" class="admin-table-sort" data-sort-field="price" aria-label="Ordenar por preço">
-                        Preço <span class="admin-table-sort__icon" aria-hidden="true"></span>
+                      <button type="button" class="admin-table-sort" data-sort-field="price" aria-label="${t('common.sortByPrice')}">
+                        ${t('common.price')} <span class="admin-table-sort__icon" aria-hidden="true"></span>
                       </button>
                     </th>
                     <th class="admin-table-sortable">
-                      <button type="button" class="admin-table-sort" data-sort-field="stock" aria-label="Ordenar por estoque">
-                        Estoque <span class="admin-table-sort__icon" aria-hidden="true"></span>
+                      <button type="button" class="admin-table-sort" data-sort-field="stock" aria-label="${t('common.sortByStock')}">
+                        ${t('common.stock')} <span class="admin-table-sort__icon" aria-hidden="true"></span>
                       </button>
                     </th>
-                    <th>Status</th>
+                    <th>${t('labels.status')}</th>
                     <th></th>
                   </tr></thead>
                   <tbody id="merchant-products-tbody">
                     ${renderProductTableRows(products, categories, store)}
                     <tr data-products-empty hidden>
-                      <td colspan="5">${merchantEmptyState('🔍', 'Nenhum resultado', 'Nenhum produto corresponde aos filtros selecionados.')}</td>
+                      <td colspan="5">${merchantEmptyState('🔍', t('common.noResults'), t('merchant.noProductsFilter'))}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1267,48 +1285,50 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
 
     main.innerHTML = merchantPage(
       menuItem.label,
-      `${metrics.totalOrders} pedido${metrics.totalOrders === 1 ? '' : 's'} · ${formatCurrency(revenue)} em volume`,
+      metrics.totalOrders === 1
+        ? t('merchant.ordersVolumeSummary', { count: metrics.totalOrders, revenue: formatCurrency(revenue) })
+        : t('merchant.ordersVolumeSummaryPlural', { count: metrics.totalOrders, revenue: formatCurrency(revenue) }),
       `
         ${metrics.totalOrders > 0 ? `
           <div class="admin-stat-chips" style="margin-bottom:1rem">
-            <span class="admin-stat-chip admin-stat-chip--sent">${metrics.byStatus.sent ?? 0} enviados</span>
-            <span class="admin-stat-chip admin-stat-chip--viewed">${metrics.byStatus.viewed ?? 0} visualizados</span>
-            <span class="admin-stat-chip admin-stat-chip--pending">${metrics.byStatus.pending ?? 0} pendentes</span>
+            <span class="admin-stat-chip admin-stat-chip--sent">${t('merchant.sentOrdersCount', { count: metrics.byStatus.sent ?? 0 })}</span>
+            <span class="admin-stat-chip admin-stat-chip--viewed">${t('merchant.viewedOrdersCount', { count: metrics.byStatus.viewed ?? 0 })}</span>
+            <span class="admin-stat-chip admin-stat-chip--pending">${t('merchant.pendingOrdersCount', { count: metrics.byStatus.pending ?? 0 })}</span>
           </div>` : ''}
         ${orders.length === 0
-          ? merchantEmptyState('🛒', 'Nenhum pedido', 'Os pedidos feitos pelo WhatsApp aparecerão aqui automaticamente.')
+          ? merchantEmptyState('🛒', t('merchant.noOrdersTitle'), t('merchant.noOrdersBody'))
           : `
             <div class="admin-orders-toolbar">
               <div class="admin-filter-bar admin-filter-bar--compact" style="margin:0;flex:1">
-                <input type="search" class="form-input admin-filter-bar__search" id="merchant-orders-search" placeholder="Buscar cliente ou telefone..." autocomplete="off" />
+                <input type="search" class="form-input admin-filter-bar__search" id="merchant-orders-search" placeholder="${t('merchant.searchCustomerPhone')}" autocomplete="off" />
                 <div class="admin-filter-chips" role="group">
-                  <button type="button" class="admin-filter-chip active" data-order-status="all">Todos</button>
-                  <button type="button" class="admin-filter-chip" data-order-status="sent">Enviados</button>
-                  <button type="button" class="admin-filter-chip" data-order-status="viewed">Visualizados</button>
-                  <button type="button" class="admin-filter-chip" data-order-status="pending">Pendentes</button>
+                  <button type="button" class="admin-filter-chip active" data-order-status="all">${t('common.all')}</button>
+                  <button type="button" class="admin-filter-chip" data-order-status="sent">${t('orderStatus.sentPlural')}</button>
+                  <button type="button" class="admin-filter-chip" data-order-status="viewed">${t('orderStatus.viewedPlural')}</button>
+                  <button type="button" class="admin-filter-chip" data-order-status="pending">${t('orderStatus.pendingPlural')}</button>
                 </div>
               </div>
-              <button type="button" class="btn btn-outline btn-sm" id="merchant-orders-export">⬇ Exportar CSV</button>
+              <button type="button" class="btn btn-outline btn-sm" id="merchant-orders-export">${t('common.exportCsv')}</button>
             </div>
             <div class="table-wrap admin-orders-table" style="margin-top:1rem" id="merchant-orders-table">
               <table>
                 <thead><tr>
                   <th class="admin-table-sortable">
-                    <button type="button" class="admin-table-sort active" id="merchant-orders-sort" data-sort-field="date" aria-label="Ordenar por data, mais recentes primeiro">
-                      Data <span class="admin-table-sort__icon" aria-hidden="true">↓</span>
+                    <button type="button" class="admin-table-sort active" id="merchant-orders-sort" data-sort-field="date" aria-label="${t('common.sortByDateRecent')}">
+                      ${t('common.date')} <span class="admin-table-sort__icon" aria-hidden="true">↓</span>
                     </button>
                   </th>
-                  <th>Cliente</th>
-                  <th>Telefone</th>
-                  <th>Pagamento</th>
-                  <th>Total</th>
-                  <th>Status</th>
+                  <th>${t('common.customer')}</th>
+                  <th>${t('labels.phone')}</th>
+                  <th>${t('common.payment')}</th>
+                  <th>${t('common.total')}</th>
+                  <th>${t('labels.status')}</th>
                   <th></th>
                 </tr></thead>
                 <tbody id="merchant-orders-tbody">
                   ${renderOrderRows(orders)}
                   <tr data-orders-empty hidden>
-                    <td colspan="7">${merchantEmptyState('🔍', 'Nenhum resultado', 'Nenhum pedido corresponde aos filtros selecionados.')}</td>
+                    <td colspan="7">${merchantEmptyState('🔍', t('common.noResults'), t('merchant.noOrdersFilter'))}</td>
                   </tr>
                 </tbody>
               </table>
@@ -1316,7 +1336,7 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
             <div id="merchant-orders-pagination-wrap"></div>`}
       `,
       orders.length > 0
-        ? '<span class="admin-export-hint">Exporta todos os pedidos filtrados (todas as páginas)</span>'
+        ? `<span class="admin-export-hint">${t('merchant.exportFilteredHint')}</span>`
         : '',
     )
 
@@ -1352,45 +1372,45 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
 
     main.innerHTML = merchantPage(
       menuItem.label,
-      canCreate ? 'Divulgue sua loja no feed principal' : 'Disponível após aprovação da loja',
+      canCreate ? t('merchant.adsSubtitle') : t('merchant.adsAfterApproval'),
       `
         <div id="ad-msg"></div>
         ${!canCreate ? `
           <div class="alert alert-error" style="margin-bottom:1rem">
-            Sua loja precisa estar aprovada e com assinatura ativa para criar anúncios.
+            ${t('merchant.adsApprovalRequired')}
           </div>` : `
           <details class="admin-form-panel" open>
-            <summary>Novo anúncio</summary>
+            <summary>${t('merchant.newAd')}</summary>
             <form id="ad-form" class="admin-form-grid" style="margin-top:1rem">
               <div class="form-group admin-form-grid__full">
-                <label class="form-label">Título</label>
-                <input class="form-input" name="title" placeholder="Ex: Promoção de fim de semana" minlength="3" maxlength="80" required />
+                <label class="form-label">${t('common.title')}</label>
+                <input class="form-input" name="title" placeholder="${t('merchant.adTitlePlaceholder')}" minlength="3" maxlength="80" required />
               </div>
               <div class="form-group admin-form-grid__full">
-                <label class="form-label">Mensagem</label>
-                <textarea class="form-input" name="message" placeholder="Descreva a oferta ou novidade (10–280 caracteres)" minlength="10" maxlength="280" rows="3" required></textarea>
+                <label class="form-label">${t('common.message')}</label>
+                <textarea class="form-input" name="message" placeholder="${t('merchant.adMessagePlaceholder')}" minlength="10" maxlength="280" rows="3" required></textarea>
               </div>
               <div class="form-group admin-form-grid__full">
-                <label class="form-label">Imagem (opcional)</label>
+                <label class="form-label">${t('merchant.adImageOptional')}</label>
                 <div class="admin-image-field">
-                  <div data-preview-ad-create>${imagePreviewBlock(null, 'Anúncio', 'banner')}</div>
+                  <div data-preview-ad-create>${imagePreviewBlock(null, t('merchant.adPreview'), 'banner')}</div>
                   <input class="form-input" type="file" name="image" accept="image/*" />
                   <small class="form-hint">${PRODUCT_IMAGE_UPLOAD_HINT}</small>
                 </div>
               </div>
               <div class="admin-form-grid__full">
-                <button type="submit" class="btn btn-primary btn-sm">Criar anúncio</button>
+                <button type="submit" class="btn btn-primary btn-sm">${t('merchant.createAd')}</button>
               </div>
             </form>
-            <p class="form-hint" style="margin-top:0.75rem">Anúncios passam por aprovação do admin e ficam ativos por 24h após aprovação.</p>
+            <p class="form-hint" style="margin-top:0.75rem">${t('merchant.adsApprovalNote')}</p>
           </details>`}
         <section class="admin-section">
           <div class="admin-section__head">
-            <h2>Seus anúncios</h2>
-            <span class="admin-stat-chip admin-stat-chip--sent">${ads.length} cadastrado${ads.length === 1 ? '' : 's'}</span>
+            <h2>${t('merchant.yourAds')}</h2>
+            <span class="admin-stat-chip admin-stat-chip--sent">${ads.length === 1 ? t('merchant.adsRegisteredOne', { count: ads.length }) : t('merchant.adsRegisteredMany', { count: ads.length })}</span>
           </div>
           ${ads.length === 0
-            ? merchantEmptyState('📣', 'Nenhum anúncio', canCreate ? 'Crie seu primeiro anúncio usando o formulário acima.' : 'Aguarde a aprovação da loja para começar.')
+            ? merchantEmptyState('📣', t('merchant.noAdsTitle'), canCreate ? t('merchant.createFirstAd') : t('merchant.waitStoreApproval'))
             : `<div style="display:flex;flex-direction:column;gap:0.75rem">${renderStoreAdRows(ads)}</div>`}
         </section>
       `,
@@ -1416,7 +1436,7 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
 
     main.innerHTML = merchantPage(
       menuItem.label,
-      'Dados e aparência da sua loja',
+      t('merchant.settingsSubtitle'),
       `
         <div id="settings-msg"></div>
         <div class="merchant-settings-layout">
@@ -1425,37 +1445,37 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
           </aside>
           <form id="settings-form" class="merchant-settings-form merchant-settings-main">
             <section class="merchant-settings-section">
-              <h2>Informações da loja</h2>
+              <h2>${t('merchant.storeInfo')}</h2>
               <div class="admin-form-grid">
                 <div class="form-group admin-form-grid__full">
-                  <label class="form-label">Nome</label>
+                  <label class="form-label">${t('labels.name')}</label>
                   <input class="form-input" name="name" value="${escapeHtml(store.name)}" required />
                 </div>
                 <div class="form-group">
-                  <label class="form-label">WhatsApp</label>
+                  <label class="form-label">${t('labels.whatsapp')}</label>
                   <input class="form-input" name="whatsapp" value="${escapeHtml(store.whatsapp)}" required />
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Horário</label>
-                  <input class="form-input" name="opening_hours" value="${escapeHtml(store.opening_hours ?? '')}" placeholder="Ex: Seg–Sex 9h–18h" />
+                  <label class="form-label">${t('merchant.openingHours')}</label>
+                  <input class="form-input" name="opening_hours" value="${escapeHtml(store.opening_hours ?? '')}" placeholder="${t('merchant.openingHoursPlaceholder')}" />
                 </div>
                 <div class="form-group admin-form-grid__full">
-                  <label class="form-label">Instagram</label>
-                  <input class="form-input" name="instagram" value="${escapeHtml(store.instagram ?? '')}" placeholder="@minhaloja ou instagram.com/minhaloja" autocomplete="off" />
-                  <p class="form-hint">Opcional — aparece na vitrine pública da sua loja.</p>
+                  <label class="form-label">${t('merchant.instagram')}</label>
+                  <input class="form-input" name="instagram" value="${escapeHtml(store.instagram ?? '')}" placeholder="${t('merchant.instagramPlaceholder')}" autocomplete="off" />
+                  <p class="form-hint">${t('merchant.instagramOptionalHint')}</p>
                 </div>
                 <div class="form-group admin-form-grid__full">
-                  <label class="form-label">Descrição</label>
+                  <label class="form-label">${t('labels.description')}</label>
                   <textarea class="form-input" name="description" rows="3">${escapeHtml(store.description ?? '')}</textarea>
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Categoria</label>
+                  <label class="form-label">${t('labels.category')}</label>
                   <select class="form-input" name="category_id">
                     ${categories.map((c) => `<option value="${c.id}" ${store.category_id === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
                   </select>
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Cor do tema</label>
+                  <label class="form-label">${t('merchant.themeColor')}</label>
                   <select class="form-input" name="theme_color">
                     ${STORE_THEME_COLORS.map((c) => `<option value="${c.id}" ${store.theme_color === c.id ? 'selected' : ''}>${c.id}</option>`).join('')}
                   </select>
@@ -1463,8 +1483,8 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
               </div>
             </section>
             <section class="merchant-settings-section">
-              <h2>Formas de pagamento</h2>
-              <p class="form-hint">Escolha quais opções o cliente vê ao finalizar o pedido no carrinho.</p>
+              <h2>${t('merchant.paymentMethods')}</h2>
+              <p class="form-hint">${t('merchant.paymentMethodsHint')}</p>
               <div class="merchant-payment-toggles" id="merchant-payment-toggles">
                 ${PAYMENT_METHODS.map((method) => {
                   const enabled = normalizeStorePaymentMethods(store.payment_methods).includes(method.id)
@@ -1495,21 +1515,21 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
   if (tab === 'account') {
     main.innerHTML = merchantPage(
       menuItem.label,
-      'Altere sua senha de acesso ao painel',
+      t('merchant.accountSubtitle'),
       `
         <div class="admin-account-card">
-          <p class="admin-account-card__email"><span>Conta</span> ${escapeHtml(user.email)}</p>
+          <p class="admin-account-card__email"><span>${t('common.account')}</span> ${escapeHtml(user.email)}</p>
           <form id="merchant-password-form" class="admin-password-form">
             <div class="form-group">
-              <label class="form-label">Nova senha</label>
+              <label class="form-label">${t('labels.newPassword')}</label>
               <input class="form-input" type="password" name="password" required minlength="6" autocomplete="new-password" />
             </div>
             <div class="form-group">
-              <label class="form-label">Confirmar nova senha</label>
+              <label class="form-label">${t('labels.confirmNewPassword')}</label>
               <input class="form-input" type="password" name="confirm" required minlength="6" autocomplete="new-password" />
             </div>
             <div id="merchant-password-msg"></div>
-            <button type="submit" class="btn btn-primary btn-sm">Alterar senha</button>
+            <button type="submit" class="btn btn-primary btn-sm">${t('merchant.changePassword')}</button>
           </form>
         </div>
       `,

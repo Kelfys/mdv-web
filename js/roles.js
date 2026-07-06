@@ -2,6 +2,7 @@
  * Papéis e permissões do painel da plataforma.
  * Hierarquia: admin > moderador > lojista > cliente
  */
+import { t } from './strings.js'
 
 export const ROLES = {
   CUSTOMER: 'customer',
@@ -42,8 +43,8 @@ export function canApprovePlanChanges(user) {
 export const MODERATOR_PERMISSIONS = [
   {
     id: 'can_approve_plan_changes',
-    label: 'Aprovar mudanças de plano',
-    description: 'Analisa pedidos de upgrade ou downgrade de plano das lojas do bairro atribuído.',
+    get label() { return t('moderator.approvePlanChanges') },
+    get description() { return t('moderator.approvePlanChangesDesc') },
   },
 ]
 

@@ -1,4 +1,5 @@
 import { renderSubscriptionPlanCards } from './plans.js'
+import { t } from './strings.js'
 
 /** Painel de regras e planos nas páginas Entrar e Criar conta (colapsável). */
 export function renderRulesAndPlansContent() {
@@ -6,50 +7,50 @@ export function renderRulesAndPlansContent() {
 
   return `
     <div class="auth-info-panel">
-      <h2 class="auth-info-panel__title" id="regras">Regras da Plataforma</h2>
+      <h2 class="auth-info-panel__title" id="regras">${t('rules.title')}</h2>
 
       <section class="rules-section">
-        <h3>1. Sobre o MaredeVendas</h3>
-        <p>Marketplace local que conecta clientes a lojas da região. Pedidos são finalizados via WhatsApp — não há pagamento in-app.</p>
+        <h3>${t('rules.section1Title')}</h3>
+        <p>${t('rules.section1Body')}</p>
       </section>
 
       <section class="rules-section">
-        <h3>2. Clientes</h3>
+        <h3>${t('rules.section2Title')}</h3>
         <ul>
-          <li>Não é obrigatório criar conta para comprar.</li>
-          <li>Conta gratuita permite favoritar lojas e pré-preencher dados no checkout.</li>
-          <li>Combine entrega e pagamento diretamente com a loja no WhatsApp.</li>
+          <li>${t('rules.section2Item1')}</li>
+          <li>${t('rules.section2Item2')}</li>
+          <li>${t('rules.section2Item3')}</li>
         </ul>
       </section>
 
       <section class="rules-section">
-        <h3>3. Lojistas</h3>
+        <h3>${t('rules.section3Title')}</h3>
         <ul>
-          <li>Cadastro sujeito à aprovação do administrador.</li>
-          <li>Informações da loja devem ser verdadeiras e atualizadas.</li>
-          <li>Produtos com preço e estoque corretos.</li>
-          <li>WhatsApp deve estar ativo para receber pedidos.</li>
+          <li>${t('rules.section3Item1')}</li>
+          <li>${t('rules.section3Item2')}</li>
+          <li>${t('rules.section3Item3')}</li>
+          <li>${t('rules.section3Item4')}</li>
         </ul>
       </section>
 
       <section class="rules-section" id="planos">
-        <h3>4. Planos para lojistas</h3>
-        <p>Escolha o plano que melhor se encaixa no tamanho da sua loja. O plano <strong>Gratuito</strong> é ativado após aprovação do cadastro. Para planos pagos, solicite a mudança no painel da loja após o login.</p>
+        <h3>${t('rules.section4Title')}</h3>
+        <p>${t('rules.section4Body')}</p>
         <div class="plan-grid">${planCards}</div>
         <div class="plan-payment-info">
-          <p><strong>Como assinar um plano pago:</strong></p>
+          <p><strong>${t('rules.section4HowToTitle')}</strong></p>
           <ol>
-            <li>Entre no painel da loja em <strong>Planos</strong>.</li>
-            <li>Realize o pagamento do valor mensal do plano escolhido.</li>
-            <li>Solicite o plano e envie o comprovante pelo WhatsApp.</li>
-            <li>Após confirmação, seu plano será ativado pelo administrador.</li>
+            <li>${t('rules.section4Step1')}</li>
+            <li>${t('rules.section4Step2')}</li>
+            <li>${t('rules.section4Step3')}</li>
+            <li>${t('rules.section4Step4')}</li>
           </ol>
         </div>
       </section>
 
       <section class="rules-section">
-        <h3>5. Conduta</h3>
-        <p>Conteúdo ilegal, discriminatório ou enganoso será removido. Lojas podem ser bloqueadas em caso de violação.</p>
+        <h3>${t('rules.section5Title')}</h3>
+        <p>${t('rules.section5Body')}</p>
       </section>
     </div>`
 }

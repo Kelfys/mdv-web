@@ -1,9 +1,11 @@
 /**
  * Tipos de item do catálogo (produto físico ou serviço).
  */
+import { t } from './strings.js'
+
 export const CATALOG_ITEM_TYPES = [
-  { id: 'product', label: 'Produto', icon: '📦' },
-  { id: 'service', label: 'Serviço', icon: '🛠️' },
+  { id: 'product', get label() { return t('catalog.product') }, icon: '📦' },
+  { id: 'service', get label() { return t('catalog.service') }, icon: '🛠️' },
 ]
 
 export function normalizeItemType(itemType) {
@@ -15,7 +17,7 @@ export function isService(item) {
 }
 
 export function getCatalogItemType(item) {
-  return CATALOG_ITEM_TYPES.find((t) => t.id === normalizeItemType(item?.item_type)) ?? CATALOG_ITEM_TYPES[0]
+  return CATALOG_ITEM_TYPES.find((type) => type.id === normalizeItemType(item?.item_type)) ?? CATALOG_ITEM_TYPES[0]
 }
 
 export function getCatalogItemLabel(item) {
@@ -34,7 +36,7 @@ export function isCatalogItemAvailable(item) {
 }
 
 export function catalogItemStockLabel(item) {
-  if (isService(item)) return 'Sob consulta'
+  if (isService(item)) return t('catalog.onRequest')
   return String(item.stock ?? 0)
 }
 
@@ -47,7 +49,7 @@ export function catalogItemTypeOptionsHtml(selected = 'product') {
 export function catalogItemTypeFieldHtml(selected = 'product') {
   return `
     <div class="form-group">
-      <label class="form-label">Tipo</label>
+      <label class="form-label">${t('catalog.type')}</label>
       <select class="form-input" name="item_type">${catalogItemTypeOptionsHtml(selected)}</select>
     </div>`
 }
@@ -56,7 +58,7 @@ export function catalogStockFieldHtml(value = 0, itemType = 'product') {
   const isSvc = normalizeItemType(itemType) === 'service'
   return `
     <div class="form-group" data-stock-field ${isSvc ? 'hidden' : ''}>
-      <label class="form-label">Estoque</label>
+      <label class="form-label">${t('catalog.stock')}</label>
       <input class="form-input" name="stock" type="number" min="0" value="${isSvc ? '' : value}" ${isSvc ? '' : 'required'} />
     </div>`
 }

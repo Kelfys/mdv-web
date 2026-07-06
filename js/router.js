@@ -2,6 +2,7 @@
  * Roteador SPA — hash (#/rota). 404.html e shells por rota no deploy (GitHub Pages).
  */
 import { APP_BASE_PATH, USE_HISTORY_ROUTER } from './config.js'
+import { t } from './strings.js'
 
 const routes = new Map()
 let currentCleanup = null
@@ -117,7 +118,7 @@ export async function render() {
 
   if (!matched) {
     if (epoch !== renderEpoch) return
-    main.innerHTML = `<div class="empty-state"><h2>Página não encontrada</h2><p><a href="${routeHref('/')}">Voltar ao início</a></p></div>`
+    main.innerHTML = `<div class="empty-state"><h2>${t('router.notFoundTitle')}</h2><p><a href="${routeHref('/')}">${t('router.notFoundBack')}</a></p></div>`
     return
   }
 
