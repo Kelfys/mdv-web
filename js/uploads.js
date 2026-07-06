@@ -19,7 +19,11 @@ const BUCKET_LIMITS = {
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
-export const STORE_BRANDING_UPLOAD_HINT = 'JPG, PNG, WebP ou GIF (planos pagos).'
+/** Hints do painel lojista/admin — logo em todos os planos; banner exige plano pago. */
+export const STORE_LOGO_UPLOAD_HINT = 'JPG, PNG, WebP ou GIF — máx. 2 MB.'
+export const STORE_BANNER_UPLOAD_HINT = 'JPG, PNG, WebP ou GIF — planos pagos, máx. 5 MB.'
+/** @deprecated Use STORE_LOGO_UPLOAD_HINT ou STORE_BANNER_UPLOAD_HINT */
+export const STORE_BRANDING_UPLOAD_HINT = STORE_BANNER_UPLOAD_HINT
 export const PRODUCT_IMAGE_UPLOAD_HINT =
   `JPG, PNG, WebP ou GIF — máx. ${Math.round(PRODUCT_IMAGE_MAX_BYTES / 1024)} KB.`
 

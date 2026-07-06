@@ -20,7 +20,7 @@ import { DEFAULT_THEME_COLOR } from './config.js'
 import { STORAGE_BUCKETS, uploadImage } from './uploads.js'
 import { normalizeItemType } from './catalog.js'
 import {
-  planAllowsStoreBranding, FREE_PLAN_BRANDING_MESSAGE,
+  planAllowsStoreBanner, FREE_PLAN_BANNER_MESSAGE,
   getPlanProductLimit, getPlanProductImageLimit,
   planProductLimitMessage, planProductImageLimitMessage,
   getPriceCooldownRemaining, formatPriceCooldownRemaining, getPlanById,
@@ -76,14 +76,15 @@ async function assertProductImageAllowed(client, storeId, { productHadImage = fa
   }
 }
 
-async function assertStoreBrandingAllowed(client, storeId, planIdOverride) {
+/** Bloqueia upload de banner no plano Gratuito (logo não passa por aqui). */
+async function assertStoreBannerAllowed(client, storeId, planIdOverride) {
   let planId = planIdOverride
   if (!planId) {
     const { data } = await client.from('stores').select('plan_id').eq('id', storeId).single()
     planId = data?.plan_id
   }
-  if (!planAllowsStoreBranding(planId)) {
-    throw new Error(FREE_PLAN_BRANDING_MESSAGE)
+  if (!planAllowsStoreBanner(planId)) {
+    throw new Error(FREE_PLAN_BANNER_MESSAGE)
   }
 }
 
@@ -387,15 +388,15 @@ export async function updateStore(storeId, form) {
     if (form[key] !== undefined) updates[key] = form[key]
   }
 
+  // Logo: todos os planos. Banner: validado em assertStoreBannerAllowed.
   if (form.remove_logo) updates.logo = null
   else if (form.logo instanceof File) {
-    await assertStoreBrandingAllowed(client, storeId)
     updates.logo = await uploadImage(STORAGE_BUCKETS.logos, `${storeId}/logo`, form.logo)
   }
 
   if (form.remove_banner) updates.banner = null
   else if (form.banner instanceof File) {
-    await assertStoreBrandingAllowed(client, storeId)
+    await assertStoreBannerAllowed(client, storeId)
     updates.banner = await uploadImage(STORAGE_BUCKETS.banners, `${storeId}/banner`, form.banner)
   }
 
@@ -415,11 +416,6 @@ export async function updateStoreAsAdmin(storeId, form) {
     if (form[key] !== undefined) updates[key] = form[key]
   }
 
-  const brandingUpload = form.logo instanceof File || form.banner instanceof File
-  if (brandingUpload) {
-    await assertStoreBrandingAllowed(client, storeId, form.plan_id)
-  }
-
   if (form.remove_logo) updates.logo = null
   else if (form.logo instanceof File) {
     updates.logo = await uploadImage(STORAGE_BUCKETS.logos, `${storeId}/logo`, form.logo)
@@ -427,6 +423,7 @@ export async function updateStoreAsAdmin(storeId, form) {
 
   if (form.remove_banner) updates.banner = null
   else if (form.banner instanceof File) {
+    await assertStoreBannerAllowed(client, storeId, form.plan_id)
     updates.banner = await uploadImage(STORAGE_BUCKETS.banners, `${storeId}/banner`, form.banner)
   }
 

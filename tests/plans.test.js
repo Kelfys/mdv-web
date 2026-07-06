@@ -8,6 +8,8 @@ import {
   getPlanProductImageLimit,
   canCreateProduct,
   canAddProductImage,
+  planAllowsStoreLogo,
+  planAllowsStoreBanner,
   renderSubscriptionPlanCards,
 } from '../js/plans.js'
 
@@ -37,6 +39,19 @@ describe('plan price cooldown', () => {
   it('resolves plan by id', () => {
     expect(getPlanById('starter').name).toBe('Starter')
     expect(getPlanById('plus').name).toBe('Plus')
+  })
+})
+
+describe('plan store images', () => {
+  it('allows logo on all plans including free', () => {
+    expect(planAllowsStoreLogo('free')).toBe(true)
+    expect(planAllowsStoreLogo('premium')).toBe(true)
+  })
+
+  it('restricts banner to paid plans', () => {
+    expect(planAllowsStoreBanner('free')).toBe(false)
+    expect(planAllowsStoreBanner('starter')).toBe(true)
+    expect(planAllowsStoreBanner('premium')).toBe(true)
   })
 })
 

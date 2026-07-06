@@ -16,7 +16,7 @@ import {
 } from '../utils.js'
 import { STORE_THEME_COLORS } from '../config.js'
 import {
-  planAllowsStoreBranding, FREE_PLAN_BRANDING_MESSAGE,
+  planAllowsStoreBanner, FREE_PLAN_BANNER_MESSAGE,
   countProductsWithImages, canAddProductImage, canCreateProduct,
   planProductImageLimitMessage, planProductLimitMessage,
   formatProductLimitHint, formatProductImageLimitHint,
@@ -26,7 +26,7 @@ import {
   renderSubscriptionPlanCards,
 } from '../plans.js'
 import {
-  STORE_BRANDING_UPLOAD_HINT, PRODUCT_IMAGE_UPLOAD_HINT,
+  STORE_LOGO_UPLOAD_HINT, STORE_BANNER_UPLOAD_HINT, PRODUCT_IMAGE_UPLOAD_HINT,
   validateImageFile, STORAGE_BUCKETS,
 } from '../uploads.js'
 import { MERCHANT_PANEL, getMerchantMenuItem, merchantHref } from '../merchant-nav.js'
@@ -541,46 +541,47 @@ function renderStoreAdRows(ads) {
   `).join('')
 }
 
+/** Configurações → imagem da loja: logo em qualquer plano; banner só se planAllowsStoreBanner. */
 function merchantBrandingSection(store) {
-  if (!planAllowsStoreBranding(store.plan_id)) {
-    return `
-      <section class="merchant-branding merchant-branding--locked">
-        <h2 class="merchant-branding__title">Logo e banner</h2>
-        <p class="form-hint form-hint--info">${escapeHtml(FREE_PLAN_BRANDING_MESSAGE)}</p>
-        <p style="margin-top:0.75rem;font-size:0.875rem">
-          <a href="${merchantHref('planos')}">Ver planos e fazer upgrade</a>
-        </p>
-        ${store.logo || store.banner ? `
-          <div class="merchant-branding__readonly" style="margin-top:1rem">
-            <p style="font-size:0.8125rem;color:var(--text-secondary);margin-bottom:0.5rem">Imagens atuais (somente leitura no plano Gratuito):</p>
-            <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start">
-              ${store.logo ? `<div>${imagePreviewBlock(store.logo, store.name, 'square')}</div>` : ''}
-              ${store.banner ? `<div style="flex:1;min-width:12rem">${imagePreviewBlock(store.banner, store.name, 'banner')}</div>` : ''}
-            </div>
-          </div>` : ''}
-      </section>`
-  }
+  const canBanner = planAllowsStoreBanner(store.plan_id)
 
   return `
     <section class="merchant-branding">
-      <h2 class="merchant-branding__title">Logo e banner</h2>
-      <p style="font-size:0.8125rem;color:var(--text-secondary);margin-bottom:1rem">${STORE_BRANDING_UPLOAD_HINT}</p>
+      <h2 class="merchant-branding__title">Imagem da loja</h2>
       <div class="form-group">
-        <label class="form-label">Logo da loja</label>
+        <label class="form-label">Logo da loja (foto de perfil)</label>
+        <p style="font-size:0.8125rem;color:var(--text-secondary);margin-bottom:0.5rem">${STORE_LOGO_UPLOAD_HINT}</p>
         <div class="admin-image-field">
           <div data-preview-logo>${imagePreviewBlock(store.logo, store.name, 'square')}</div>
           <input class="form-input" type="file" name="logo" accept="image/*" />
         </div>
         ${store.logo ? '<label class="admin-check"><input type="checkbox" name="remove_logo" /> Remover logo atual</label>' : ''}
       </div>
-      <div class="form-group">
-        <label class="form-label">Banner da loja</label>
-        <div class="admin-image-field">
-          <div data-preview-banner>${imagePreviewBlock(store.banner, store.name, 'banner')}</div>
-          <input class="form-input" type="file" name="banner" accept="image/*" />
+      ${canBanner ? `
+        <div class="form-group">
+          <label class="form-label">Banner da loja</label>
+          <p style="font-size:0.8125rem;color:var(--text-secondary);margin-bottom:0.5rem">${STORE_BANNER_UPLOAD_HINT}</p>
+          <div class="admin-image-field">
+            <div data-preview-banner>${imagePreviewBlock(store.banner, store.name, 'banner')}</div>
+            <input class="form-input" type="file" name="banner" accept="image/*" />
+          </div>
+          ${store.banner ? '<label class="admin-check"><input type="checkbox" name="remove_banner" /> Remover banner atual</label>' : ''}
         </div>
-        ${store.banner ? '<label class="admin-check"><input type="checkbox" name="remove_banner" /> Remover banner atual</label>' : ''}
-      </div>
+      ` : `
+        <div class="merchant-branding merchant-branding--locked" style="margin-top:0.5rem">
+          <h3 class="merchant-branding__title" style="font-size:1rem">Banner da loja</h3>
+          <p class="form-hint form-hint--info">${escapeHtml(FREE_PLAN_BANNER_MESSAGE)}</p>
+          <p style="margin-top:0.75rem;font-size:0.875rem">
+            <a href="${merchantHref('planos')}">Ver planos e fazer upgrade</a>
+          </p>
+          ${store.banner ? `
+            <div class="merchant-branding__readonly" style="margin-top:1rem">
+              <p style="font-size:0.8125rem;color:var(--text-secondary);margin-bottom:0.5rem">Banner atual (somente leitura no plano Gratuito):</p>
+              <div>${imagePreviewBlock(store.banner, store.name, 'banner')}</div>
+            </div>
+          ` : ''}
+        </div>
+      `}
     </section>`
 }
 
@@ -904,8 +905,8 @@ function bindSettingsForm(main, store) {
     })
   })
 
-  if (planAllowsStoreBranding(store.plan_id)) {
-    bindImagePreview(form.querySelector('input[name="logo"]'), form.querySelector('[data-preview-logo]'))
+  bindImagePreview(form.querySelector('input[name="logo"]'), form.querySelector('[data-preview-logo]'))
+  if (planAllowsStoreBanner(store.plan_id)) {
     bindImagePreview(form.querySelector('input[name="banner"]'), form.querySelector('[data-preview-banner]'))
   }
 
@@ -935,18 +936,18 @@ function bindSettingsForm(main, store) {
         payment_methods: paymentMethods,
       }
 
-      if (planAllowsStoreBranding(store.plan_id)) {
-        const logoFile = f.logo?.files?.[0]
-        const bannerFile = f.banner?.files?.[0]
-        if (logoFile) payload.logo = logoFile
+      const logoFile = f.logo?.files?.[0]
+      const bannerFile = f.banner?.files?.[0]
+      if (logoFile) payload.logo = logoFile
+      if (!logoFile && f.remove_logo?.checked) payload.remove_logo = true
+      if (planAllowsStoreBanner(store.plan_id)) {
         if (bannerFile) payload.banner = bannerFile
-        if (!logoFile && f.remove_logo?.checked) payload.remove_logo = true
         if (!bannerFile && f.remove_banner?.checked) payload.remove_banner = true
       }
 
       await updateStore(store.id, payload)
       showToast('Configurações salvas!')
-      if (planAllowsStoreBranding(store.plan_id) && (payload.logo || payload.banner || payload.remove_logo || payload.remove_banner)) {
+      if (payload.logo || payload.banner || payload.remove_logo || payload.remove_banner) {
         renderMerchantDashboard(main, 'settings')
       } else {
         updatePreview()

@@ -16,11 +16,26 @@ function priceCooldownLabel(hours) {
   return `Alteração de preços a cada ${days} dia${days > 1 ? 's' : ''}`
 }
 
-export const FREE_PLAN_BRANDING_MESSAGE =
-  'O plano Gratuito não inclui logo nem banner. Assine um plano pago para personalizar a vitrine.'
+/** Mensagem exibida quando lojista free tenta enviar banner personalizado. */
+export const FREE_PLAN_BANNER_MESSAGE =
+  'O plano Gratuito não inclui banner personalizado. Assine um plano pago para personalizar o banner da vitrine.'
 
-export function planAllowsStoreBranding(planId) {
+/** @deprecated Use FREE_PLAN_BANNER_MESSAGE */
+export const FREE_PLAN_BRANDING_MESSAGE = FREE_PLAN_BANNER_MESSAGE
+
+/** Logo (foto de perfil da loja) — liberado em todos os planos, inclusive Gratuito. */
+export function planAllowsStoreLogo() {
+  return true
+}
+
+/** Banner da vitrine — somente planos pagos (starter, plus, premium). */
+export function planAllowsStoreBanner(planId) {
   return Boolean(planId && planId !== 'free')
+}
+
+/** @deprecated Use planAllowsStoreBanner — banner exige plano pago; logo é liberado em todos os planos */
+export function planAllowsStoreBranding(planId) {
+  return planAllowsStoreBanner(planId)
 }
 
 /** Limites de catálogo por plano (produtos totais e produtos com imagem). */
@@ -103,7 +118,8 @@ export const SUBSCRIPTION_PLANS = [
     features: [
       'Até 6 itens (produtos ou serviços)',
       'Imagens em até 2 produtos (500 KB cada)',
-      'Vitrine com tema padrão (sem logo nem banner)',
+      'Logo da loja (foto de perfil)',
+      'Banner padrão por cor (sem banner personalizado)',
       priceCooldownLabel(24),
       'Ativar ou ocultar produtos à venda',
       'Pedidos via WhatsApp',
@@ -118,7 +134,7 @@ export const SUBSCRIPTION_PLANS = [
     features: [
       'Até 15 itens (produtos ou serviços)',
       'Imagens em até 10 produtos (500 KB cada)',
-      'Logo e banner personalizados',
+      'Banner personalizado da vitrine',
       priceCooldownLabel(12),
       'Destaque visual na página inicial',
       'Ativar ou ocultar produtos à venda',
@@ -133,7 +149,7 @@ export const SUBSCRIPTION_PLANS = [
     features: [
       'Até 30 itens (produtos ou serviços)',
       'Imagens em todos os produtos (500 KB cada)',
-      'Logo e banner personalizados',
+      'Banner personalizado da vitrine',
       priceCooldownLabel(4),
       'Anúncio ampliado na vitrine principal',
       'Prioridade nas buscas',
@@ -148,7 +164,7 @@ export const SUBSCRIPTION_PLANS = [
     features: [
       'Até 80 itens (produtos ou serviços)',
       'Imagens em todos os produtos (500 KB cada)',
-      'Logo e banner personalizados',
+      'Banner personalizado da vitrine',
       priceCooldownLabel(null),
       'Máximo destaque na página inicial',
       'Rotação de prioridade a cada 15 min',

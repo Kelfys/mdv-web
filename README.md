@@ -12,7 +12,7 @@ Marketplace local de lojas — **HTML, CSS e JavaScript vanilla** com backend [S
 |-------|------------------|
 | **Visitante** | Ver feed de lojas e produtos (abas **Para você** e **Anúncios**), buscar, adicionar ao carrinho e pedir pelo WhatsApp |
 | **Cliente** | Dashboard em **Minha conta** (`/favoritos`): favoritos, produtos curtidos, histórico de pedidos e perfil editável; curtir/comentar produtos; checkout com dados pré-preenchidos |
-| **Lojista** | Painel com produtos, pedidos, anúncios e configurações (após aprovação do admin) |
+| **Lojista** | Painel com produtos, pedidos, anúncios e configurações (após aprovação do admin); **logo da loja** em qualquer plano; **banner personalizado** só em planos pagos |
 | **Moderador** | Aprovações, lojas, produtos e pedidos (somente leitura em lojas/produtos) |
 | **Admin** | Métricas, moderação, gestão de lojistas/moderadores e configuração da plataforma |
 
@@ -205,6 +205,17 @@ gh workflow run deploy.yml
 | `/auth/callback` | Retorno OAuth Google / recovery de senha |
 
 > Rotas sempre em hash: `https://kelfys.github.io/MaredeVendas-vanilla/#/conta/entrar`. O `404.html` redireciona rotas diretas para `/#/rota`.
+
+---
+
+## Imagens da loja (por plano)
+
+| Recurso | Gratuito | Starter / Plus / Premium |
+|---------|----------|---------------------------|
+| **Logo** (foto de perfil) | Sim | Sim |
+| **Banner** personalizado | Não (cor/tema padrão) | Sim |
+
+Regras em `js/plans.js` (`planAllowsStoreLogo`, `planAllowsStoreBanner`). Upload validado em `js/api.js`; UI em **Dashboard → Configurações** e no painel admin.
 
 ---
 

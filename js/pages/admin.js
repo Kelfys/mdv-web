@@ -23,14 +23,14 @@ import { STORE_THEME_COLORS } from '../config.js'
 import { STAFF_PANELS, staffHref, getStaffMenuItem } from '../staff-nav.js'
 import { canAccessPanel, isReadOnlyStaffTab, canApprovePlanChanges } from '../roles.js'
 import {
-  planAllowsStoreBranding, FREE_PLAN_BRANDING_MESSAGE,
+  planAllowsStoreBanner, FREE_PLAN_BANNER_MESSAGE,
   countProductsWithImages, canAddProductImage, canCreateProduct,
   planProductImageLimitMessage, planProductLimitMessage,
   formatProductLimitHint, formatProductImageLimitHint,
   getPlanById,
 } from '../plans.js'
 import {
-  PRODUCT_IMAGE_UPLOAD_HINT, STORE_BRANDING_UPLOAD_HINT,
+  PRODUCT_IMAGE_UPLOAD_HINT, STORE_LOGO_UPLOAD_HINT, STORE_BANNER_UPLOAD_HINT,
   validateImageFile, STORAGE_BUCKETS,
 } from '../uploads.js'
 import {
@@ -622,19 +622,13 @@ function bindImagePreview(input, previewEl) {
   })
 }
 
+/** Logo sempre no DOM; banner fica hidden + aviso de upgrade quando plano é free. */
 function storeBrandingFieldsHtml(planId, store = null) {
   const id = store?.id ?? ''
-  const allowed = planAllowsStoreBranding(planId)
-
-  if (!allowed) {
-    return `
-      <div class="form-group admin-form-grid__full" data-branding-locked>
-        <p class="form-hint form-hint--info">${escapeHtml(FREE_PLAN_BRANDING_MESSAGE)}</p>
-      </div>`
-  }
+  const canBanner = planAllowsStoreBanner(planId)
 
   return `
-    <div class="form-group" data-branding-field>
+    <div class="form-group" data-branding-field data-branding-logo>
       <label class="form-label">Logo</label>
       ${store
         ? `<div class="admin-image-field">
@@ -643,9 +637,9 @@ function storeBrandingFieldsHtml(planId, store = null) {
           </div>
           ${store.logo ? `<label class="admin-check"><input type="checkbox" name="remove_logo" /> Remover logo atual</label>` : ''}`
         : `<input class="form-input" type="file" name="logo" accept="image/*" />
-           <small class="form-hint">${STORE_BRANDING_UPLOAD_HINT}</small>`}
+           <small class="form-hint">${STORE_LOGO_UPLOAD_HINT}</small>`}
     </div>
-    <div class="form-group admin-form-grid__full" data-branding-field>
+    <div class="form-group admin-form-grid__full" data-branding-field data-branding-banner ${canBanner ? '' : 'hidden'}>
       <label class="form-label">Banner</label>
       ${store
         ? `<div class="admin-image-field">
@@ -654,7 +648,10 @@ function storeBrandingFieldsHtml(planId, store = null) {
           </div>
           ${store.banner ? `<label class="admin-check"><input type="checkbox" name="remove_banner" /> Remover banner atual</label>` : ''}`
         : `<input class="form-input" type="file" name="banner" accept="image/*" />
-           <small class="form-hint">${STORE_BRANDING_UPLOAD_HINT}</small>`}
+           <small class="form-hint">${STORE_BANNER_UPLOAD_HINT}</small>`}
+    </div>
+    <div class="form-group admin-form-grid__full" data-branding-locked ${canBanner ? 'hidden' : ''}>
+      <p class="form-hint form-hint--info">${escapeHtml(FREE_PLAN_BANNER_MESSAGE)}</p>
     </div>`
 }
 
@@ -899,6 +896,7 @@ function renderStoreProductsPanel({ store, products, categories, readOnly = fals
     </div>`
 }
 
+/** Alterna visibilidade do campo banner ao mudar plan_id no formulário admin. */
 function bindPlanBrandingToggle(scope) {
   scope.querySelectorAll('[data-plan-branding-form]').forEach((form) => {
     const planSelect = form.querySelector('[name="plan_id"]')
@@ -906,16 +904,16 @@ function bindPlanBrandingToggle(scope) {
     if (!planSelect || !brandingWrap) return
 
     const sync = () => {
-      const allowed = planAllowsStoreBranding(planSelect.value)
-      brandingWrap.querySelectorAll('[data-branding-field]').forEach((el) => {
-        el.hidden = !allowed
+      const canBanner = planAllowsStoreBanner(planSelect.value)
+      brandingWrap.querySelectorAll('[data-branding-banner]').forEach((el) => {
+        el.hidden = !canBanner
         el.querySelectorAll('input[type="file"]').forEach((inp) => {
-          inp.disabled = !allowed
-          if (!allowed) inp.value = ''
+          inp.disabled = !canBanner
+          if (!canBanner) inp.value = ''
         })
       })
       const locked = brandingWrap.querySelector('[data-branding-locked]')
-      if (locked) locked.hidden = allowed
+      if (locked) locked.hidden = canBanner
     }
 
     planSelect.addEventListener('change', sync)
@@ -1630,8 +1628,8 @@ function bindStoreForm(main) {
       const logoFile = f.logo?.files?.[0]
       const bannerFile = f.banner?.files?.[0]
       if (logoFile || bannerFile) {
-        if (!planAllowsStoreBranding(f.plan_id.value)) {
-          throw new Error(FREE_PLAN_BRANDING_MESSAGE)
+        if (bannerFile && !planAllowsStoreBanner(f.plan_id.value)) {
+          throw new Error(FREE_PLAN_BANNER_MESSAGE)
         }
         await updateStoreAsAdmin(store.id, {
           plan_id: f.plan_id.value,
