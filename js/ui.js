@@ -1,7 +1,7 @@
 /**
  * Componentes de UI reutilizáveis (renderização imperativa).
  *
- * Header: logo, nav-desktop (Lojas/Regras/Entrar), ações (tema, painel, sair)
+ * Header: logo, nav-desktop (Lojas/Entrar), ações (tema, painel, sair)
  * e nav-mobile (hambúrguer). Entrar fica no menu — não nas ações do header.
  *
  * Também: store-card, feed-product-card, cart-drawer e checkout com pagamentos por loja.
