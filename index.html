@@ -13,13 +13,28 @@
     (function () {
       var match = location.pathname.match(/^(\/[^/]+)/)
       window.__MV_BASE__ = (match && !match[1].includes('.')) ? match[1] + '/' : './'
+
+      function normalizeRoutePath(raw) {
+        if (!raw || raw === '/') return ''
+        var path = raw.charAt(0) === '/' ? raw : '/' + raw
+        return path.split('?')[0].replace(/\/$/, '') || '/'
+      }
+
+      var deepSub = ''
       var hash = location.hash.replace(/^#/, '')
       if (!hash || hash === '/') {
         var deep = location.pathname.match(/^(\/[^/]+)(\/.*)?$/)
-        var sub = deep && deep[2] ? deep[2].replace(/\/$/, '') : ''
-        if (sub && sub !== '/') {
-          history.replaceState(null, '', deep[1] + '/#' + sub + location.search)
+        deepSub = deep && deep[2] ? deep[2].replace(/\/$/, '') : ''
+        if (deepSub && deepSub !== '/') {
+          var target = deep[1] + '/#' + deepSub + location.search
+          history.replaceState(null, '', target)
+          hash = location.hash.replace(/^#/, '') || deepSub
         }
+      }
+
+      var route = normalizeRoutePath(hash || deepSub)
+      if (route && route !== '/') {
+        window.__MV_INITIAL_ROUTE__ = route
       }
     })()
   </script>

@@ -34,5 +34,11 @@ describe('router path helpers', () => {
     window.location.hash = '#/admin/entrar'
     window.location.pathname = '/MaredeVendas-vanilla/'
     expect(getCurrentPath()).toBe('/admin/entrar')
+
+    window.location.hash = ''
+    window.location.href = 'https://example.github.io/MaredeVendas-vanilla/'
+    window.__MV_INITIAL_ROUTE__ = '/admin/entrar'
+    expect(getCurrentPath()).toBe('/admin/entrar')
+    delete window.__MV_INITIAL_ROUTE__
   })
 })

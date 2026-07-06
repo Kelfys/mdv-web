@@ -7,15 +7,29 @@ const routes = new Map()
 let currentCleanup = null
 let renderEpoch = 0
 
+function normalizeRoutePath(raw) {
+  if (!raw || raw === '/') return ''
+  let path = String(raw).split('?')[0].replace(/\/$/, '') || '/'
+  if (!path.startsWith('/')) path = `/${path}`
+  return path === '/' ? '' : path
+}
+
 function readHashPath() {
-  const href = window.location.href ?? ''
-  const hashIdx = href.indexOf('#')
-  if (hashIdx === -1) return ''
-  const raw = href.slice(hashIdx + 1).replace(/^#/, '') || '/'
-  let path = raw.split('?')[0]
-  const anchorIdx = path.indexOf('#', 1)
-  if (anchorIdx !== -1) path = path.slice(0, anchorIdx)
-  return path.startsWith('/') ? path : `/${path}`
+  const fromHash = normalizeRoutePath(window.location.hash?.replace(/^#/, '') ?? '')
+  if (fromHash) return fromHash
+
+  const fromHref = (() => {
+    const href = window.location.href ?? ''
+    const hashIdx = href.indexOf('#')
+    if (hashIdx === -1) return ''
+    return normalizeRoutePath(href.slice(hashIdx + 1))
+  })()
+  if (fromHref) return fromHref
+
+  const initial = normalizeRoutePath(window.__MV_INITIAL_ROUTE__ ?? '')
+  if (initial) return initial
+
+  return ''
 }
 
 export function registerRoute(pattern, handler) {
@@ -138,6 +152,13 @@ function handleLinkClick(event) {
   navigate(link.getAttribute('href').slice(1))
 }
 
+function syncHashFromPath(path) {
+  if (!path || path === '/' || USE_HISTORY_ROUTER) return
+  const want = `#${path}`
+  if (window.location.hash === want) return
+  history.replaceState(null, '', `${window.location.pathname}${window.location.search}${want}`)
+}
+
 export function initRouter() {
   if (USE_HISTORY_ROUTER) {
     window.addEventListener('popstate', render)
@@ -145,5 +166,6 @@ export function initRouter() {
     window.addEventListener('hashchange', render)
   }
   document.addEventListener('click', handleLinkClick)
+  syncHashFromPath(getCurrentPath())
   render()
 }
