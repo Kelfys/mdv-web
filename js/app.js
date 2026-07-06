@@ -8,6 +8,7 @@ import { setTheme, loadUser } from './state.js'
 import { initHeader, initCart } from './ui.js'
 import { registerRoute, initRouter, routeHref, navigate } from './router.js'
 import { getSupabase } from './db.js'
+import { completeOAuthSignup } from './api.js'
 
 const lazy = (loader) => async (main, params) => {
   const mod = await loader()
@@ -30,6 +31,11 @@ async function handleAuthCallback() {
     }
     if (client && code) {
       await client.auth.exchangeCodeForSession(code)
+      try {
+        await completeOAuthSignup()
+      } catch (err) {
+        console.error('OAuth signup completion error:', err)
+      }
       try {
         postAuthRedirect = sessionStorage.getItem('oauth-next') || '/favoritos'
         sessionStorage.removeItem('oauth-next')

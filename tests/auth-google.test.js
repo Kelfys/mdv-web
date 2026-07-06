@@ -65,4 +65,43 @@ describe('google auth', () => {
     expect(main.innerHTML).toContain('ou preencha o formulário')
     expect(googleBtn.addEventListener).toHaveBeenCalled()
   })
+
+  it('renderMerchantRegister includes Google signup button', async () => {
+    vi.doMock('../js/api.js', () => ({
+      signUp: vi.fn(),
+      signInWithGoogle: vi.fn(),
+      fetchCategories: vi.fn(),
+      createStore: vi.fn(),
+      fetchStoreByOwner: vi.fn(),
+    }))
+    vi.doMock('../js/state.js', () => ({
+      getUser: () => null,
+      loadUser: vi.fn(),
+      setUser: vi.fn(),
+    }))
+    vi.doMock('../js/router.js', () => ({
+      navigate: vi.fn(),
+      getHashSection: () => null,
+      routeHref: (path) => `#${path}`,
+    }))
+
+    const formStub = { addEventListener: vi.fn() }
+    const googleBtn = { addEventListener: vi.fn(), disabled: false }
+    const main = {
+      innerHTML: '',
+      querySelector: (sel) => {
+        if (sel === '#merchant-signup') return formStub
+        if (sel === '#google-auth-btn') return googleBtn
+        if (sel === '#auth-error') return { innerHTML: '' }
+        return null
+      },
+    }
+
+    const { renderMerchantRegister } = await import('../js/pages/auth.js')
+    await renderMerchantRegister(main)
+
+    expect(main.innerHTML).toContain('Cadastrar loja com Google')
+    expect(main.innerHTML).toContain('ou preencha o formulário')
+    expect(googleBtn.addEventListener).toHaveBeenCalled()
+  })
 })

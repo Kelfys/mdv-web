@@ -202,10 +202,12 @@ export function getAuthRedirectUrl() {
   return `${window.location.origin}${window.location.pathname}#/auth/callback`
 }
 
-export async function signInWithGoogle({ nextPath = '/favoritos' } = {}) {
+export async function signInWithGoogle({ nextPath = '/favoritos', role } = {}) {
   const client = await requireClient()
   try {
     sessionStorage.setItem('oauth-next', nextPath)
+    if (role) sessionStorage.setItem('oauth-role', role)
+    else sessionStorage.removeItem('oauth-role')
   } catch {
     // sessionStorage indisponível
   }
@@ -223,6 +225,37 @@ export async function signInWithGoogle({ nextPath = '/favoritos' } = {}) {
   })
   if (error) throw new Error(formatAuthError(error))
   return data
+}
+
+export async function completeOAuthSignup() {
+  let intendedRole = null
+  try {
+    intendedRole = sessionStorage.getItem('oauth-role')
+    sessionStorage.removeItem('oauth-role')
+  } catch {
+    return
+  }
+  if (intendedRole !== 'merchant') return
+
+  const client = await requireClient()
+  const { data: { user } } = await client.auth.getUser()
+  if (!user) return
+
+  const { data: profile, error } = await client.from('users').select('role').eq('id', user.id).single()
+  if (error || !profile) return
+  if (profile.role === 'merchant' || profile.role === 'admin' || profile.role === 'moderator') return
+
+  const { error: metaError } = await client.auth.updateUser({
+    data: { ...user.user_metadata, role: 'merchant' },
+  })
+  if (metaError) throw metaError
+
+  const { error: roleError } = await client
+    .from('users')
+    .update({ role: 'merchant' })
+    .eq('id', user.id)
+    .eq('role', 'customer')
+  if (roleError) throw roleError
 }
 
 export async function requestPasswordReset(email) {

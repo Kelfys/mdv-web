@@ -47,7 +47,7 @@ function bindPasswordReset(main, buttonId) {
   })
 }
 
-function bindGoogleAuth(main, { nextPath = '/favoritos', redirect } = {}) {
+function bindGoogleAuth(main, { nextPath = '/favoritos', redirect, role } = {}) {
   const btn = main.querySelector('#google-auth-btn')
   if (!btn) return
   btn.addEventListener('click', async () => {
@@ -57,7 +57,7 @@ function bindGoogleAuth(main, { nextPath = '/favoritos', redirect } = {}) {
     try {
       const { signInWithGoogle } = await import('../api.js')
       const next = redirect?.startsWith('/') ? redirect : nextPath
-      await signInWithGoogle({ nextPath: next })
+      await signInWithGoogle({ nextPath: next, role })
     } catch (err) {
       if (errEl) errEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
       btn.disabled = false
@@ -341,6 +341,9 @@ export async function renderMerchantRegister(main) {
       'Cadastrar Loja',
       'Primeiro crie sua conta de lojista.',
       `
+        ${renderGoogleAuthButton('Cadastrar loja com Google')}
+        <p class="form-hint form-hint--center">Conta de lojista — em seguida você preenche os dados da loja.</p>
+        ${renderAuthDivider('ou preencha o formulário')}
         <form id="merchant-signup">
           <div class="form-group"><label class="form-label">Nome</label><input class="form-input" name="name" required /></div>
           <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" name="email" required /></div>
@@ -349,6 +352,8 @@ export async function renderMerchantRegister(main) {
         </form>
       `
     )
+
+    bindGoogleAuth(main, { nextPath: '/lojista/cadastro', role: 'merchant' })
 
     main.querySelector('#merchant-signup').addEventListener('submit', async (e) => {
       e.preventDefault()
