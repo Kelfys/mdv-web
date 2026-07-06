@@ -1,6 +1,13 @@
 /**
  * Planos de assinatura para lojistas.
  * Fonte de verdade para limites, exibição na página de regras e fluxos de billing.
+ *
+ * Plano Gratuito (free) — ver PLAN_LIMITS e README § Planos de assinatura:
+ *   • até 2 itens no catálogo (produto ou serviço)
+ *   • 0 imagens de produto (productImages: 0 → canAddProductImage sempre false)
+ *   • logo da loja sim; banner personalizado não (planAllowsStoreBanner)
+ *   • alteração de preço a cada 24 h (PLAN_COOLDOWN_HOURS.free)
+ * Validação na API: js/api.js (assertProductCountAllowed, assertProductImageAllowed).
  */
 import { formatCurrency, escapeHtml } from './utils.js'
 import { buildWhatsAppUrl } from './whatsapp.js'
@@ -43,8 +50,12 @@ export function planAllowsStoreBranding(planId) {
   return planAllowsStoreBanner(planId)
 }
 
-/** Limites de catálogo por plano (produtos totais e produtos com imagem). */
+/**
+ * Limites de catálogo por plano (itens totais e quantos podem ter foto).
+ * products: teto de cadastro; productImages: 0 no free bloqueia qualquer upload.
+ */
 export const PLAN_LIMITS = {
+  // Gratuito: 2 itens publicáveis, sem foto no catálogo
   free: { products: 2, productImages: 0 },
   starter: { products: 15, productImages: 10 },
   plus: { products: 30, productImages: 30 },
@@ -93,6 +104,7 @@ export function canCreateProduct(planId, productCount) {
   return productCount < getPlanProductLimit(planId)
 }
 
+/** productImages === 0 (free) nega upload novo e troca de imagem existente. */
 export function canAddProductImage(planId, productsWithImages, productAlreadyHasImage = false) {
   const limit = getPlanProductImageLimit(planId)
   if (limit === 0) return false
@@ -116,6 +128,7 @@ export function formatProductImageLimitHint(planId, productsWithImages) {
   return remaining > 0 ? `${hint}${t('plans.productLimitRemaining', { remaining })}` : hint
 }
 
+/** Intervalo mínimo entre mudanças de preço; free = 24 h, premium = sem limite (null). */
 const PLAN_COOLDOWN_HOURS = {
   free: 24,
   starter: 12,
@@ -124,6 +137,7 @@ const PLAN_COOLDOWN_HOURS = {
 }
 
 const PLAN_CONFIGS = [
+  /** Gratuito — ativado na aprovação da loja; limites em PLAN_LIMITS.free */
   {
     id: 'free',
     nameKey: 'plans.planFree',
