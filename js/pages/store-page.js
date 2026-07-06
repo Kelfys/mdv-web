@@ -19,7 +19,9 @@ import { getStoreThemeColor } from '../config.js'
 import {
   renderProductCard, openCart, formatPhone,
 } from '../ui.js'
-import { escapeHtml, rankProductsByEngagement } from '../utils.js'
+import {
+  escapeHtml, rankProductsByEngagement, instagramProfileUrl, formatInstagramDisplay,
+} from '../utils.js'
 import { setStore, addItem, getCartItemCount, getUser } from '../state.js'
 import { normalizeStorePaymentMethods } from '../payment.js'
 import { navigate } from '../router.js'
@@ -119,6 +121,7 @@ export async function renderStorePage(main, { slug }) {
           ${store.address ? `<div class="info-panel__item">📍 ${escapeHtml(store.address)}, ${escapeHtml(store.city)} - ${escapeHtml(store.state)}</div>` : ''}
           ${store.opening_hours ? `<div class="info-panel__item">🕐 ${escapeHtml(store.opening_hours)}</div>` : ''}
           <div class="info-panel__item">📞 ${formatPhone(store.whatsapp)}</div>
+          ${store.instagram ? `<a class="info-panel__item info-panel__link" href="${escapeHtml(instagramProfileUrl(store.instagram))}" target="_blank" rel="noopener noreferrer">📷 ${escapeHtml(formatInstagramDisplay(store.instagram))}</a>` : ''}
         </div>
 
         <div class="products-header">

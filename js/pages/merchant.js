@@ -920,6 +920,10 @@ function bindSettingsForm(main, store) {
         throw new Error('Selecione pelo menos uma forma de pagamento.')
       }
 
+      const { validateInstagramHandle } = await import('../utils.js')
+      const instagramCheck = validateInstagramHandle(f.instagram?.value ?? '')
+      if (!instagramCheck.ok) throw new Error(instagramCheck.message)
+
       const payload = {
         name: f.name.value.trim(),
         whatsapp: f.whatsapp.value.trim(),
@@ -927,6 +931,7 @@ function bindSettingsForm(main, store) {
         category_id: f.category_id.value,
         theme_color: f.theme_color.value,
         opening_hours: f.opening_hours.value.trim(),
+        instagram: instagramCheck.handle || null,
         payment_methods: paymentMethods,
       }
 
@@ -1431,6 +1436,11 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
                 <div class="form-group">
                   <label class="form-label">Horário</label>
                   <input class="form-input" name="opening_hours" value="${escapeHtml(store.opening_hours ?? '')}" placeholder="Ex: Seg–Sex 9h–18h" />
+                </div>
+                <div class="form-group admin-form-grid__full">
+                  <label class="form-label">Instagram</label>
+                  <input class="form-input" name="instagram" value="${escapeHtml(store.instagram ?? '')}" placeholder="@minhaloja ou instagram.com/minhaloja" autocomplete="off" />
+                  <p class="form-hint">Opcional — aparece na vitrine pública da sua loja.</p>
                 </div>
                 <div class="form-group admin-form-grid__full">
                   <label class="form-label">Descrição</label>

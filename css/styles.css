@@ -1027,6 +1027,17 @@ img { max-width: 100%; display: block; }
   color: var(--text-secondary);
 }
 
+.info-panel__link {
+  color: var(--primary-600);
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.info-panel__link:hover {
+  color: var(--primary-700);
+  text-decoration: underline;
+}
+
 .section-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; }
 
 /* Cart drawer */

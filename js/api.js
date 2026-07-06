@@ -370,6 +370,7 @@ export async function createStore(ownerId, form) {
     state: form.state,
     category_id: form.category_id || null,
     opening_hours: form.opening_hours,
+    instagram: form.instagram || null,
     theme_color: form.theme_color ?? DEFAULT_THEME_COLOR,
     status: 'pending',
     plan_id: 'free',
@@ -382,7 +383,7 @@ export async function createStore(ownerId, form) {
 export async function updateStore(storeId, form) {
   const client = await requireClient()
   const updates = {}
-  for (const key of ['name', 'description', 'whatsapp', 'address', 'city', 'state', 'opening_hours', 'category_id', 'theme_color', 'payment_methods']) {
+  for (const key of ['name', 'description', 'whatsapp', 'address', 'city', 'state', 'opening_hours', 'instagram', 'category_id', 'theme_color', 'payment_methods']) {
     if (form[key] !== undefined) updates[key] = form[key]
   }
 
@@ -410,7 +411,7 @@ export async function updateStore(storeId, form) {
 export async function updateStoreAsAdmin(storeId, form) {
   const client = await requireClient()
   const updates = {}
-  for (const key of ['name', 'description', 'whatsapp', 'address', 'city', 'state', 'opening_hours', 'category_id', 'theme_color', 'plan_id', 'status']) {
+  for (const key of ['name', 'description', 'whatsapp', 'address', 'city', 'state', 'opening_hours', 'instagram', 'category_id', 'theme_color', 'plan_id', 'status']) {
     if (form[key] !== undefined) updates[key] = form[key]
   }
 
@@ -1141,6 +1142,7 @@ export async function createStoreAsAdmin(form) {
     state: form.state,
     category_id: form.category_id || null,
     opening_hours: form.opening_hours ?? '',
+    instagram: form.instagram || null,
     theme_color: form.theme_color ?? DEFAULT_THEME_COLOR,
     status: approved ? 'approved' : 'pending',
     plan_id: form.plan_id ?? 'free',

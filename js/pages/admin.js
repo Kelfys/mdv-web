@@ -17,7 +17,7 @@ import { getUser, setAdminPendingCount } from '../state.js'
 import { navigate } from '../router.js'
 import {
   escapeHtml, formatDate, formatCurrency, showToast,
-  formatDateTimeCsv, buildCsv, downloadTextFile,
+  formatDateTimeCsv, buildCsv, downloadTextFile, validateInstagramHandle,
 } from '../utils.js'
 import { STORE_THEME_COLORS } from '../config.js'
 import { STAFF_PANELS, staffHref, getStaffMenuItem } from '../staff-nav.js'
@@ -1300,6 +1300,10 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                         <label class="form-label">Horário</label>
                         <input class="form-input" name="opening_hours" value="${escapeHtml(s.opening_hours ?? '')}" />
                       </div>
+                      <div class="form-group admin-form-grid__full">
+                        <label class="form-label">Instagram</label>
+                        <input class="form-input" name="instagram" value="${escapeHtml(s.instagram ?? '')}" placeholder="@minhaloja" />
+                      </div>
                       <div data-branding-wrap class="admin-form-grid__full admin-form-grid">
                         ${storeBrandingFieldsHtml(s.plan_id, s)}
                       </div>
@@ -1676,6 +1680,9 @@ function bindStoreEdits(main) {
       const submitBtn = form.querySelector('button[type="submit"]')
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Salvando...' }
       try {
+        const instagramCheck = validateInstagramHandle(form.instagram?.value ?? '')
+        if (!instagramCheck.ok) throw new Error(instagramCheck.message)
+
         await updateStoreAsAdmin(id, {
           name: form.name.value.trim(),
           whatsapp: form.whatsapp.value.trim(),
@@ -1688,6 +1695,7 @@ function bindStoreEdits(main) {
           description: form.description.value.trim(),
           address: form.address.value.trim(),
           opening_hours: form.opening_hours.value.trim(),
+          instagram: instagramCheck.handle || null,
           logo: logoInput?.files?.[0],
           banner: bannerInput?.files?.[0],
           remove_logo: !logoInput?.files?.[0] && form.remove_logo?.checked,

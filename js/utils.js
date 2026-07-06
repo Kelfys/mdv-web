@@ -20,6 +20,35 @@ export function formatPhone(phone) {
   return phone
 }
 
+/** Extrai handle do Instagram (sem @) de URL, @usuario ou usuario. */
+export function normalizeInstagramHandle(raw) {
+  const value = String(raw ?? '').trim()
+  if (!value) return ''
+  const urlMatch = value.match(/(?:https?:\/\/)?(?:www\.)?instagram\.com\/([A-Za-z0-9._]+)/i)
+  if (urlMatch) return urlMatch[1].replace(/\/$/, '')
+  return value.replace(/^@/, '').replace(/\/$/, '').split('/')[0].split('?')[0]
+}
+
+export function validateInstagramHandle(raw) {
+  const handle = normalizeInstagramHandle(raw)
+  if (!handle) return { ok: true, handle: '' }
+  if (!/^[A-Za-z0-9._]{1,30}$/.test(handle)) {
+    return { ok: false, message: 'Usuário do Instagram inválido. Use letras, números, ponto ou underscore (até 30 caracteres).' }
+  }
+  return { ok: true, handle }
+}
+
+export function instagramProfileUrl(handle) {
+  const user = normalizeInstagramHandle(handle)
+  if (!user) return null
+  return `https://www.instagram.com/${encodeURIComponent(user)}/`
+}
+
+export function formatInstagramDisplay(handle) {
+  const user = normalizeInstagramHandle(handle)
+  return user ? `@${user}` : ''
+}
+
 export function formatDate(date) {
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
