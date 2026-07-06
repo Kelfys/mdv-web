@@ -331,14 +331,48 @@ Em `#/lojista/cadastro`, o lojista escolhe **Bairro / região** antes de enviar.
 
 ---
 
-## Imagens da loja (por plano)
+## Planos de assinatura (lojistas)
 
-| Recurso | Gratuito | Starter / Plus / Premium |
-|---------|----------|---------------------------|
-| **Logo** (foto de perfil) | Sim | Sim |
-| **Banner** personalizado | Não (cor/tema padrão) | Sim |
+Limites e regras ficam em **`js/plans.js`** (`PLAN_LIMITS`, `canCreateProduct`, `canAddProductImage`, `planAllowsStoreBanner`). A API (`js/api.js`) e o painel do lojista bloqueiam cadastro/upload além do plano. Textos exibidos ao usuário em `js/strings.js` (seção `plans.*`).
 
-Regras em `js/plans.js` (`planAllowsStoreLogo`, `planAllowsStoreBanner`). Upload validado em `js/api.js`; UI em **Dashboard → Configurações** e no painel admin.
+O plano **Gratuito** é ativado após aprovação do cadastro da loja. Planos pagos (Starter, Plus, Premium) são solicitados em **Dashboard → Planos** e confirmados pelo admin após comprovante.
+
+### Plano Gratuito — limites
+
+| Recurso | Limite |
+|---------|--------|
+| **Itens no catálogo** (produtos ou serviços) | **2** no total |
+| **Imagens nos produtos** | **Não** — upload desabilitado na UI e rejeitado na API |
+| **Logo** da loja (foto de perfil) | Sim |
+| **Banner** personalizado da vitrine | Não — apenas cor/tema padrão |
+| **Alteração de preço** | A cada **24 h** |
+| **Pedidos** | Via WhatsApp |
+| **Ativar/ocultar** itens no catálogo | Sim |
+
+Lojistas no Gratuito podem publicar até **dois** produtos ou serviços **sem foto**. Para ampliar o catálogo ou enviar imagens nos itens, é necessário assinar um plano pago.
+
+### Comparativo de catálogo (todos os planos)
+
+| Plano | Itens no catálogo | Produtos com imagem | Banner personalizado | Cooldown de preço |
+|-------|-------------------|---------------------|----------------------|-------------------|
+| **Gratuito** | 2 | 0 | Não | 24 h |
+| **Starter** | 15 | 10 | Sim | 12 h |
+| **Plus** | 30 | 30 | Sim | 4 h |
+| **Premium** | 80 | 80 | Sim | Sem limite |
+
+Detalhes de preços, destaques no feed e lista completa de benefícios: `#/regras` (seção planos) ou painel **Planos** do lojista.
+
+### Implementação
+
+| Função | O que valida |
+|--------|----------------|
+| `planAllowsStoreLogo()` | Logo liberado em todos os planos |
+| `planAllowsStoreBanner(planId)` | Banner só em planos pagos |
+| `planAllowsProductImages(planId)` | Fotos no catálogo só se `productImages > 0` |
+| `canCreateProduct(planId, count)` | Teto de itens no catálogo |
+| `canAddProductImage(planId, …)` | Teto de imagens (Gratuito sempre `false`) |
+
+Testes: `tests/plans.test.js`.
 
 ---
 
