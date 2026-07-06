@@ -222,7 +222,7 @@ export function getAuthRedirectUrl() {
  * Pré-requisito no dashboard Supabase (não é configurável só no código):
  * 1. Authentication → Providers → Google: Enable + Client ID/Secret (Google Cloud)
  * 2. Google Cloud redirect URI: https://<ref>.supabase.co/auth/v1/callback
- * 3. Redirect URLs: .../MaredeVendas-vanilla/#/auth/callback
+ * 3. Redirect URLs: https://maredevendas.com.br/#/auth/callback
  *
  * Sem o provider ativo, a API retorna "provider is not enabled".
  * @param {string} [nextPath] — rota após callback (sessionStorage oauth-next)

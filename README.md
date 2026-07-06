@@ -2,7 +2,7 @@
 
 Marketplace local de lojas — **HTML, CSS e JavaScript vanilla** com backend [Supabase](https://supabase.com). Clientes exploram lojas, montam o carrinho e finalizam o pedido pelo **WhatsApp**. Não há pagamento in-app.
 
-**Site em produção:** https://kelfys.github.io/MaredeVendas-vanilla/
+**Site em produção:** https://maredevendas.com.br/ (espelho: https://kelfys.github.io/MaredeVendas-vanilla/)
 
 ---
 
@@ -132,10 +132,14 @@ Ou execute cada arquivo em `supabase/migrations/` no **SQL Editor** (ordem numé
 
 | Campo | Valor |
 |-------|--------|
-| Site URL (prod) | `https://kelfys.github.io/MaredeVendas-vanilla/` |
-| Redirect URLs | `https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback` |
-| | `https://kelfys.github.io/MaredeVendas-vanilla/` |
+| Site URL (prod) | `https://maredevendas.com.br/` |
+| Redirect URLs | `https://maredevendas.com.br/#/auth/callback` |
+| | `https://maredevendas.com.br/` |
+| | `https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback` (legado) |
+| | `https://kelfys.github.io/MaredeVendas-vanilla/` (legado) |
 | Local | `http://localhost:8080` |
+
+Aplicar no projeto remoto: `npx supabase config push` (valores em `supabase/config.toml`).
 
 Credenciais em `js/config.js` (chave **publishable** / anon — pública por design):
 
@@ -185,7 +189,8 @@ Botões na UI em `/conta/entrar`, `/conta/criar` e `/lojista/cadastro`. **Requer
 
 1. **APIs & Services → Credentials → OAuth client ID** (Web application)
 2. **Authorized JavaScript origins:**
-   - `https://kelfys.github.io`
+   - `https://maredevendas.com.br`
+   - `https://kelfys.github.io` (legado)
    - `https://ulpjsxmilumqedkkfuqw.supabase.co`
 3. **Authorized redirect URIs** (apenas Supabase, não o GitHub Pages):
    - `https://ulpjsxmilumqedkkfuqw.supabase.co/auth/v1/callback`
