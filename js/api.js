@@ -122,7 +122,10 @@ export async function signUpCustomer({ email, password, name, phone, address, de
 }
 
 export function formatAuthError(error) {
-  const msg = error?.message ?? ''
+  const msg = error?.message ?? error?.msg ?? ''
+  if (/provider is not enabled|unsupported provider/i.test(msg)) {
+    return 'Login com Google não está ativado no Supabase. Habilite em Authentication → Providers → Google (Client ID e Secret do Google Cloud).'
+  }
   if (/invalid login credentials/i.test(msg)) {
     return 'Email ou senha incorretos. Verifique os dados ou use "Esqueci minha senha".'
   }
