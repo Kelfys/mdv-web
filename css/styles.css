@@ -1711,6 +1711,43 @@ tr:last-child td { border-bottom: none; }
   box-shadow: 0 0 0 1px var(--primary-600);
 }
 
+.plan-card--current {
+  border-color: var(--green-600);
+  box-shadow: 0 0 0 1px var(--green-600);
+}
+
+.plan-card__note--current {
+  color: var(--green-600);
+  font-weight: 600;
+}
+
+.merchant-plans-current {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface-secondary);
+}
+
+.merchant-plans-current__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.merchant-plans-current h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
 .plan-card__header {
   display: flex;
   justify-content: space-between;

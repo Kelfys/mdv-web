@@ -68,6 +68,7 @@ function boot() {
   registerRoute('/dashboard/produtos', lazy(() => import('./pages/merchant.js').then((m) => ({ default: (main) => m.renderMerchantDashboard(main, 'products') }))))
   registerRoute('/dashboard/pedidos', lazy(() => import('./pages/merchant.js').then((m) => ({ default: (main) => m.renderMerchantDashboard(main, 'orders') }))))
   registerRoute('/dashboard/anuncios', lazy(() => import('./pages/merchant.js').then((m) => ({ default: (main) => m.renderMerchantDashboard(main, 'ads') }))))
+  registerRoute('/dashboard/planos', lazy(() => import('./pages/merchant.js').then((m) => ({ default: (main) => m.renderMerchantDashboard(main, 'plans') }))))
   registerRoute('/dashboard/configuracoes', lazy(() => import('./pages/merchant.js').then((m) => ({ default: (main) => m.renderMerchantDashboard(main, 'settings') }))))
   registerRoute('/dashboard/conta', lazy(() => import('./pages/merchant.js').then((m) => ({ default: (main) => m.renderMerchantDashboard(main, 'account') }))))
   registerRoute('/favoritos', lazy(() => import('./pages/favorites.js').then((m) => ({ default: m.renderFavorites }))))

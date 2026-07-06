@@ -1,27 +1,8 @@
-import { escapeHtml } from '../utils.js'
-import { SUBSCRIPTION_PLANS, formatPlanPrice, buildPlanPaymentUrl } from '../plans.js'
+import { renderSubscriptionPlanCards } from '../plans.js'
 
 /** Página estática com regras, termos e planos da plataforma. */
 export async function renderRules(main) {
-  const planCards = SUBSCRIPTION_PLANS.map((plan) => `
-    <article class="plan-card ${plan.id === 'premium' ? 'plan-card--highlight' : ''}">
-      <div class="plan-card__header">
-        <h3 class="plan-card__name">${escapeHtml(plan.name)}</h3>
-        <p class="plan-card__price">${escapeHtml(formatPlanPrice(plan.priceMonthly))}</p>
-      </div>
-      <p class="plan-card__desc">${escapeHtml(plan.description)}</p>
-      <ul class="plan-card__features">
-        ${plan.features.map((f) => `<li>${escapeHtml(f)}</li>`).join('')}
-      </ul>
-      ${plan.priceMonthly > 0 ? `
-        <a href="${buildPlanPaymentUrl(plan)}" target="_blank" rel="noopener noreferrer" class="btn btn-green btn-block btn-sm">
-          Enviar comprovante — ${escapeHtml(plan.name)}
-        </a>
-      ` : `
-        <p class="plan-card__note">Incluso na aprovação do cadastro</p>
-      `}
-    </article>
-  `).join('')
+  const planCards = renderSubscriptionPlanCards()
 
   main.innerHTML = `
     <div class="container-wide rules-page">

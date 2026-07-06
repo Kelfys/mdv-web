@@ -2,7 +2,7 @@
  * Planos de assinatura para lojistas.
  * Fonte de verdade para limites, exibição na página de regras e fluxos de billing.
  */
-import { formatCurrency } from './utils.js'
+import { formatCurrency, escapeHtml } from './utils.js'
 import { buildWhatsAppUrl } from './whatsapp.js'
 
 /** WhatsApp para envio de comprovante de pagamento do plano */
@@ -162,6 +162,68 @@ export function formatPlanPrice(priceMonthly) {
 
 export function getPlanById(planId) {
   return SUBSCRIPTION_PLANS.find((p) => p.id === planId) ?? SUBSCRIPTION_PLANS[0]
+}
+
+const PLAN_RANK = { free: 0, starter: 1, plus: 2, premium: 3 }
+
+function planRank(planId) {
+  return PLAN_RANK[planId] ?? 0
+}
+
+function renderPlanCardAction(plan, currentPlanId) {
+  const isDashboard = Boolean(currentPlanId)
+  const isCurrent = currentPlanId === plan.id
+
+  if (isDashboard && isCurrent) {
+    if (plan.priceMonthly > 0) {
+      return `
+        <a href="${buildPlanPaymentUrl(plan)}" target="_blank" rel="noopener noreferrer" class="btn btn-green btn-block btn-sm">
+          Renovar — ${escapeHtml(plan.name)}
+        </a>
+        <p class="plan-card__note">Seu plano atual</p>`
+    }
+    return `<p class="plan-card__note plan-card__note--current">Seu plano atual</p>`
+  }
+
+  if (isDashboard && plan.priceMonthly > 0 && planRank(plan.id) > planRank(currentPlanId)) {
+    return `
+      <a href="${buildPlanPaymentUrl(plan)}" target="_blank" rel="noopener noreferrer" class="btn btn-green btn-block btn-sm">
+        Assinar — ${escapeHtml(plan.name)}
+      </a>`
+  }
+
+  if (!isDashboard) {
+    if (plan.priceMonthly > 0) {
+      return `
+        <a href="${buildPlanPaymentUrl(plan)}" target="_blank" rel="noopener noreferrer" class="btn btn-green btn-block btn-sm">
+          Enviar comprovante — ${escapeHtml(plan.name)}
+        </a>`
+    }
+    return `<p class="plan-card__note">Incluso na aprovação do cadastro</p>`
+  }
+
+  return ''
+}
+
+/** Cards de planos para /regras e painel do lojista. */
+export function renderSubscriptionPlanCards({ currentPlanId = null } = {}) {
+  return SUBSCRIPTION_PLANS.map((plan) => {
+    const isCurrent = currentPlanId === plan.id
+    const highlight = plan.id === 'premium' || isCurrent
+
+    return `
+    <article class="plan-card ${highlight ? 'plan-card--highlight' : ''} ${isCurrent ? 'plan-card--current' : ''}">
+      <div class="plan-card__header">
+        <h3 class="plan-card__name">${escapeHtml(plan.name)}</h3>
+        <p class="plan-card__price">${escapeHtml(formatPlanPrice(plan.priceMonthly))}</p>
+      </div>
+      <p class="plan-card__desc">${escapeHtml(plan.description)}</p>
+      <ul class="plan-card__features">
+        ${plan.features.map((f) => `<li>${escapeHtml(f)}</li>`).join('')}
+      </ul>
+      ${renderPlanCardAction(plan, currentPlanId)}
+    </article>`
+  }).join('')
 }
 
 const PLAN_FEED_WEIGHT = {

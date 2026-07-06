@@ -8,6 +8,7 @@ import {
   getPlanProductImageLimit,
   canCreateProduct,
   canAddProductImage,
+  renderSubscriptionPlanCards,
 } from '../js/plans.js'
 
 describe('plan price cooldown', () => {
@@ -62,5 +63,21 @@ describe('plan catalog limits', () => {
     expect(canAddProductImage('starter', 9)).toBe(true)
     expect(canAddProductImage('starter', 10)).toBe(false)
     expect(canAddProductImage('starter', 10, true)).toBe(true)
+  })
+})
+
+describe('renderSubscriptionPlanCards', () => {
+  it('renders public plan buttons', () => {
+    const html = renderSubscriptionPlanCards()
+    expect(html).toContain('Enviar comprovante — Starter')
+    expect(html).not.toContain('Seu plano atual')
+  })
+
+  it('highlights current plan in dashboard mode', () => {
+    const html = renderSubscriptionPlanCards({ currentPlanId: 'starter' })
+    expect(html).toContain('plan-card--current')
+    expect(html).toContain('Seu plano atual')
+    expect(html).toContain('Assinar — Plus')
+    expect(html).not.toContain('Assinar — Starter')
   })
 })

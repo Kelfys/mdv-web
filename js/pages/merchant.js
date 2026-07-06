@@ -21,7 +21,8 @@ import {
   formatProductLimitHint, formatProductImageLimitHint,
   getPlanById, formatPlanPrice,
   getPriceCooldownRemaining, formatPriceCooldownRemaining,
-  getPlanPriceCooldownHours, buildPlanPaymentUrl,
+  getPlanPriceCooldownHours,
+  renderSubscriptionPlanCards,
 } from '../plans.js'
 import {
   STORE_BRANDING_UPLOAD_HINT, PRODUCT_IMAGE_UPLOAD_HINT,
@@ -174,10 +175,10 @@ function merchantMetrics({ products, orders, store, viewStats }) {
         <div class="metric-card__value">${viewStats?.total ?? 0}</div>
         <div class="metric-card__label">Visualizações${viewStats?.week ? ` · ${viewStats.week} na semana` : ''}</div>
       </div>
-      <div class="metric-card">
+      <a href="${merchantHref('planos')}" class="metric-card metric-card--link">
         <div class="metric-card__value">${escapeHtml(plan.name)}</div>
-        <div class="metric-card__label">${formatPlanPrice(plan.priceMonthly)}</div>
-      </div>
+        <div class="metric-card__label">${formatPlanPrice(plan.priceMonthly)} · Ver planos</div>
+      </a>
     </div>`
 }
 
@@ -198,6 +199,11 @@ function merchantQuickActions(store) {
         <span class="admin-quick-card__icon">📣</span>
         <strong>Anúncios</strong>
         <span>Divulgar no feed</span>
+      </a>
+      <a href="${merchantHref('planos')}" class="admin-quick-card">
+        <span class="admin-quick-card__icon">💎</span>
+        <strong>Planos</strong>
+        <span>Assinar ou renovar</span>
       </a>
       <a href="${merchantHref('configuracoes')}" class="admin-quick-card">
         <span class="admin-quick-card__icon">⚙️</span>
@@ -577,6 +583,31 @@ function merchantBrandingSection(store) {
     </section>`
 }
 
+function renderMerchantPlansPanel(store) {
+  const plan = getPlanById(store.plan_id)
+
+  return `
+    <div class="merchant-plans-current">
+      <div>
+        <p class="merchant-plans-current__eyebrow">Plano ativo</p>
+        <h2>${escapeHtml(plan.name)} · ${escapeHtml(formatPlanPrice(plan.priceMonthly))}</h2>
+        <p class="form-hint">Loja: ${escapeHtml(store.name)}</p>
+      </div>
+      ${store.status === 'approved' ? `<span class="badge badge-approved">Loja aprovada</span>` : storeStatusBadge(store.status)}
+    </div>
+    <div class="plan-grid">${renderSubscriptionPlanCards({ currentPlanId: store.plan_id })}</div>
+    <div class="plan-payment-info">
+      <p><strong>Como assinar ou renovar:</strong></p>
+      <ol>
+        <li>Realize o pagamento do plano escolhido.</li>
+        <li>Clique em <strong>Assinar</strong> ou <strong>Renovar</strong> no card do plano para abrir o WhatsApp com a mensagem pronta.</li>
+        <li>Envie o comprovante e informe o nome da loja e o email cadastrado.</li>
+        <li>Após confirmação, o administrador ativa o plano na sua conta.</li>
+      </ol>
+      <p class="form-hint">Dúvidas sobre limites e benefícios? <a href="${routeHref('/regras')}">Leia as regras e planos</a>.</p>
+    </div>`
+}
+
 function renderSettingsPreviewCard(store, plan) {
   const theme = STORE_THEME_COLORS.find((c) => c.id === store.theme_color)
   return `
@@ -591,14 +622,11 @@ function renderSettingsPreviewCard(store, plan) {
       <div style="margin-top:0.75rem">${storeStatusBadge(store.status)}</div>
       <p class="merchant-store-card__plan">Plano ${escapeHtml(plan.name)} · ${formatPlanPrice(plan.priceMonthly)}</p>
       ${store.status === 'approved' ? `<a href="${routeHref(`/loja/${store.slug}`)}" class="btn btn-outline btn-sm" style="margin-top:0.75rem">Ver vitrine</a>` : ''}
-      ${plan.id !== 'premium' ? `
-        <a
-          href="${buildPlanPaymentUrl(plan.id === 'free' ? getPlanById('starter') : plan.id === 'starter' ? getPlanById('plus') : getPlanById('premium'))}"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="btn btn-green btn-sm"
-          style="margin-top:0.75rem;display:block;text-align:center"
-        >Fazer upgrade do plano</a>` : ''}
+      <a
+        href="${merchantHref('planos')}"
+        class="btn btn-green btn-sm"
+        style="margin-top:0.75rem;display:block;text-align:center"
+      >${plan.id === 'premium' ? 'Ver planos' : 'Assinar ou fazer upgrade'}</a>
     </div>`
 }
 
@@ -1329,6 +1357,15 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
     )
 
     if (canCreate) bindAdForm(main, store)
+    return
+  }
+
+  if (tab === 'plans') {
+    main.innerHTML = merchantPage(
+      menuItem.label,
+      'Assine ou renove o plano da sua loja ou serviço',
+      renderMerchantPlansPanel(store),
+    )
     return
   }
 
