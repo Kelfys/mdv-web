@@ -1,5 +1,5 @@
 import { escapeHtml } from '../utils.js'
-import { SUBSCRIPTION_PLANS, formatPlanPrice, buildPlanPaymentUrl, buildGenericPaymentUrl } from '../plans.js'
+import { SUBSCRIPTION_PLANS, formatPlanPrice, buildPlanPaymentUrl } from '../plans.js'
 
 /** Página estática com regras, termos e planos da plataforma. */
 export async function renderRules(main) {
@@ -61,13 +61,10 @@ export async function renderRules(main) {
             <p><strong>Como assinar um plano pago:</strong></p>
             <ol>
               <li>Realize o pagamento do valor mensal do plano escolhido.</li>
-              <li>Clique no botão do plano acima ou envie o comprovante para nosso WhatsApp.</li>
+              <li>Clique no botão do plano escolhido acima para enviar o comprovante pelo WhatsApp.</li>
               <li>Informe o nome da loja e o email cadastrado na mensagem.</li>
               <li>Após confirmação, seu plano será ativado pelo administrador.</li>
             </ol>
-            <a href="${buildGenericPaymentUrl()}" target="_blank" rel="noopener noreferrer" class="btn btn-green">
-              Enviar comprovante via WhatsApp
-            </a>
           </div>
         </section>
 
