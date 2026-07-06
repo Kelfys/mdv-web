@@ -57,8 +57,8 @@ describe('plan store images', () => {
 
 describe('plan catalog limits', () => {
   it('defines product and image limits per plan', () => {
-    expect(getPlanProductLimit('free')).toBe(6)
-    expect(getPlanProductImageLimit('free')).toBe(2)
+    expect(getPlanProductLimit('free')).toBe(2)
+    expect(getPlanProductImageLimit('free')).toBe(0)
     expect(getPlanProductLimit('starter')).toBe(15)
     expect(getPlanProductImageLimit('starter')).toBe(10)
     expect(getPlanProductLimit('plus')).toBe(30)
@@ -68,13 +68,15 @@ describe('plan catalog limits', () => {
   })
 
   it('blocks product creation at plan cap', () => {
-    expect(canCreateProduct('free', 5)).toBe(true)
-    expect(canCreateProduct('free', 6)).toBe(false)
+    expect(canCreateProduct('free', 1)).toBe(true)
+    expect(canCreateProduct('free', 2)).toBe(false)
     expect(canCreateProduct('premium', 79)).toBe(true)
     expect(canCreateProduct('premium', 80)).toBe(false)
   })
 
   it('blocks new product images at plan cap', () => {
+    expect(canAddProductImage('free', 0)).toBe(false)
+    expect(canAddProductImage('free', 0, true)).toBe(false)
     expect(canAddProductImage('starter', 9)).toBe(true)
     expect(canAddProductImage('starter', 10)).toBe(false)
     expect(canAddProductImage('starter', 10, true)).toBe(true)

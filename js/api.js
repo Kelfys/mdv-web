@@ -28,7 +28,7 @@ import { normalizeItemType } from './catalog.js'
 import {
   planAllowsStoreBanner, FREE_PLAN_BANNER_MESSAGE,
   getPlanProductLimit, getPlanProductImageLimit,
-  planProductLimitMessage, planProductImageLimitMessage,
+  planProductLimitMessage, planProductImageLimitMessage, canAddProductImage,
   getPriceCooldownRemaining, formatPriceCooldownRemaining, getPlanById,
 } from './plans.js'
 
@@ -66,8 +66,6 @@ async function assertProductCountAllowed(client, storeId) {
 }
 
 async function assertProductImageAllowed(client, storeId, { productHadImage = false } = {}) {
-  if (productHadImage) return
-
   const { data: store, error: storeError } = await client
     .from('stores')
     .select('plan_id')
@@ -77,7 +75,7 @@ async function assertProductImageAllowed(client, storeId, { productHadImage = fa
 
   const planId = store?.plan_id ?? 'free'
   const count = await countStoreProductsWithImages(client, storeId)
-  if (count >= getPlanProductImageLimit(planId)) {
+  if (!canAddProductImage(planId, count, productHadImage)) {
     throw new Error(planProductImageLimitMessage(planId))
   }
 }

@@ -45,7 +45,7 @@ export function planAllowsStoreBranding(planId) {
 
 /** Limites de catálogo por plano (produtos totais e produtos com imagem). */
 export const PLAN_LIMITS = {
-  free: { products: 6, productImages: 2 },
+  free: { products: 2, productImages: 0 },
   starter: { products: 15, productImages: 10 },
   plus: { products: 30, productImages: 30 },
   premium: { products: 80, productImages: 80 },
@@ -65,9 +65,15 @@ export function planProductLimitMessage(planId) {
   return t('plans.productLimitMessage', { plan: plan.name, limit })
 }
 
+/** Planos pagos permitem foto nos produtos; Gratuito não. */
+export function planAllowsProductImages(planId) {
+  return getPlanProductImageLimit(planId) > 0
+}
+
 export function planProductImageLimitMessage(planId) {
   const plan = getPlanById(planId)
   const limit = getPlanProductImageLimit(planId)
+  if (limit === 0) return t('plans.freeProductImageMessage')
   return t('plans.productImageLimitMessage', { plan: plan.name, limit })
 }
 
@@ -88,8 +94,10 @@ export function canCreateProduct(planId, productCount) {
 }
 
 export function canAddProductImage(planId, productsWithImages, productAlreadyHasImage = false) {
+  const limit = getPlanProductImageLimit(planId)
+  if (limit === 0) return false
   if (productAlreadyHasImage) return true
-  return productsWithImages < getPlanProductImageLimit(planId)
+  return productsWithImages < limit
 }
 
 export function formatProductLimitHint(planId, productCount) {
@@ -123,8 +131,8 @@ const PLAN_CONFIGS = [
     priceMonthly: 0,
     priceCooldownHours: PLAN_COOLDOWN_HOURS.free,
     featureKeys: [
-      'plans.featureFreeItems6',
-      'plans.featureFreeImages2',
+      'plans.featureFreeItems2',
+      'plans.featureFreeNoImages',
       'plans.featureStoreLogo',
       'plans.featureDefaultBanner',
       'plans.featureToggleProducts',
