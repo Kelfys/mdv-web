@@ -299,11 +299,7 @@ export async function renderAdminLogin(main) {
         <div class="form-group"><label class="form-label">Senha</label><input class="form-input" type="password" name="password" required /></div>
         <button type="submit" class="btn btn-primary btn-block">Entrar</button>
       </form>
-      <p style="margin-top:1rem;font-size:0.8125rem;text-align:center;color:var(--text-muted)">
-        Conta admin: <strong>brunopdaraujo@gmail.com</strong><br />
-        Senha padrão: <strong>MarecAdmin2026!</strong> (com <strong>c</strong>, não &quot;de&quot;)
-      </p>
-      <p style="margin-top:0.75rem;font-size:0.875rem;text-align:center;color:var(--text-secondary)">
+      <p style="margin-top:1rem;font-size:0.875rem;text-align:center;color:var(--text-secondary)">
         <button type="button" class="btn btn-outline btn-sm" id="admin-reset-password">Esqueci minha senha</button>
       </p>
       <p style="margin-top:0.75rem;font-size:0.8125rem;text-align:center;color:var(--text-muted)">
