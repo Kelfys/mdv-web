@@ -1,5 +1,26 @@
 /**
- * Textos estáticos da interface — edite em strings-editor.html
+ * Catálogo centralizado de textos da interface (pt-BR).
+ *
+ * Toda cópia visível ao usuário deve vir daqui via t('secao.chave'), não
+ * hardcoded em páginas, api.js, whatsapp.js etc. Exceção: mensagens brutas
+ * do Supabase (error.message) quando não há mapeamento em formatAuthError.
+ *
+ * Convenções de chaves:
+ *   app.*          — título, meta, fallbacks globais
+ *   nav.*          — menus e header
+ *   home|store|cart|checkout|customer|auth.* — fluxos públicos
+ *   merchant|admin|moderator.* — painéis staff
+ *   errors.*       — validações e erros lançados em api.js / utils.js
+ *   plans|rules|whatsapp|uploads|catalog.* — domínios específicos
+ *
+ * Placeholders: t('cart.itemsCount', { count: 3 }) → "Itens (3)"
+ *
+ * Helpers: deliveryPeriodLabel(), orderStatusLabel() — valores de enum → texto.
+ *
+ * Edição visual: strings-editor.html (busca, rascunho localStorage, download
+ * de strings.js). Após alterar, commitar js/strings.js — o app lê o módulo
+ * em runtime, sem build step.
+ *
  * Uso: import { t } from './strings.js'  →  t('nav.home')
  */
 

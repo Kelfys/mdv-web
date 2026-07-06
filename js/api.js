@@ -13,6 +13,11 @@
  * - Cache em memória para categorias (mudam pouco)
  * - Upload de imagens: js/uploads.js (banner/logo/produto)
  * - Webhook de assinatura real (Stripe) em vez de status manual
+ *
+ * Textos de erro/validação: import { t } from './strings.js' — chaves em
+ * errors.* (ex.: errors.invalidEmail, errors.selectStoreNeighborhood).
+ * formatAuthError mapeia códigos do Supabase Auth para essas chaves.
+ * Erros não mapeados repassam error.message original do backend.
  */
 import { requireClient, isSupabaseConfigured, getSupabase } from './db.js'
 import { generateSlug, sanitizeSearch } from './utils.js'
@@ -123,6 +128,7 @@ export async function signUpCustomer({ email, password, name, phone, address, de
   return data
 }
 
+/** Mapeia mensagens do Supabase Auth para chaves errors.* em strings.js. */
 export function formatAuthError(error) {
   const msg = error?.message ?? error?.msg ?? ''
   if (/provider is not enabled|unsupported provider/i.test(msg)) {

@@ -8,6 +8,8 @@
  * - Debounce/throttle reutilizáveis (hoje home.js faz debounce inline)
  * - Validação de telefone brasileiro mais rigorosa
  * - i18n se expandir para outros países
+ *
+ * Mensagens de validação (idade, Instagram): chaves errors.* via t() em strings.js.
  */
 import { t } from './strings.js'
 

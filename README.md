@@ -34,15 +34,17 @@ Marketplace local de lojas — **HTML, CSS e JavaScript vanilla** com backend [S
 ```
 maredevendas-vanilla/
 ├── index.html              # Shell HTML — cache bust em app.js/styles.css no deploy
+├── strings-editor.html     # Editor visual dos textos (js/strings.js)
 ├── 404.html                # Fallback SPA para rotas diretas no GitHub Pages
 ├── css/styles.css          # Estilos globais e componentes
 ├── js/
 │   ├── app.js              # Boot, registro de rotas e lazy-load de páginas
+│   ├── strings.js          # Catálogo de textos da UI + t(), helpers i18n
 │   ├── router.js           # Roteador SPA (History ou hash)
 │   ├── state.js            # Estado global (tema, auth, carrinho)
 │   ├── config.js           # Credenciais Supabase e constantes
 │   ├── db.js               # Cliente Supabase (CDN ESM)
-│   ├── api.js              # Camada de acesso a dados
+│   ├── api.js              # Camada de acesso a dados (erros em errors.*)
 │   ├── feed.js             # Algoritmo do feed da home
 │   ├── payment.js          # Formas de pagamento no checkout
 │   ├── ui.js               # Header, carrinho, cards e checkout
@@ -56,6 +58,44 @@ maredevendas-vanilla/
 └── .github/workflows/
     └── deploy.yml          # Pipeline de deploy para GitHub Pages
 ```
+
+---
+
+## Textos da interface (i18n)
+
+Todos os rótulos, mensagens, placeholders e templates (WhatsApp, planos, regras) ficam em **`js/strings.js`**. O app não usa biblioteca de i18n — apenas o helper `t()` e o objeto `STRINGS`.
+
+### Uso no código
+
+```js
+import { t, deliveryPeriodLabel, orderStatusLabel } from './strings.js'
+
+t('nav.home')                              // "Início"
+t('cart.itemsCount', { count: 3 })         // "Itens (3)"
+deliveryPeriodLabel('manha')               // "Manhã"
+```
+
+- **UI** (`js/ui.js`, `js/pages/*`, `js/plans.js`, …): `t('secao.chave')` no HTML/innerHTML
+- **Erros** (`js/api.js`, `js/utils.js`, `js/uploads.js`): chaves em `errors.*`
+- **WhatsApp** (`js/whatsapp.js`): chaves em `whatsapp.*`
+- Mensagens cruas do Supabase sem mapeamento em `formatAuthError()` continuam como `error.message`
+
+### Editor visual
+
+**`strings-editor.html`** — publicado junto com o site (ex.: `https://kelfys.github.io/MaredeVendas-vanilla/strings-editor.html`).
+
+1. Buscar por chave ou valor
+2. Editar textos (rascunho salvo em `localStorage`)
+3. Baixar ou copiar o `strings.js` gerado
+4. Substituir `js/strings.js` no repositório e fazer commit
+
+Testes: `tests/strings.test.js` (resolve de chaves, placeholders, round-trip do editor).
+
+### Nova string
+
+1. Adicione a chave em `js/strings.js` dentro da seção adequada (`nav`, `errors`, `merchant`, …)
+2. Use `t('secao.novaChave')` no código — não deixe texto PT solto no JS/HTML
+3. Rode `npm test` e atualize o editor se necessário (ele importa o módulo atual)
 
 ---
 
@@ -178,7 +218,7 @@ Deploy automático ao fazer push na `main` (após testes passarem no CI).
 O workflow (`.github/workflows/deploy.yml`):
 
 1. `npm ci` + `npm test` (Vitest)
-2. Copia `index.html`, `css/`, `js/`, `favicon.svg` e `404.html` para `dist/`
+2. Copia `index.html`, `strings-editor.html`, `css/`, `js/`, `favicon.svg` e `404.html` para `dist/`
 3. Injeta `?v=<commit>` em todos os `.js` e em `styles.css` (cache bust)
 4. Gera shells SPA por rota (`copy-spa-shells.sh`) para deep links no GitHub Pages
 5. Publica na branch `gh-pages` via Peaceiris
@@ -320,6 +360,13 @@ Regras em `js/plans.js` (`planAllowsStoreLogo`, `planAllowsStoreBanner`). Upload
 1. Crie `js/pages/minha-pagina.js` com `export async function renderMinhaPagina(main) { ... }`
 2. Registre em `js/app.js` com `registerRoute`
 3. Adicione link em `js/ui.js` se for rota pública
+4. Textos da página em `js/strings.js` — use `t()`, não strings hardcoded
+
+### Alterar textos da interface
+
+1. Edite `js/strings.js` diretamente ou use `strings-editor.html` e baixe o arquivo
+2. `npm test` (inclui `tests/strings.test.js`)
+3. Commit — o deploy publica o módulo atualizado sem build extra
 
 ### Nova migration
 

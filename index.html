@@ -8,9 +8,11 @@
   <meta name="theme-color" content="#2563eb" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
+  <!-- title/description estáticos abaixo são fallback; o módulo strings.js atualiza no load -->
   <title>MaredeVendas — Marketplace Local</title>
   <script type="module">
     const base = window.__MV_BASE__ || './'
+    // Sincroniza <title> e meta description com app.pageTitle / app.metaDescription
     import(base + 'js/strings.js').then(({ t }) => {
       document.title = t('app.pageTitle')
       const meta = document.querySelector('meta[data-mv-string="app.metaDescription"]')
@@ -70,6 +72,7 @@
   </div>
   <script type="module">
     const base = window.__MV_BASE__ || './'
+    // Carrega strings antes do app para mensagem de erro de bootstrap (app.loadError*)
     const [{ t }] = await Promise.all([
       import(base + 'js/strings.js'),
     ]).catch(() => [{ t: (key) => key }])
