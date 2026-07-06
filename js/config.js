@@ -32,6 +32,12 @@ export function stringsEditorHref() {
   return `${APP_BASE_PATH}/strings-editor.html`
 }
 
+/** URL de arquivo estático em assets/ (ex.: assetHref('images/logo.png')). */
+export function assetHref(relativePath = '') {
+  const normalized = String(relativePath).replace(/^\//, '')
+  return `${APP_BASE_PATH}/assets/${normalized}`
+}
+
 /** Hash (#/rota) — único modo confiável no GitHub Pages (rotas diretas dão 404). */
 export const USE_HISTORY_ROUTER = false
 export const CART_STORAGE_KEY = 'maredevendas-cart'
