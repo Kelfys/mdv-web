@@ -121,10 +121,21 @@ export async function signUpCustomer({ email, password, name, phone, address, de
   return data
 }
 
+export function formatAuthError(error) {
+  const msg = error?.message ?? ''
+  if (/invalid login credentials/i.test(msg)) {
+    return 'Email ou senha incorretos. Verifique os dados ou use "Esqueci minha senha".'
+  }
+  if (/email not confirmed/i.test(msg)) {
+    return 'Confirme seu email antes de entrar.'
+  }
+  return msg || 'Não foi possível entrar. Tente novamente.'
+}
+
 export async function signIn(email, password) {
   const client = await requireClient()
   const { data, error } = await client.auth.signInWithPassword({ email, password })
-  if (error) throw error
+  if (error) throw new Error(formatAuthError(error))
   return data
 }
 

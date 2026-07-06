@@ -11,7 +11,7 @@
  */
 import { signIn, signUpCustomer } from '../api.js'
 import { setUser } from '../state.js'
-import { navigate, getHashSection } from '../router.js'
+import { navigate, getHashSection, routeHref } from '../router.js'
 import { escapeHtml, getMaxBirthDateForRegistration, validateRegistrationBirthDate } from '../utils.js'
 
 function parseQuery() {
@@ -83,8 +83,9 @@ export async function renderLogin(main) {
         <button type="submit" class="btn btn-primary btn-block">Entrar</button>
       </form>
       <div class="auth-links">
-        <a href="#/conta/criar">Criar conta de cliente</a>
-        <a href="#/lojista/cadastro">Cadastrar minha loja</a>
+        <a href="${routeHref('/conta/criar')}">Criar conta de cliente</a>
+        <a href="${routeHref('/lojista/cadastro')}">Cadastrar minha loja</a>
+        <a href="${routeHref('/admin/entrar')}">Acesso admin</a>
       </div>
     `,
     { infoPanelHtml: renderRulesAndPlansContent() },
@@ -189,7 +190,7 @@ export async function renderAdminLogin(main) {
         <button type="button" class="btn btn-outline btn-sm" id="admin-reset-password">Esqueci minha senha</button>
       </p>
       <p style="margin-top:0.75rem;font-size:0.8125rem;text-align:center;color:var(--text-muted)">
-        <a href="#/moderador/entrar">Acesso moderador</a>
+        <a href="${routeHref('/moderador/entrar')}">Acesso moderador</a>
       </p>
     `
   )
@@ -246,7 +247,7 @@ export async function renderModeratorLogin(main) {
         <button type="button" class="btn btn-outline btn-sm" id="moderator-reset-password">Esqueci minha senha</button>
       </p>
       <p style="margin-top:0.75rem;font-size:0.8125rem;text-align:center;color:var(--text-muted)">
-        <a href="#/admin/entrar">Acesso admin</a>
+        <a href="${routeHref('/admin/entrar')}">Acesso admin</a>
       </p>
     `
   )

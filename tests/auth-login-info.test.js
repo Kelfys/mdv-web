@@ -25,6 +25,7 @@ describe('login page rules and plans', () => {
     vi.doMock('../js/router.js', () => ({
       navigate: vi.fn(),
       getHashSection: () => null,
+      routeHref: (path) => `#${path}`,
     }))
     vi.doMock('../js/rules-plans-panel.js', () => ({
       renderRulesAndPlansContent: () => `
@@ -50,6 +51,7 @@ describe('login page rules and plans', () => {
     expect(main.innerHTML).not.toContain('Enviar comprovante')
     expect(main.innerHTML).not.toContain('sec=regras')
     expect(main.innerHTML).not.toContain('sec=planos')
+    expect(main.innerHTML).toContain('Acesso admin')
     expect(main.innerHTML).toContain('Conduta')
   })
 
