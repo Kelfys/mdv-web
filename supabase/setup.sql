@@ -28,8 +28,8 @@
 --
 -- Depois:
 -- 1. Authentication → URL Configuration (ou npx supabase config push):
---    Site URL: https://maredevendas.com.br/
---    Redirect: https://maredevendas.com.br/#/auth/callback
+--    Site URL: https://kelfys.github.io/MaredeVendas-vanilla/
+--    Redirect: https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback
 --    Local: http://localhost:8080
 -- 2. Credenciais do frontend em js/config.js (SUPABASE_URL + SUPABASE_ANON_KEY)
 -- 3. Crie usuários no Auth; único admin: brunopdaraujo@gmail.com (migration 005/013)

@@ -46,8 +46,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir -p dist
-          # CNAME — domínio customizado GitHub Pages (maredevendas.com.br)
-          cp index.html strings-editor.html favicon.svg 404.html README.md CNAME dist/
+          cp index.html strings-editor.html favicon.svg 404.html README.md dist/
           # assets/ — estáticos servidos via assetHref() em js/config.js
           cp -r css js assets dist/
           touch dist/.nojekyll
