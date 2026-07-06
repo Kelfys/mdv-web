@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>MaredeVendas</title>
+  <script>
+    sessionStorage.setItem('spa-redirect', location.pathname + location.search + location.hash)
+    location.replace(location.pathname.split('/').slice(0, 2).join('/') + '/')
+  </script>
+</head>
+<body></body>
+</html>

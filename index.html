@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<!-- MaredeVendas — SPA vanilla (ES Modules + Supabase). Conteúdo em #main via js/app.js; ?v= no deploy invalida cache. -->
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Marketplace de lojas locais. Encontre produtos perto de você e peça direto pelo WhatsApp." />
+  <meta name="theme-color" content="#2563eb" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <title>MaredeVendas — Marketplace Local</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css?v=1133816" />
+</head>
+<body>
+  <div id="app">
+    <header id="header" class="header"></header>
+    <main id="main" class="main"></main>
+    <div id="cart-root"></div>
+    <div id="toast" class="toast hidden" role="status"></div>
+  </div>
+  <script>
+    (function () {
+      var target = sessionStorage.getItem('spa-redirect')
+      if (!target) return
+      sessionStorage.removeItem('spa-redirect')
+      history.replaceState(null, '', target)
+    })()
+  </script>
+  <script type="module" src="js/app.js?v=1133816"></script>
+</body>
+</html>
