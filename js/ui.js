@@ -77,11 +77,11 @@ export function renderHeader() {
       </a>
 
       <nav class="nav-desktop">
-        <a href="${routeHref('/')}" class="nav-btn nav-btn--ghost${onHome ? ' active' : ''}">
+        <a href="${routeHref('/')}" class="nav-btn${onHome ? ' active' : ''}">
           <span class="nav-btn__icon" aria-hidden="true">🏠</span>
           <span>Início</span>
         </a>
-        ${!user ? `<a href="${routeHref('/conta/entrar')}" class="nav-btn nav-btn--primary${onLogin ? ' active' : ''}">
+        ${!user ? `<a href="${routeHref('/conta/entrar')}" class="nav-btn${onLogin ? ' active' : ''}">
           <span class="nav-btn__icon" aria-hidden="true">🔑</span>
           <span>Entrar</span>
         </a>` : ''}
@@ -116,11 +116,11 @@ export function renderHeader() {
 
     <nav class="nav-mobile ${menuOpen ? 'open' : ''}" id="nav-mobile">
       <div class="nav-mobile__actions${user ? ' nav-mobile__actions--single' : ''}">
-        <a href="${routeHref('/')}" class="nav-btn nav-btn--ghost nav-btn--block${onHome ? ' active' : ''}">
+        <a href="${routeHref('/')}" class="nav-btn nav-btn--block${onHome ? ' active' : ''}">
           <span class="nav-btn__icon" aria-hidden="true">🏠</span>
           <span>Início</span>
         </a>
-        ${!user ? `<a href="${routeHref('/conta/entrar')}" class="nav-btn nav-btn--primary nav-btn--block${onLogin ? ' active' : ''}">
+        ${!user ? `<a href="${routeHref('/conta/entrar')}" class="nav-btn nav-btn--block${onLogin ? ' active' : ''}">
           <span class="nav-btn__icon" aria-hidden="true">🔑</span>
           <span>Entrar</span>
         </a>` : ''}
