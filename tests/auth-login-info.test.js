@@ -1,0 +1,66 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { renderRulesAndPlansContent } from '../js/pages/rules.js'
+
+describe('login page rules and plans', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', {
+      location: { hash: '#/conta/entrar' },
+      scrollTo: vi.fn(),
+    })
+    vi.stubGlobal('document', {
+      getElementById: () => ({ innerHTML: '' }),
+      createElement: () => ({ innerHTML: '' }),
+    })
+    vi.stubGlobal('requestAnimationFrame', (fn) => fn())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.resetModules()
+  })
+
+  it('renderLogin includes rules and plans panel', async () => {
+    vi.doMock('../js/api.js', () => ({ signIn: vi.fn() }))
+    vi.doMock('../js/state.js', () => ({ setUser: vi.fn() }))
+    vi.doMock('../js/router.js', () => ({
+      navigate: vi.fn(),
+      getHashSection: () => null,
+    }))
+
+    const formStub = { addEventListener: vi.fn() }
+    const main = {
+      innerHTML: '',
+      querySelector: (sel) => (sel === '#login-form' ? formStub : null),
+    }
+    const { renderLogin } = await import('../js/pages/auth.js')
+    await renderLogin(main)
+
+    expect(main.innerHTML).toContain('auth-page--with-info')
+    expect(main.innerHTML).toContain('auth-page__info')
+    expect(main.innerHTML).toContain('id="regras"')
+    expect(main.innerHTML).toContain('id="planos"')
+    expect(main.innerHTML).toContain('Enviar comprovante — Starter')
+    expect(main.innerHTML).toContain('Conduta')
+    expect(main.innerHTML).toContain('sec=regras')
+    expect(main.innerHTML).toContain('sec=planos')
+  })
+
+  it('renderRules redirects to login rules section', async () => {
+    const navigate = vi.fn()
+    vi.doMock('../js/router.js', () => ({ navigate, getHashSection: () => null }))
+
+    const main = { innerHTML: '' }
+    const { renderRules } = await import('../js/pages/rules.js')
+    await renderRules(main)
+
+    expect(navigate).toHaveBeenCalledWith('/conta/entrar?sec=regras')
+  })
+
+  it('rules panel content is self-contained', () => {
+    const html = renderRulesAndPlansContent()
+    expect(html).toContain('1. Sobre o MaredeVendas')
+    expect(html).toContain('4. Planos para lojistas')
+    expect(html).toContain('5. Conduta')
+    expect(html).toContain('plan-grid')
+  })
+})
