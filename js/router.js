@@ -15,14 +15,22 @@ function normalizeRoutePath(raw) {
 }
 
 function readHashPath() {
-  const fromHash = normalizeRoutePath(window.location.hash?.replace(/^#/, '') ?? '')
-  if (fromHash) return fromHash
+  const rawHash = window.location.hash ?? ''
+  if (rawHash) {
+    const fromHash = normalizeRoutePath(rawHash.replace(/^#/, ''))
+    if (fromHash) return fromHash
+    return '/'
+  }
 
   const fromHref = (() => {
     const href = window.location.href ?? ''
     const hashIdx = href.indexOf('#')
     if (hashIdx === -1) return ''
-    return normalizeRoutePath(href.slice(hashIdx + 1))
+    const pathPart = href.slice(hashIdx + 1)
+    const normalized = normalizeRoutePath(pathPart)
+    if (normalized) return normalized
+    if (pathPart === '' || pathPart === '/') return '/'
+    return ''
   })()
   if (fromHref) return fromHref
 

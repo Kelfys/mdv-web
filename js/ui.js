@@ -49,7 +49,7 @@ function renderStaffPanelDropdown(user, panel, activeTab) {
         <p class="admin-menu__title">${panelConfig.label}</p>
         ${renderStaffMenuItems(panel, activeTab)}
         <div class="admin-menu__divider"></div>
-        <a href="#/" class="admin-menu__item admin-menu__item--muted">← Voltar ao site</a>
+        <a href="${routeHref('/')}" class="admin-menu__item admin-menu__item--muted">← Voltar ao site</a>
       </div>
     </div>`
 }
@@ -69,13 +69,13 @@ export function renderHeader() {
 
   header.innerHTML = `
     <div class="header__inner">
-      <a href="#/" class="logo">
+      <a href="${routeHref('/')}" class="logo">
         <div class="logo__icon">🏪</div>
         <span>${APP_NAME.replace('Vendas', '')}<span class="accent">Vendas</span></span>
       </a>
 
       <nav class="nav-desktop">
-        <a href="#/">Lojas</a>
+        <a href="${routeHref('/')}">Lojas</a>
         ${!user ? '<a href="#/conta/entrar">Entrar</a>' : ''}
       </nav>
 
@@ -95,7 +95,7 @@ export function renderHeader() {
                 </a>
               `).join('')}
               <div class="admin-menu__divider"></div>
-              <a href="#/" class="admin-menu__item admin-menu__item--muted">← Voltar ao site</a>
+              <a href="${routeHref('/')}" class="admin-menu__item admin-menu__item--muted">← Voltar ao site</a>
             </div>
           </div>` : ''}
         ${user?.role === 'admin' ? renderStaffPanelDropdown(user, 'admin', staffTab) : ''}
@@ -107,7 +107,7 @@ export function renderHeader() {
     </div>
 
     <nav class="nav-mobile ${menuOpen ? 'open' : ''}" id="nav-mobile">
-      <a href="#/">Lojas</a>
+      <a href="${routeHref('/')}">Lojas</a>
       ${user?.role === 'customer' ? '<a href="#/favoritos">❤️ Favoritos</a>' : ''}
       ${user?.role === 'merchant' ? `
         <p class="nav-mobile__section">Painel do Lojista</p>
@@ -116,17 +116,17 @@ export function renderHeader() {
             ? ` (${getMerchantNewOrdersCount()})` : ''
           return `<a href="${merchantMenuHref(item)}" class="${merchantTab === item.id ? 'active' : ''}">${item.icon} ${item.label}${badge}</a>`
         }).join('')}
-        <a href="#/">← Voltar ao site</a>
+        <a href="${routeHref('/')}">← Voltar ao site</a>
       ` : ''}
       ${user?.role === 'admin' ? `
         <p class="nav-mobile__section">Painel Admin</p>
         ${renderStaffMenuItems('admin', staffTab, { compact: true })}
-        <a href="#/">← Voltar ao site</a>
+        <a href="${routeHref('/')}">← Voltar ao site</a>
       ` : ''}
       ${user?.role === 'moderator' ? `
         <p class="nav-mobile__section">Painel Moderador</p>
         ${renderStaffMenuItems('moderator', staffTab, { compact: true })}
-        <a href="#/">← Voltar ao site</a>
+        <a href="${routeHref('/')}">← Voltar ao site</a>
       ` : ''}
       ${user ? '<button type="button" id="logout-mobile">🚪 Sair</button>' : '<a href="#/conta/entrar">🔑 Entrar</a>'}
     </nav>

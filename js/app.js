@@ -117,6 +117,7 @@ function boot() {
   initHeader()
   initCart()
   initRouter()
+  delete window.__MV_INITIAL_ROUTE__
 }
 
 handleAuthCallback()
