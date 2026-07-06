@@ -344,7 +344,6 @@ img { max-width: 100%; display: block; }
 @media (min-width: 768px) {
   .nav-desktop { display: flex; }
   .menu-toggle { display: none; }
-  .btn-login-mobile { display: none !important; }
 }
 
 /* Main */

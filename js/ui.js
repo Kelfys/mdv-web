@@ -83,12 +83,12 @@ export function renderHeader() {
         <a href="#/">Lojas</a>
         <a href="#/lojista/cadastro">Vender aqui</a>
         <a href="#/regras">Regras</a>
+        ${!user ? '<a href="#/conta/entrar">Entrar</a>' : ''}
       </nav>
 
       <div class="header__actions">
         <button type="button" class="icon-btn" id="theme-toggle" title="Alternar tema">${getTheme() === 'dark' ? '☀️' : '🌙'}</button>
 
-        ${!user ? `<a href="#/conta/entrar" class="btn btn-primary btn-sm btn-login-mobile">Entrar</a>` : ''}
         ${user?.role === 'customer' ? `<a href="#/favoritos" class="icon-btn" title="Favoritos">❤️</a>` : ''}
         ${user?.role === 'merchant' ? `
           <div class="header-dropdown ${staffMenuOpen ? 'open' : ''}" id="staff-dropdown-merchant">
@@ -107,7 +107,7 @@ export function renderHeader() {
           </div>` : ''}
         ${user?.role === 'admin' ? renderStaffPanelDropdown(user, 'admin', staffTab) : ''}
         ${user?.role === 'moderator' ? renderStaffPanelDropdown(user, 'moderator', staffTab) : ''}
-        ${user ? `<button type="button" class="icon-btn" id="logout-btn" title="Sair">🚪</button>` : `<a href="#/conta/entrar" class="icon-btn hidden md:flex" title="Entrar">❤️</a>`}
+        ${user ? `<button type="button" class="icon-btn" id="logout-btn" title="Sair">🚪</button>` : ''}
 
         <button type="button" class="icon-btn menu-toggle" id="menu-toggle" aria-expanded="${menuOpen}">${menuOpen ? '✕' : '☰'}</button>
       </div>
