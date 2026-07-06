@@ -50,6 +50,7 @@ describe('login page rules and plans', () => {
     const { renderLogin } = await import('../js/pages/auth.js')
     await renderLogin(main)
 
+    expect(main.innerHTML).toContain('Esqueci minha senha')
     expect(main.innerHTML).toContain('Entrar com Google')
     expect(main.innerHTML).toContain('btn-google')
     expect(main.innerHTML).toContain('ou use email e senha')

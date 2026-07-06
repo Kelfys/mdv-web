@@ -1591,6 +1591,11 @@ img { max-width: 100%; display: block; }
 
 .auth-card h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
 .auth-card p { color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem; }
+.auth-forgot {
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
 .auth-links {
   display: flex;
   flex-direction: column;

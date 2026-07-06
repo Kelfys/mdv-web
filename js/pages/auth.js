@@ -29,6 +29,24 @@ function renderAuthDivider(text = 'ou') {
   return `<div class="auth-divider" role="separator"><span>${escapeHtml(text)}</span></div>`
 }
 
+function bindPasswordReset(main, buttonId) {
+  main.querySelector(`#${buttonId}`)?.addEventListener('click', async () => {
+    const errEl = main.querySelector('#auth-error')
+    const email = main.querySelector('#login-form input[name="email"]')?.value?.trim()
+    if (!email) {
+      errEl.innerHTML = '<div class="alert alert-error">Informe seu email acima primeiro.</div>'
+      return
+    }
+    try {
+      const { requestPasswordReset } = await import('../api.js')
+      await requestPasswordReset(email)
+      errEl.innerHTML = '<div class="alert" style="background:var(--primary-50);color:var(--primary-700);padding:0.75rem;border-radius:var(--radius)">Link de redefinição enviado para seu email.</div>'
+    } catch (err) {
+      errEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
+    }
+  })
+}
+
 function bindGoogleAuth(main, { nextPath = '/favoritos', redirect } = {}) {
   const btn = main.querySelector('#google-auth-btn')
   if (!btn) return
@@ -117,6 +135,9 @@ export async function renderLogin(main) {
         </div>
         <button type="submit" class="btn btn-primary btn-block">Entrar</button>
       </form>
+      <p class="auth-forgot">
+        <button type="button" class="btn btn-outline btn-sm" id="login-reset-password">Esqueci minha senha</button>
+      </p>
       <div class="auth-links">
         <a href="${routeHref('/conta/criar')}">Criar conta de cliente</a>
         <a href="${routeHref('/lojista/cadastro')}">Cadastrar minha loja</a>
@@ -128,6 +149,7 @@ export async function renderLogin(main) {
 
   const oauthNext = redirect?.startsWith('/') ? redirect : '/favoritos'
   bindGoogleAuth(main, { nextPath: oauthNext, redirect })
+  bindPasswordReset(main, 'login-reset-password')
 
   main.querySelector('#login-form').addEventListener('submit', async (e) => {
     e.preventDefault()
@@ -242,21 +264,7 @@ export async function renderAdminLogin(main) {
     `
   )
 
-  main.querySelector('#admin-reset-password')?.addEventListener('click', async () => {
-    const errEl = main.querySelector('#auth-error')
-    const email = main.querySelector('#login-form input[name="email"]')?.value?.trim()
-    if (!email) {
-      errEl.innerHTML = '<div class="alert alert-error">Informe seu email acima primeiro.</div>'
-      return
-    }
-    try {
-      const { requestPasswordReset } = await import('../api.js')
-      await requestPasswordReset(email)
-      errEl.innerHTML = '<div class="alert" style="background:var(--primary-50);color:var(--primary-700);padding:0.75rem;border-radius:var(--radius)">Link de redefinição enviado para seu email.</div>'
-    } catch (err) {
-      errEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
-    }
-  })
+  bindPasswordReset(main, 'admin-reset-password')
 
   main.querySelector('#login-form').addEventListener('submit', async (e) => {
     e.preventDefault()
@@ -299,21 +307,7 @@ export async function renderModeratorLogin(main) {
     `
   )
 
-  main.querySelector('#moderator-reset-password')?.addEventListener('click', async () => {
-    const errEl = main.querySelector('#auth-error')
-    const email = main.querySelector('#login-form input[name="email"]')?.value?.trim()
-    if (!email) {
-      errEl.innerHTML = '<div class="alert alert-error">Informe seu email acima primeiro.</div>'
-      return
-    }
-    try {
-      const { requestPasswordReset } = await import('../api.js')
-      await requestPasswordReset(email)
-      errEl.innerHTML = '<div class="alert" style="background:var(--primary-50);color:var(--primary-700);padding:0.75rem;border-radius:var(--radius)">Link de redefinição enviado para seu email.</div>'
-    } catch (err) {
-      errEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
-    }
-  })
+  bindPasswordReset(main, 'moderator-reset-password')
 
   main.querySelector('#login-form').addEventListener('submit', async (e) => {
     e.preventDefault()
