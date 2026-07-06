@@ -2233,6 +2233,12 @@ tr:last-child td { border-bottom: none; }
   font-size: 1.0625rem;
 }
 
+.admin-section__head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .admin-cards-list {
   display: flex;
   flex-direction: column;

@@ -1185,7 +1185,7 @@ export async function fetchPendingPlanChangeRequests(neighborhoodId = null) {
   const client = await requireClient()
   const { data, error } = await client
     .from('plan_change_requests')
-    .select('*, store:stores(id, name, slug, city, state, plan_id, neighborhood_id, owner:users(id, name, email))')
+    .select('*, store:stores(id, name, slug, city, state, plan_id, neighborhood_id, neighborhood:neighborhoods(id, name), owner:users(id, name, email))')
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
   if (error) throw error

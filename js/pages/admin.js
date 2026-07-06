@@ -97,6 +97,7 @@ function renderPlanChangeApprovalCards(requests) {
             <dl class="admin-approval-card__details">
               <div><dt>Lojista</dt><dd>${escapeHtml(r.store?.owner?.name ?? '—')}</dd></div>
               <div><dt>Email</dt><dd>${escapeHtml(r.store?.owner?.email ?? '—')}</dd></div>
+              <div><dt>Bairro</dt><dd>${escapeHtml(r.store?.neighborhood?.name ?? '—')}</dd></div>
               <div><dt>Cidade</dt><dd>${escapeHtml(r.store?.city ?? '—')}, ${escapeHtml(r.store?.state ?? '—')}</dd></div>
             </dl>
             <div class="admin-approval-card__actions">
@@ -149,6 +150,108 @@ function storeStatusSummary(stores) {
       <span class="admin-stat-chip admin-stat-chip--approved">${counts.approved} aprovadas</span>
       <span class="admin-stat-chip admin-stat-chip--pending">${counts.pending} pendentes</span>
       <span class="admin-stat-chip admin-stat-chip--blocked">${counts.blocked} bloqueadas</span>
+    </div>`
+}
+
+function summarizeRegionalOverview(neighborhoods, stores, moderators) {
+  const storeCounts = new Map()
+  const pendingCounts = new Map()
+  for (const store of stores) {
+    const id = store.neighborhood_id
+    if (!id) continue
+    storeCounts.set(id, (storeCounts.get(id) ?? 0) + 1)
+    if (store.status === 'pending') {
+      pendingCounts.set(id, (pendingCounts.get(id) ?? 0) + 1)
+    }
+  }
+
+  const moderatorsByNeighborhood = new Map()
+  for (const moderator of moderators) {
+    if (!moderator.neighborhood_id) continue
+    moderatorsByNeighborhood.set(moderator.neighborhood_id, (moderatorsByNeighborhood.get(moderator.neighborhood_id) ?? 0) + 1)
+  }
+
+  const rows = neighborhoods.map((neighborhood) => ({
+    neighborhood,
+    storeCount: storeCounts.get(neighborhood.id) ?? 0,
+    pendingCount: pendingCounts.get(neighborhood.id) ?? 0,
+    moderatorCount: moderatorsByNeighborhood.get(neighborhood.id) ?? 0,
+  }))
+
+  return {
+    totalNeighborhoods: neighborhoods.length,
+    activeNeighborhoods: neighborhoods.filter((n) => n.active).length,
+    totalModerators: moderators.length,
+    unassignedStores: stores.filter((s) => !s.neighborhood_id).length,
+    rows,
+  }
+}
+
+function renderRegionalOverviewSection(summary) {
+  const { totalNeighborhoods, activeNeighborhoods, totalModerators, unassignedStores, rows } = summary
+
+  return `
+    <section class="admin-section admin-regional-overview">
+      <div class="admin-section__head">
+        <h2>Bairros e moderadores</h2>
+        <div class="admin-section__head-actions">
+          <a href="${staffHref('admin', 'bairros')}" class="btn btn-outline btn-sm">Gerenciar bairros</a>
+          <a href="${staffHref('admin', 'moderadores')}" class="btn btn-outline btn-sm">Gerenciar moderadores</a>
+        </div>
+      </div>
+      <div class="admin-stat-chips" style="margin-bottom:1rem">
+        <span class="admin-stat-chip admin-stat-chip--sent">${activeNeighborhoods} bairro${activeNeighborhoods === 1 ? '' : 's'} ativo${activeNeighborhoods === 1 ? '' : 's'}</span>
+        <span class="admin-stat-chip admin-stat-chip--sent">${totalNeighborhoods} região${totalNeighborhoods === 1 ? '' : 'ões'} no total</span>
+        <span class="admin-stat-chip admin-stat-chip--sent">${totalModerators} moderador${totalModerators === 1 ? '' : 'es'}</span>
+        ${unassignedStores > 0 ? `<span class="admin-stat-chip admin-stat-chip--pending">${unassignedStores} loja${unassignedStores === 1 ? '' : 's'} sem bairro</span>` : ''}
+      </div>
+      ${rows.length === 0
+        ? adminEmptyState('📍', 'Nenhum bairro', 'Cadastre regiões para segmentar lojas e moderadores.', `<a href="${staffHref('admin', 'bairros')}" class="btn btn-primary btn-sm">Criar bairro</a>`)
+        : `<div class="table-wrap">
+            <table>
+              <thead><tr><th>Bairro</th><th>Lojas</th><th>Pendentes</th><th>Moderadores</th><th>Status</th></tr></thead>
+              <tbody>
+                ${rows.map(({ neighborhood, storeCount, pendingCount, moderatorCount }) => `
+                  <tr>
+                    <td><strong>${escapeHtml(neighborhood.name)}</strong><br><small>${escapeHtml(neighborhood.city)}, ${escapeHtml(neighborhood.state)}</small></td>
+                    <td>${storeCount}</td>
+                    <td>${pendingCount > 0 ? `<span class="admin-stat-chip admin-stat-chip--pending">${pendingCount}</span>` : '0'}</td>
+                    <td>${moderatorCount > 0 ? moderatorCount : '<span class="admin-stat-chip admin-stat-chip--pending">0</span>'}</td>
+                    <td>${neighborhood.active ? '<span class="badge badge-approved">Ativo</span>' : '<span class="badge badge-blocked">Inativo</span>'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>`}
+    </section>`
+}
+
+function adminStoresFilterBar({ searchId, searchPlaceholder, chips, neighborhoods = [] }) {
+  const neighborhoodFilter = neighborhoods.length > 0
+    ? `
+        <div class="admin-filter-group admin-filter-group--store">
+          <label class="admin-filter-group__label" for="admin-stores-neighborhood">Bairro</label>
+          <select class="form-input admin-orders-store-select" id="admin-stores-neighborhood">
+            <option value="all">Todos os bairros</option>
+            ${neighborhoods.map((n) => `<option value="${n.id}">${escapeHtml(formatNeighborhoodLabel(n))}</option>`).join('')}
+          </select>
+        </div>`
+    : ''
+
+  return `
+    <div class="admin-orders-filters">
+      <input type="search" class="form-input admin-filter-bar__search" id="${searchId}" placeholder="${escapeHtml(searchPlaceholder)}" autocomplete="off" />
+      <div class="admin-orders-filters__groups">
+        ${neighborhoodFilter}
+        <div class="admin-filter-group">
+          <span class="admin-filter-group__label">Status</span>
+          <div class="admin-filter-chips" role="group">
+            ${chips.map((c) => `
+              <button type="button" class="admin-filter-chip ${c.active ? 'active' : ''}" data-filter="${c.id}">${escapeHtml(c.label)}</button>
+            `).join('')}
+          </div>
+        </div>
+      </div>
     </div>`
 }
 
@@ -393,6 +496,43 @@ function bindListFilters(main, {
   }
 
   search?.addEventListener('input', apply)
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      activeFilter = chip.dataset.filter
+      chips.forEach((c) => c.classList.toggle('active', c === chip))
+      apply()
+    })
+  })
+}
+
+function bindStoreListFilters(main) {
+  const search = main.querySelector('#admin-stores-search')
+  const neighborhoodSelect = main.querySelector('#admin-stores-neighborhood')
+  const chips = main.querySelectorAll('[data-filter]')
+  const rows = main.querySelectorAll('[data-store-row]')
+  let activeFilter = 'all'
+  let activeNeighborhood = 'all'
+
+  const apply = () => {
+    const term = search?.value.trim().toLowerCase() ?? ''
+    rows.forEach((row) => {
+      const matchesSearch = !term || (row.dataset.storeSearch ?? '').includes(term)
+      const matchesStatus = activeFilter === 'all' || row.dataset.storeStatus === activeFilter
+      const matchesNeighborhood = activeNeighborhood === 'all' || row.dataset.storeNeighborhood === activeNeighborhood
+      const visible = matchesSearch && matchesStatus && matchesNeighborhood
+      row.hidden = !visible
+      if (row.dataset.storeId) {
+        const editRow = main.querySelector(`#edit-store-row-${row.dataset.storeId}`)
+        if (editRow && !visible) editRow.hidden = true
+      }
+    })
+  }
+
+  search?.addEventListener('input', apply)
+  neighborhoodSelect?.addEventListener('change', () => {
+    activeNeighborhood = neighborhoodSelect.value
+    apply()
+  })
   chips.forEach((chip) => {
     chip.addEventListener('click', () => {
       activeFilter = chip.dataset.filter
@@ -942,6 +1082,8 @@ function quickActions(panel = 'admin') {
     cards.push(
       { href: staffHref(panel, 'lojas'), icon: '🏪', title: 'Nova loja', text: 'Cadastrar vitrine' },
       { href: staffHref(panel, 'produtos'), icon: '📦', title: 'Novo produto', text: 'Adicionar ao catálogo' },
+      { href: staffHref(panel, 'bairros'), icon: '📍', title: 'Bairros', text: 'Regiões do marketplace' },
+      { href: staffHref(panel, 'moderadores'), icon: '🛡️', title: 'Moderadores', text: 'Equipe regional' },
     )
   }
   cards.push(
@@ -1000,13 +1142,23 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
   const productsReadOnly = isReadOnlyStaffTab(panel, 'products')
 
   if (tab === 'overview') {
-    const [metrics, queue, stores, orderAnalytics, recentOrders] = await Promise.all([
+    const overviewFetches = [
       fetchAdminMetrics(),
       loadStaffApprovalQueue(user, panel),
       fetchAllStoresAdmin(getStaffNeighborhoodScope(user, panel)),
       fetchAdminOrdersAnalytics(),
       fetchAdminOrders(5),
-    ])
+    ]
+    if (panel === 'admin') {
+      overviewFetches.push(fetchNeighborhoods({ activeOnly: false }), fetchModerators())
+    }
+    const overviewResults = await Promise.all(overviewFetches)
+    const [metrics, queue, stores, orderAnalytics, recentOrders] = overviewResults
+    const neighborhoods = panel === 'admin' ? overviewResults[5] : []
+    const moderators = panel === 'admin' ? overviewResults[6] : []
+    const regionalSummary = panel === 'admin'
+      ? summarizeRegionalOverview(neighborhoods, stores, moderators)
+      : null
     const { pendingStores: pending, planRequests, pendingTotal } = queue
     const orderMetrics = orderAnalytics.metrics
 
@@ -1017,10 +1169,13 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
 
     main.innerHTML = adminPage(
       menuItem.label,
-      panel === 'moderator' ? staffScopeSubtitle(user, panel) : 'Resumo da plataforma e atalhos rápidos',
+      panel === 'moderator'
+        ? staffScopeSubtitle(user, panel)
+        : 'Resumo multi-bairro da plataforma e atalhos rápidos',
       `
         ${quickActions(panel)}
         ${metricCards(metrics, pendingTotal, orderMetrics, panel)}
+        ${regionalSummary ? renderRegionalOverviewSection(regionalSummary) : ''}
         <section class="admin-section">
           <div class="admin-section__head">
             <h2>Pedidos</h2>
@@ -1237,23 +1392,35 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
             </div>
           </form>
         </details>`}
-        ${stores.length > 0 ? adminFilterBar({
-          searchId: 'admin-stores-search',
-          searchPlaceholder: 'Buscar loja, cidade ou lojista...',
-          chips: [
-            { id: 'all', label: 'Todas', active: true },
-            { id: 'approved', label: 'Aprovadas', active: false },
-            { id: 'pending', label: 'Pendentes', active: false },
-            { id: 'blocked', label: 'Bloqueadas', active: false },
-          ],
-        }) : ''}
+        ${stores.length > 0 ? (panel === 'admin'
+          ? adminStoresFilterBar({
+            searchId: 'admin-stores-search',
+            searchPlaceholder: 'Buscar loja, bairro ou lojista...',
+            neighborhoods,
+            chips: [
+              { id: 'all', label: 'Todas', active: true },
+              { id: 'approved', label: 'Aprovadas', active: false },
+              { id: 'pending', label: 'Pendentes', active: false },
+              { id: 'blocked', label: 'Bloqueadas', active: false },
+            ],
+          })
+          : adminFilterBar({
+            searchId: 'admin-stores-search',
+            searchPlaceholder: 'Buscar loja, cidade ou lojista...',
+            chips: [
+              { id: 'all', label: 'Todas', active: true },
+              { id: 'approved', label: 'Aprovadas', active: false },
+              { id: 'pending', label: 'Pendentes', active: false },
+              { id: 'blocked', label: 'Bloqueadas', active: false },
+            ],
+          })) : ''}
         ${storeStatusSummary(stores)}
         <div class="table-wrap admin-stores-table" style="margin-top:1rem">
           <table>
             <thead><tr><th>Loja</th><th>Bairro</th><th>Lojista</th><th>Cidade</th><th>Status</th><th>Plano</th><th></th></tr></thead>
             <tbody>
               ${stores.length === 0 ? `<tr><td colspan="7">${adminEmptyState('🏪', 'Nenhuma loja', 'Cadastre a primeira loja usando o formulário acima.')}</td></tr>` : stores.map((s) => `
-                <tr data-store-row data-store-id="${s.id}" data-store-status="${s.status}" data-store-search="${escapeHtml(`${s.name} ${s.neighborhood?.name ?? ''} ${s.city} ${s.state} ${s.owner?.name ?? ''} ${s.owner?.email ?? ''}`.toLowerCase())}">
+                <tr data-store-row data-store-id="${s.id}" data-store-status="${s.status}" data-store-neighborhood="${s.neighborhood_id ?? ''}" data-store-search="${escapeHtml(`${s.name} ${s.neighborhood?.name ?? ''} ${s.city} ${s.state} ${s.owner?.name ?? ''} ${s.owner?.email ?? ''}`.toLowerCase())}">
                   <td>
                     <div class="admin-table-thumb">
                       ${s.logo ? `<img src="${escapeHtml(s.logo)}" alt="" />` : '<span>🏪</span>'}
@@ -1362,13 +1529,16 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
       bindStoreEdits(main)
       bindPlanBrandingToggle(main)
     }
-    bindListFilters(main, {
-      searchId: 'admin-stores-search',
-      rowSelector: '[data-store-row]',
-      getSearchText: (row) => row.dataset.storeSearch ?? '',
-      getFilterValue: (row) => row.dataset.storeStatus ?? '',
-      linkedEditPrefix: 'edit-store-row-',
-    })
+    if (panel === 'admin') bindStoreListFilters(main)
+    else {
+      bindListFilters(main, {
+        searchId: 'admin-stores-search',
+        rowSelector: '[data-store-row]',
+        getSearchText: (row) => row.dataset.storeSearch ?? '',
+        getFilterValue: (row) => row.dataset.storeStatus ?? '',
+        linkedEditPrefix: 'edit-store-row-',
+      })
+    }
     return
   }
 
@@ -1485,7 +1655,13 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
       return
     }
 
-    const neighborhoods = await fetchNeighborhoods({ activeOnly: false })
+    const [neighborhoods, stores, moderators] = await Promise.all([
+      fetchNeighborhoods({ activeOnly: false }),
+      fetchAllStoresAdmin(),
+      fetchModerators(),
+    ])
+    const regionalSummary = summarizeRegionalOverview(neighborhoods, stores, moderators)
+    const summaryById = Object.fromEntries(regionalSummary.rows.map((row) => [row.neighborhood.id, row]))
 
     main.innerHTML = adminPage(
       menuItem.label,
@@ -1521,12 +1697,21 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
             ? adminEmptyState('📍', 'Nenhum bairro', 'Crie o primeiro bairro para segmentar lojas e moderadores.')
             : `<div class="table-wrap">
                 <table>
-                  <thead><tr><th>Nome</th><th>Cidade</th><th>Slug</th><th>Status</th><th></th></tr></thead>
+                  <thead><tr><th>Nome</th><th>Cidade</th><th>Lojas</th><th>Moderadores</th><th>Slug</th><th>Status</th><th></th></tr></thead>
                   <tbody>
-                    ${neighborhoods.map((n) => `
+                    ${neighborhoods.map((n) => {
+                      const row = summaryById[n.id]
+                      const storeCount = row?.storeCount ?? 0
+                      const pendingCount = row?.pendingCount ?? 0
+                      const moderatorCount = row?.moderatorCount ?? 0
+                      return `
                       <tr>
                         <td><strong>${escapeHtml(n.name)}</strong></td>
                         <td>${escapeHtml(n.city)}, ${escapeHtml(n.state)}</td>
+                        <td>
+                          ${storeCount}${pendingCount > 0 ? `<br><small>${pendingCount} pendente${pendingCount === 1 ? '' : 's'}</small>` : ''}
+                        </td>
+                        <td>${moderatorCount > 0 ? moderatorCount : '<span class="admin-stat-chip admin-stat-chip--pending">0</span>'}</td>
                         <td><code>/${escapeHtml(n.slug)}</code></td>
                         <td>${n.active ? '<span class="badge badge-approved">Ativo</span>' : '<span class="badge badge-blocked">Inativo</span>'}</td>
                         <td>
@@ -1534,8 +1719,8 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                             ${n.active ? 'Desativar' : 'Ativar'}
                           </button>
                         </td>
-                      </tr>
-                    `).join('')}
+                      </tr>`
+                    }).join('')}
                   </tbody>
                 </table>
               </div>`}
