@@ -47,6 +47,7 @@ maredevendas-vanilla/
 │   ├── payment.js          # Formas de pagamento no checkout
 │   ├── ui.js               # Header, carrinho, cards e checkout
 │   ├── utils.js            # Formatação, escape HTML, validação de idade
+│   ├── neighborhood.js     # Seleção de bairro no feed e escopo do moderador
 │   ├── merchant-nav.js     # Menu do painel do lojista
 │   ├── staff-nav.js        # Menu dos painéis admin e moderador
 │   └── pages/              # Uma página por rota
@@ -121,6 +122,8 @@ npm test
 | Lojista | `demo-pet-2@maredevendas.com` | `DemoLojista2026!` |
 | Admin | `brunopdaraujo@gmail.com` | `MarecAdmin2026!` |
 | Moderador | `moderador@maredevendas.com` | `DemoModerador2026!` |
+
+O moderador demo está vinculado ao bairro **Copacabana** (migration `033`). Login em `#/moderador/entrar`.
 
 ---
 
@@ -198,8 +201,17 @@ gh workflow run deploy.yml
 | `/conta/criar` | Cadastro do cliente (com data de nascimento) |
 | `/lojista/cadastro` | Cadastro de loja |
 | `/dashboard` | Painel do lojista |
+| `/admin/entrar` | Login admin |
 | `/admin` | Painel admin |
-| `/moderador` | Painel moderador |
+| `/admin/bairros` | Gestão de bairros/regiões (só admin) |
+| `/admin/moderadores` | Promover moderadores e atribuir bairro |
+| `/moderador/entrar` | Login moderador |
+| `/moderador` | Painel moderador (escopo regional) |
+| `/moderador/aprovacoes` | Aprovar lojas e planos do bairro |
+| `/moderador/lojas` | Lojas do bairro (somente leitura) |
+| `/moderador/produtos` | Produtos do bairro (somente leitura) |
+| `/moderador/pedidos` | Pedidos das lojas do bairro |
+| `/moderador/conta` | Perfil e região atribuída |
 | `/favoritos` | Dashboard do cliente (favoritos, curtidos, pedidos, perfil) |
 | `/regras` | Regras e planos |
 | `/auth/callback` | Retorno OAuth Google / recovery de senha |
@@ -210,11 +222,72 @@ gh workflow run deploy.yml
 
 ## Bairros e moderadores regionais
 
-- Tabela `neighborhoods` + `stores.neighborhood_id` + `users.neighborhood_id` (moderadores)
-- **Home:** chips de bairro filtram lojas, produtos e anúncios (preferência salva no navegador)
-- **Admin → Bairros** (`#/admin/bairros`): criar/ativar regiões
-- **Admin → Moderadores:** promover usuário **com bairro obrigatório**
-- **Moderador:** vê e aprova apenas lojas/pedidos do seu bairro (RLS no Supabase — migration `033`)
+A plataforma é **multi-bairro**: um único site, várias regiões. O admin controla tudo; cada moderador opera só no bairro atribuído.
+
+### Hierarquia
+
+```
+Admin (visão global)
+  └── Bairros (Copacabana, Ipanema, …)
+        └── Moderador regional (1 bairro)
+              └── Lojas e pedidos daquele bairro
+```
+
+### Modelo de dados (migration `033`)
+
+| Tabela / coluna | Função |
+|-----------------|--------|
+| `neighborhoods` | Bairros/regiões (nome, slug, cidade, UF, ativo) |
+| `stores.neighborhood_id` | Loja pertence a um bairro (obrigatório no cadastro) |
+| `users.neighborhood_id` | Moderador vinculado a um bairro |
+
+Bairros demo no Rio (seed na migration): **Copacabana**, **Ipanema**, **Leblon**, **Centro**, **Tijuca**. Lojas antigas foram vinculadas a Copacabana.
+
+### Marketplace (visitante / cliente)
+
+- Na **home**, chips de bairro filtram lojas, produtos e anúncios
+- A escolha fica salva no navegador (`js/neighborhood.js`)
+- Sem bairro selecionado, o primeiro bairro ativo é usado automaticamente
+
+### Admin
+
+| Aba | Rota | O que faz |
+|-----|------|-----------|
+| **Bairros** | `#/admin/bairros` | Criar região (nome, cidade, UF); ativar/desativar |
+| **Moderadores** | `#/admin/moderadores` | Promover usuário existente **com bairro obrigatório**; alterar região depois; permissão de aprovar mudança de plano |
+| **Lojas** | `#/admin/lojas` | Ver/editar bairro de cada loja |
+
+### Moderador regional
+
+- Login: `#/moderador/entrar`
+- Painel mostra a **região atribuída** no topo e em **Minha conta**
+- **Aprovações:** só cadastros de loja e pedidos de plano de lojas do seu bairro
+- **Lojas / Produtos:** somente leitura, já filtrados pela região
+- **Pedidos:** só pedidos de lojas do bairro
+- Segurança reforçada por **RLS** no Supabase (`moderator_neighborhood_id()`)
+
+Moderadores com permissão **“Pode aprovar planos”** (checkbox no admin) analisam mudanças de plano **apenas das lojas do bairro deles**.
+
+### Cadastro de loja
+
+Em `#/lojista/cadastro`, o lojista escolhe **Bairro / região** antes de enviar. A aprovação cai na fila do moderador daquele bairro.
+
+### Promover um moderador (admin)
+
+1. O usuário precisa existir (cadastro em `/conta/criar` ou login Google)
+2. Admin → **Moderadores** (`#/admin/moderadores`)
+3. Informar email, escolher **bairro** e marcar “Pode aprovar planos” se necessário
+4. O moderador passa a ver só lojas, produtos, pedidos e aprovações daquele bairro
+
+### Arquivos relevantes
+
+- `supabase/migrations/033_neighborhoods.sql` — schema, seed e políticas RLS
+- `js/neighborhood.js` — seleção no feed e `getStaffNeighborhoodScope()`
+- `js/api.js` — `fetchNeighborhoods`, `createNeighborhood`, `promoteUserToModerator(email, neighborhoodId)`
+- `js/pages/admin.js` — abas Bairros e Moderadores
+- `js/pages/home.js` — seletor de bairro no feed
+- `js/staff-nav.js` — menu dos painéis admin e moderador
+- `tests/neighborhood.test.js` — testes de escopo e persistência do bairro
 
 ---
 
@@ -250,11 +323,14 @@ Regras em `js/plans.js` (`planAllowsStoreLogo`, `planAllowsStoreBanner`). Upload
 
 ### Nova migration
 
-1. Crie `supabase/migrations/033_descricao.sql` (próximo número sequencial)
+1. Crie `supabase/migrations/034_descricao.sql` (próximo número sequencial)
 2. `npx supabase db push` ou SQL Editor
 3. Atualize `api.js` e a UI conforme necessário
 
-**Última migration:** `032_customer_orders.sql` — coluna `user_id` em `orders` e RLS para o cliente ler seus pedidos.
+**Últimas migrations:**
+
+- `033_neighborhoods.sql` — bairros, escopo regional de moderadores e RLS
+- `032_customer_orders.sql` — `user_id` em pedidos e histórico do cliente
 
 ---
 
