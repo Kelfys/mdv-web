@@ -5,6 +5,18 @@ import { APP_BASE_PATH, USE_HISTORY_ROUTER } from './config.js'
 
 const routes = new Map()
 let currentCleanup = null
+let renderEpoch = 0
+
+function readHashPath() {
+  const href = window.location.href ?? ''
+  const hashIdx = href.indexOf('#')
+  if (hashIdx === -1) return ''
+  const raw = href.slice(hashIdx + 1).replace(/^#/, '') || '/'
+  let path = raw.split('?')[0]
+  const anchorIdx = path.indexOf('#', 1)
+  if (anchorIdx !== -1) path = path.slice(0, anchorIdx)
+  return path.startsWith('/') ? path : `/${path}`
+}
 
 export function registerRoute(pattern, handler) {
   routes.set(pattern, handler)
@@ -17,6 +29,9 @@ export function routeHref(path) {
 }
 
 export function getCurrentPath() {
+  const hashPath = readHashPath()
+  if (hashPath && hashPath !== '/') return hashPath
+
   if (USE_HISTORY_ROUTER) {
     let path = window.location.pathname
     if (APP_BASE_PATH && path.startsWith(APP_BASE_PATH)) {
@@ -24,11 +39,8 @@ export function getCurrentPath() {
     }
     return path.startsWith('/') ? path : `/${path}`
   }
-  const raw = window.location.hash.replace(/^#/, '') || '/'
-  let path = raw.split('?')[0]
-  const anchorIdx = path.indexOf('#', 1)
-  if (anchorIdx !== -1) path = path.slice(0, anchorIdx)
-  return path.startsWith('/') ? path : `/${path}`
+
+  return hashPath || '/'
 }
 
 export function getHashSection() {
@@ -46,14 +58,17 @@ export function getHashSection() {
 }
 
 function matchRoute(path) {
-  for (const [pattern, handler] of routes) {
+  const normalized = path.replace(/\/$/, '') || '/'
+  const ordered = [...routes.entries()].sort((a, b) => b[0].length - a[0].length)
+
+  for (const [pattern, handler] of ordered) {
     const paramNames = []
     const regexStr = pattern.replace(/:([^/]+)/g, (_, name) => {
       paramNames.push(name)
       return '([^/]+)'
     })
     const regex = new RegExp(`^${regexStr}$`)
-    const match = path.match(regex)
+    const match = normalized.match(regex)
     if (match) {
       const params = {}
       paramNames.forEach((name, i) => { params[name] = decodeURIComponent(match[i + 1]) })
@@ -67,6 +82,8 @@ export async function render() {
   const main = document.getElementById('main')
   if (!main) return
 
+  const epoch = ++renderEpoch
+
   import('./ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
 
   if (currentCleanup) {
@@ -77,6 +94,7 @@ export async function render() {
   const matched = matchRoute(getCurrentPath())
 
   if (!matched) {
+    if (epoch !== renderEpoch) return
     main.innerHTML = `<div class="empty-state"><h2>Página não encontrada</h2><p><a href="${routeHref('/')}">Voltar ao início</a></p></div>`
     return
   }
@@ -85,9 +103,11 @@ export async function render() {
 
   try {
     const cleanup = await matched.handler(main, matched.params)
+    if (epoch !== renderEpoch) return
     if (typeof cleanup === 'function') currentCleanup = cleanup
     window.scrollTo({ top: 0, behavior: 'smooth' })
   } catch (err) {
+    if (epoch !== renderEpoch) return
     main.innerHTML = `<div class="empty-state"><h2>Erro ao carregar</h2><p>${err.message}</p></div>`
   }
 }

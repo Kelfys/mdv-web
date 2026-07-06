@@ -4,6 +4,7 @@ describe('router path helpers', () => {
   beforeEach(() => {
     vi.stubGlobal('window', {
       location: {
+        href: 'https://example.github.io/MaredeVendas-vanilla/#/dashboard/pedidos',
         hash: '#/dashboard/pedidos',
         pathname: '/MaredeVendas-vanilla/dashboard/pedidos',
       },
@@ -25,7 +26,13 @@ describe('router path helpers', () => {
     expect(routeHref('/dashboard')).toBe('#/dashboard')
 
     window.location.hash = '#/conta/entrar?sec=planos'
+    window.location.href = 'https://example.github.io/MaredeVendas-vanilla/#/conta/entrar?sec=planos'
     expect(getCurrentPath()).toBe('/conta/entrar')
     expect(getHashSection()).toBe('planos')
+
+    window.location.href = 'https://example.github.io/MaredeVendas-vanilla/#/admin/entrar'
+    window.location.hash = '#/admin/entrar'
+    window.location.pathname = '/MaredeVendas-vanilla/'
+    expect(getCurrentPath()).toBe('/admin/entrar')
   })
 })
