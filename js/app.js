@@ -38,7 +38,26 @@ async function handleAuthCallback() {
   }
 }
 
+function restoreSpaDeepLink() {
+  try {
+    const target = sessionStorage.getItem('spa-redirect')
+    if (!target) return
+    sessionStorage.removeItem('spa-redirect')
+    history.replaceState(null, '', target)
+  } catch {
+    // sessionStorage indisponível (modo privado restrito)
+  }
+}
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(() => resolve(null), ms)),
+  ])
+}
+
 function boot() {
+  restoreSpaDeepLink()
   setTheme(localStorage.getItem('maredevendas-theme') || 'light')
 
   registerRoute('/', lazy(() => import('./pages/home.js').then((m) => ({ default: m.renderHome }))))
@@ -84,4 +103,7 @@ function boot() {
   initRouter()
 }
 
-handleAuthCallback().then(loadUser).then(boot).catch(boot)
+handleAuthCallback()
+  .then(() => withTimeout(loadUser(), 5000))
+  .then(boot)
+  .catch(boot)

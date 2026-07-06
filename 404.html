@@ -3,10 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <title>MaredeVendas</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 2rem; text-align: center; color: #334155; }
+    a { color: #2563eb; }
+  </style>
   <script>
-    sessionStorage.setItem('spa-redirect', location.pathname + location.search + location.hash)
-    location.replace(location.pathname.split('/').slice(0, 2).join('/') + '/')
+    (function () {
+      var parts = location.pathname.split('/')
+      var home = parts.length > 2 ? '/' + parts[1] + '/' : '/'
+      sessionStorage.setItem('spa-redirect', location.pathname + location.search + location.hash)
+      location.replace(home)
+    })()
   </script>
 </head>
-<body></body>
+<body>
+  <p>Redirecionando…</p>
+  <p><a id="spa-fallback" href="/">Clique aqui se não for redirecionado</a></p>
+  <script>
+    (function () {
+      var parts = location.pathname.split('/')
+      var home = parts.length > 2 ? '/' + parts[1] + '/' : '/'
+      var link = document.getElementById('spa-fallback')
+      if (link) link.href = home
+    })()
+  </script>
+</body>
 </html>
