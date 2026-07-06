@@ -27,7 +27,7 @@ export function planAllowsStoreBranding(planId) {
 export const PLAN_LIMITS = {
   free: { products: 6, productImages: 2 },
   starter: { products: 15, productImages: 10 },
-  growth: { products: 30, productImages: 30 },
+  plus: { products: 30, productImages: 30 },
   premium: { products: 80, productImages: 80 },
 }
 
@@ -89,7 +89,7 @@ export function formatProductImageLimitHint(planId, productsWithImages) {
 const PLAN_COOLDOWN_HOURS = {
   free: 24,
   starter: 12,
-  growth: 4,
+  plus: 4,
   premium: null,
 }
 
@@ -125,11 +125,11 @@ export const SUBSCRIPTION_PLANS = [
     ],
   },
   {
-    id: 'growth',
+    id: 'plus',
     name: 'Plus',
     description: 'Para lojas em crescimento com vitrine completa.',
     priceMonthly: 15,
-    priceCooldownHours: PLAN_COOLDOWN_HOURS.growth,
+    priceCooldownHours: PLAN_COOLDOWN_HOURS.plus,
     features: [
       'Até 30 produtos',
       'Imagens em todos os produtos (500 KB cada)',
@@ -167,7 +167,7 @@ export function getPlanById(planId) {
 const PLAN_FEED_WEIGHT = {
   free: 1,
   starter: 2,
-  growth: 3,
+  plus: 3,
   premium: 4,
 }
 

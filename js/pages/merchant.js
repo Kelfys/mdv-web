@@ -590,7 +590,7 @@ function renderSettingsPreviewCard(store, plan) {
       ${store.status === 'approved' ? `<a href="${routeHref(`/loja/${store.slug}`)}" class="btn btn-outline btn-sm" style="margin-top:0.75rem">Ver vitrine</a>` : ''}
       ${plan.id !== 'premium' ? `
         <a
-          href="${buildPlanPaymentUrl(plan.id === 'free' ? getPlanById('starter') : plan.id === 'starter' ? getPlanById('growth') : getPlanById('premium'))}"
+          href="${buildPlanPaymentUrl(plan.id === 'free' ? getPlanById('starter') : plan.id === 'starter' ? getPlanById('plus') : getPlanById('premium'))}"
           target="_blank"
           rel="noopener noreferrer"
           class="btn btn-green btn-sm"

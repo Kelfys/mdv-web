@@ -1131,7 +1131,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
               <select class="form-input" name="plan_id">
                 <option value="free">Gratuito</option>
                 <option value="starter">Starter</option>
-                <option value="growth">Plus</option>
+                <option value="plus">Plus</option>
                 <option value="premium">Premium</option>
               </select>
             </div>
@@ -1224,7 +1224,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                       <div class="form-group">
                         <label class="form-label">Plano</label>
                         <select class="form-input" name="plan_id">
-                          ${['free', 'starter', 'growth', 'premium'].map((p) => `<option value="${p}" ${s.plan_id === p ? 'selected' : ''}>${escapeHtml(getPlanById(p).name)}</option>`).join('')}
+                          ${['free', 'starter', 'plus', 'premium'].map((p) => `<option value="${p}" ${s.plan_id === p ? 'selected' : ''}>${escapeHtml(getPlanById(p).name)}</option>`).join('')}
                         </select>
                       </div>
                       <div class="form-group admin-form-grid__full">

@@ -11,7 +11,7 @@ import {
 const stores = [
   { id: 'a', name: 'Loja Free', plan_id: 'free', created_at: '2024-01-01T00:00:00Z', city: 'Rio' },
   { id: 'b', name: 'Loja Premium', plan_id: 'premium', created_at: '2024-01-01T00:00:00Z', city: 'Rio' },
-  { id: 'c', name: 'Loja Plus', plan_id: 'growth', created_at: new Date().toISOString(), city: 'SP' },
+  { id: 'c', name: 'Loja Plus', plan_id: 'plus', created_at: new Date().toISOString(), city: 'SP' },
 ]
 
 const products = [

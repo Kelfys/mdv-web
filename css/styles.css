@@ -419,7 +419,7 @@ img { max-width: 100%; display: block; }
 }
 
 .store-card__plan-badge--premium { background: rgb(147 51 234 / 0.85); }
-.store-card__plan-badge--growth { background: rgb(37 99 235 / 0.85); }
+.store-card__plan-badge--plus { background: rgb(37 99 235 / 0.85); }
 .store-card__plan-badge--starter { background: rgb(22 163 74 / 0.85); }
 
 .feed-ad-card {

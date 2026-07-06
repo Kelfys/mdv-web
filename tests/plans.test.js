@@ -35,7 +35,7 @@ describe('plan price cooldown', () => {
 
   it('resolves plan by id', () => {
     expect(getPlanById('starter').name).toBe('Starter')
-    expect(getPlanById('growth').name).toBe('Plus')
+    expect(getPlanById('plus').name).toBe('Plus')
   })
 })
 
@@ -45,8 +45,8 @@ describe('plan catalog limits', () => {
     expect(getPlanProductImageLimit('free')).toBe(2)
     expect(getPlanProductLimit('starter')).toBe(15)
     expect(getPlanProductImageLimit('starter')).toBe(10)
-    expect(getPlanProductLimit('growth')).toBe(30)
-    expect(getPlanProductImageLimit('growth')).toBe(30)
+    expect(getPlanProductLimit('plus')).toBe(30)
+    expect(getPlanProductImageLimit('plus')).toBe(30)
     expect(getPlanProductLimit('premium')).toBe(80)
     expect(getPlanProductImageLimit('premium')).toBe(80)
   })
