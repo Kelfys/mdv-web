@@ -6,6 +6,8 @@ import {
   buildOrderPeriodSeries, getOrderPeriodCutoff,
   fetchPendingStoreApprovals,
   approveStoreRegistration, rejectStoreRegistration,
+  fetchPendingPlanChangeRequests, approvePlanChangeRequest, rejectPlanChangeRequest,
+  setModeratorPlanApprovalPermission,
   updatePassword, fetchMerchants, fetchModerators, promoteUserToModerator, demoteModerator,
   fetchAllStoresAdmin,
   fetchAdminProducts, createStoreAsAdmin, createProduct, updateProduct,
@@ -19,7 +21,7 @@ import {
 } from '../utils.js'
 import { STORE_THEME_COLORS } from '../config.js'
 import { STAFF_PANELS, staffHref, getStaffMenuItem } from '../staff-nav.js'
-import { canAccessPanel, isReadOnlyStaffTab } from '../roles.js'
+import { canAccessPanel, isReadOnlyStaffTab, canApprovePlanChanges } from '../roles.js'
 import {
   planAllowsStoreBranding, FREE_PLAN_BRANDING_MESSAGE,
   countProductsWithImages, canAddProductImage, canCreateProduct,
@@ -44,6 +46,52 @@ function guardStaff(main, panel = 'admin') {
     return null
   }
   return user
+}
+
+async function loadStaffApprovalQueue(user) {
+  const pendingStores = await fetchPendingStoreApprovals()
+  const planRequests = canApprovePlanChanges(user)
+    ? await fetchPendingPlanChangeRequests()
+    : []
+  return {
+    pendingStores,
+    planRequests,
+    pendingTotal: pendingStores.length + planRequests.length,
+  }
+}
+
+function renderPlanChangeApprovalCards(requests) {
+  if (requests.length === 0) return ''
+
+  return `
+    <section class="admin-section">
+      <div class="admin-section__head">
+        <h2>Pedidos de mudança de plano</h2>
+        <span class="admin-stat-chip admin-stat-chip--pending">${requests.length} pendente${requests.length === 1 ? '' : 's'}</span>
+      </div>
+      <div class="admin-cards-list">
+        ${requests.map((r) => `
+          <article class="admin-approval-card">
+            <div class="admin-approval-card__head">
+              <div>
+                <h3>${escapeHtml(r.store?.name ?? 'Loja')}</h3>
+                <p>${escapeHtml(getPlanById(r.current_plan_id).name)} → <strong>${escapeHtml(getPlanById(r.requested_plan_id).name)}</strong> · ${formatDate(r.created_at)}</p>
+              </div>
+              <span class="badge badge-pending">Plano</span>
+            </div>
+            <dl class="admin-approval-card__details">
+              <div><dt>Lojista</dt><dd>${escapeHtml(r.store?.owner?.name ?? '—')}</dd></div>
+              <div><dt>Email</dt><dd>${escapeHtml(r.store?.owner?.email ?? '—')}</dd></div>
+              <div><dt>Cidade</dt><dd>${escapeHtml(r.store?.city ?? '—')}, ${escapeHtml(r.store?.state ?? '—')}</dd></div>
+            </dl>
+            <div class="admin-approval-card__actions">
+              <button type="button" class="btn btn-primary btn-sm" data-approve-plan-request="${r.id}">Aprovar plano</button>
+              <button type="button" class="btn btn-outline btn-sm" data-reject-plan-request="${r.id}">Rejeitar</button>
+            </div>
+          </article>
+        `).join('')}
+      </div>
+    </section>`
 }
 
 function rerenderStaff(main, tab, selectedStoreId = null) {
@@ -885,7 +933,7 @@ function quickActions(panel = 'admin') {
   }
   cards.push(
     { href: staffHref(panel, 'pedidos'), icon: '🛒', title: 'Pedidos', text: 'Métricas e histórico' },
-    { href: staffHref(panel, 'aprovacoes'), icon: '✅', title: 'Aprovações', text: 'Revisar cadastros' },
+    { href: staffHref(panel, 'aprovacoes'), icon: '✅', title: 'Aprovações', text: 'Cadastros e planos' },
     { href: '#/', icon: '🌐', title: 'Ver site', text: 'Abrir marketplace', muted: true },
   )
 
@@ -939,16 +987,17 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
   const productsReadOnly = isReadOnlyStaffTab(panel, 'products')
 
   if (tab === 'overview') {
-    const [metrics, pending, stores, orderAnalytics, recentOrders] = await Promise.all([
+    const [metrics, queue, stores, orderAnalytics, recentOrders] = await Promise.all([
       fetchAdminMetrics(),
-      fetchPendingStoreApprovals(),
+      loadStaffApprovalQueue(user),
       fetchAllStoresAdmin(),
       fetchAdminOrdersAnalytics(),
       fetchAdminOrders(5),
     ])
+    const { pendingStores: pending, planRequests, pendingTotal } = queue
     const orderMetrics = orderAnalytics.metrics
 
-    setAdminPendingCount(pending.length)
+    setAdminPendingCount(pendingTotal)
     import('../ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
 
     const pendingPreview = pending.slice(0, 3)
@@ -958,7 +1007,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
       'Resumo da plataforma e atalhos rápidos',
       `
         ${quickActions(panel)}
-        ${metricCards(metrics, pending.length, orderMetrics, panel)}
+        ${metricCards(metrics, pendingTotal, orderMetrics, panel)}
         <section class="admin-section">
           <div class="admin-section__head">
             <h2>Pedidos</h2>
@@ -987,11 +1036,11 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
         <section class="admin-section">
           <div class="admin-section__head">
             <h2>Aprovações recentes</h2>
-            ${pending.length > 0 ? `<a href="${staffHref(panel, 'aprovacoes')}" class="btn btn-outline btn-sm">Ver todas (${pending.length})</a>` : ''}
+            ${pendingTotal > 0 ? `<a href="${staffHref(panel, 'aprovacoes')}" class="btn btn-outline btn-sm">Ver todas (${pendingTotal})</a>` : ''}
           </div>
-          ${pendingPreview.length === 0
-            ? adminEmptyState('✅', 'Tudo em dia', 'Nenhuma loja aguardando aprovação no momento.')
-            : `<div class="admin-cards-list">
+          ${pendingPreview.length === 0 && planRequests.length === 0
+            ? adminEmptyState('✅', 'Tudo em dia', 'Nenhuma loja ou pedido de plano aguardando aprovação.')
+            : `${pendingPreview.length > 0 ? `<div class="admin-cards-list">
                 ${pendingPreview.map((s) => `
                   <article class="admin-list-card admin-list-card--highlight">
                     <div class="admin-list-card__main">
@@ -1005,7 +1054,8 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                     </div>
                   </article>
                 `).join('')}
-              </div>`}
+              </div>` : ''}
+              ${planRequests.length > 0 ? renderPlanChangeApprovalCards(planRequests.slice(0, 3)) : ''}`}
         </section>
       `,
       `<span class="admin-user-badge">${escapeHtml(user.email)}</span>`,
@@ -1013,59 +1063,69 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
     )
 
     bindApprovalActions(main, 'overview')
+    bindPlanChangeApprovalActions(main, 'overview')
     return
   }
 
   if (tab === 'approvals') {
-    const pending = await fetchPendingStoreApprovals()
-    setAdminPendingCount(pending.length)
+    const { pendingStores: pending, planRequests, pendingTotal } = await loadStaffApprovalQueue(user)
+    setAdminPendingCount(pendingTotal)
     import('../ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
 
     main.innerHTML = adminPage(
       menuItem.label,
-      `${pending.length} loja(s) aguardando sua revisão`,
-      pending.length === 0
-        ? adminEmptyState('✅', 'Fila vazia', 'Nenhuma loja aguardando aprovação.')
-        : `<div class="admin-cards-list">
-            ${pending.map((s) => `
-              <article class="admin-approval-card">
-                <div class="admin-approval-card__head">
-                  <div>
-                    <h3>${escapeHtml(s.name)}</h3>
-                    <p>${escapeHtml(s.city)}, ${escapeHtml(s.state)} · ${formatDate(s.created_at)}</p>
-                  </div>
-                  ${statusBadge(s.status)}
-                </div>
-                <dl class="admin-approval-card__details">
-                  <div><dt>Lojista</dt><dd>${escapeHtml(s.owner?.name ?? '—')}</dd></div>
-                  <div><dt>Email</dt><dd>${escapeHtml(s.owner?.email ?? '—')}</dd></div>
-                  <div><dt>WhatsApp</dt><dd>${escapeHtml(s.whatsapp)}</dd></div>
-                  <div><dt>Categoria</dt><dd>${escapeHtml(s.category?.name ?? '—')}</dd></div>
-                </dl>
-                <div class="admin-approval-card__actions">
-                  <button type="button" class="btn btn-primary btn-sm" data-approve="${s.id}">Aprovar loja</button>
-                  <button type="button" class="btn btn-outline btn-sm" data-reject="${s.id}">Rejeitar</button>
-                </div>
-              </article>
-            `).join('')}
-          </div>`,
+      `${pendingTotal} pendência${pendingTotal === 1 ? '' : 's'} aguardando sua revisão`,
+      pendingTotal === 0
+        ? adminEmptyState('✅', 'Fila vazia', 'Nenhuma loja ou pedido de plano aguardando aprovação.')
+        : `${renderPlanChangeApprovalCards(planRequests)}
+          ${pending.length > 0 ? `
+            <section class="admin-section">
+              <div class="admin-section__head">
+                <h2>Cadastros de loja</h2>
+                <span class="admin-stat-chip admin-stat-chip--pending">${pending.length} pendente${pending.length === 1 ? '' : 's'}</span>
+              </div>
+              <div class="admin-cards-list">
+                ${pending.map((s) => `
+                  <article class="admin-approval-card">
+                    <div class="admin-approval-card__head">
+                      <div>
+                        <h3>${escapeHtml(s.name)}</h3>
+                        <p>${escapeHtml(s.city)}, ${escapeHtml(s.state)} · ${formatDate(s.created_at)}</p>
+                      </div>
+                      ${statusBadge(s.status)}
+                    </div>
+                    <dl class="admin-approval-card__details">
+                      <div><dt>Lojista</dt><dd>${escapeHtml(s.owner?.name ?? '—')}</dd></div>
+                      <div><dt>Email</dt><dd>${escapeHtml(s.owner?.email ?? '—')}</dd></div>
+                      <div><dt>WhatsApp</dt><dd>${escapeHtml(s.whatsapp)}</dd></div>
+                      <div><dt>Categoria</dt><dd>${escapeHtml(s.category?.name ?? '—')}</dd></div>
+                    </dl>
+                    <div class="admin-approval-card__actions">
+                      <button type="button" class="btn btn-primary btn-sm" data-approve="${s.id}">Aprovar loja</button>
+                      <button type="button" class="btn btn-outline btn-sm" data-reject="${s.id}">Rejeitar</button>
+                    </div>
+                  </article>
+                `).join('')}
+              </div>
+            </section>` : ''}`,
       '',
       panel
     )
 
     bindApprovalActions(main, 'approvals')
+    bindPlanChangeApprovalActions(main, 'approvals')
     return
   }
 
   if (tab === 'stores') {
-    const [stores, categories, pending] = await Promise.all([
+    const [stores, categories, queue] = await Promise.all([
       fetchAllStoresAdmin(),
       fetchCategories(),
-      fetchPendingStoreApprovals(),
+      loadStaffApprovalQueue(user),
     ])
     const merchants = storesReadOnly ? [] : await fetchMerchants()
 
-    setAdminPendingCount(pending.length)
+    setAdminPendingCount(queue.pendingTotal)
     import('../ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
 
     main.innerHTML = adminPage(
@@ -1275,14 +1335,14 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
   }
 
   if (tab === 'products') {
-    const [allProducts, stores, categories, pending] = await Promise.all([
+    const [allProducts, stores, categories, queue] = await Promise.all([
       fetchAdminProducts(),
       fetchAllStoresAdmin(),
       fetchCategories(),
-      fetchPendingStoreApprovals(),
+      loadStaffApprovalQueue(user),
     ])
 
-    setAdminPendingCount(pending.length)
+    setAdminPendingCount(queue.pendingTotal)
     import('../ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
 
     if (!selectedStoreId && stores.length > 0) {
@@ -1326,14 +1386,14 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
   }
 
   if (tab === 'pedidos') {
-    const [orders, orderAnalytics, pending] = await Promise.all([
+    const [orders, orderAnalytics, queue] = await Promise.all([
       fetchAdminOrders(),
       fetchAdminOrdersAnalytics(),
-      fetchPendingStoreApprovals(),
+      loadStaffApprovalQueue(user),
     ])
     const orderMetrics = orderAnalytics.metrics
 
-    setAdminPendingCount(pending.length)
+    setAdminPendingCount(queue.pendingTotal)
     import('../ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
 
     main.innerHTML = adminPage(
@@ -1415,6 +1475,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
             <h2>Moderadores ativos</h2>
             <span class="admin-stat-chip admin-stat-chip--sent" id="admin-moderators-count">${moderators.length} cadastrado${moderators.length === 1 ? '' : 's'}</span>
           </div>
+          <p class="form-hint" style="margin-bottom:1rem">Marque quais moderadores podem aprovar pedidos de mudança de plano na aba Aprovações.</p>
           ${moderators.length === 0
             ? adminEmptyState('🛡️', 'Nenhum moderador', 'Promova o primeiro usuário usando o formulário acima.')
             : `
@@ -1445,12 +1506,13 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                         Desde <span class="admin-table-sort__icon" aria-hidden="true">↓</span>
                       </button>
                     </th>
+                    <th>Aprovar planos</th>
                     <th></th>
                   </tr></thead>
                   <tbody id="admin-moderators-tbody">
                     ${renderModeratorTableRows(moderators)}
                     <tr data-moderators-empty hidden>
-                      <td colspan="4">${adminEmptyState('🔍', 'Nenhum resultado', 'Nenhum moderador corresponde à busca.')}</td>
+                      <td colspan="5">${adminEmptyState('🔍', 'Nenhum resultado', 'Nenhum moderador corresponde à busca.')}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1816,6 +1878,12 @@ function renderModeratorTableRows(moderators) {
       <td>${escapeHtml(m.email)}</td>
       <td>${formatDate(m.created_at)}</td>
       <td>
+        <label class="admin-check">
+          <input type="checkbox" data-moderator-plan-approval="${m.id}" ${m.can_approve_plan_changes ? 'checked' : ''} />
+          Pode aprovar
+        </label>
+      </td>
+      <td>
         <button type="button" class="btn btn-outline btn-sm" data-demote-moderator="${m.id}" data-moderator-name="${escapeHtml(m.name)}">
           Remover acesso
         </button>
@@ -1943,6 +2011,19 @@ function bindModeratorsList(main) {
 function bindModeratorManagement(main) {
   bindModeratorsList(main)
 
+  main.querySelectorAll('[data-moderator-plan-approval]').forEach((checkbox) => {
+    checkbox.addEventListener('change', async () => {
+      const moderatorId = checkbox.dataset.moderatorPlanApproval
+      try {
+        await setModeratorPlanApprovalPermission(moderatorId, checkbox.checked)
+        showToast(checkbox.checked ? 'Moderador pode aprovar mudanças de plano' : 'Permissão de plano removida')
+      } catch (err) {
+        checkbox.checked = !checkbox.checked
+        showToast(err.message)
+      }
+    })
+  })
+
   main.querySelector('#promote-moderator-form')?.addEventListener('submit', async (e) => {
     e.preventDefault()
     const form = e.target
@@ -2019,6 +2100,33 @@ function bindApprovalActions(main, tab) {
       await rejectStoreRegistration(btn.dataset.reject)
       showToast('Loja rejeitada')
       rerenderStaff(main, tab)
+    })
+  })
+}
+
+function bindPlanChangeApprovalActions(main, tab) {
+  main.querySelectorAll('[data-approve-plan-request]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await approvePlanChangeRequest(btn.dataset.approvePlanRequest)
+        showToast('Plano aprovado!')
+        rerenderStaff(main, tab)
+      } catch (err) {
+        showToast(err.message)
+      }
+    })
+  })
+
+  main.querySelectorAll('[data-reject-plan-request]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Rejeitar este pedido de mudança de plano?')) return
+      try {
+        await rejectPlanChangeRequest(btn.dataset.rejectPlanRequest)
+        showToast('Pedido de plano rejeitado')
+        rerenderStaff(main, tab)
+      } catch (err) {
+        showToast(err.message)
+      }
     })
   })
 }

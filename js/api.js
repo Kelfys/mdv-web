@@ -23,7 +23,7 @@ import {
   planAllowsStoreBranding, FREE_PLAN_BRANDING_MESSAGE,
   getPlanProductLimit, getPlanProductImageLimit,
   planProductLimitMessage, planProductImageLimitMessage,
-  getPriceCooldownRemaining, formatPriceCooldownRemaining,
+  getPriceCooldownRemaining, formatPriceCooldownRemaining, getPlanById,
 } from './plans.js'
 
 async function countStoreProductsWithImages(client, storeId) {
@@ -784,7 +784,7 @@ export async function fetchModerators() {
   const client = await requireClient()
   const { data, error } = await client
     .from('users')
-    .select('id, name, email, role, created_at')
+    .select('id, name, email, role, created_at, can_approve_plan_changes')
     .eq('role', 'moderator')
     .order('name')
   if (error) throw error
@@ -820,6 +820,126 @@ export async function promoteUserToModerator(email) {
     .update({ role: 'moderator' })
     .eq('id', user.id)
     .select('id, name, email, role, created_at')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function createPlanChangeRequest(storeId, requestedPlanId, merchantNote = '') {
+  const client = await requireClient()
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Faça login para solicitar um plano.')
+
+  const { data: store, error: storeError } = await client
+    .from('stores')
+    .select('id, plan_id, owner_id')
+    .eq('id', storeId)
+    .single()
+  if (storeError) throw storeError
+  if (store.owner_id !== user.id) throw new Error('Sem permissão para solicitar plano desta loja.')
+
+  if (!['free', 'starter', 'plus', 'premium'].includes(requestedPlanId)) {
+    throw new Error('Plano inválido.')
+  }
+  if (requestedPlanId === store.plan_id && getPlanById(requestedPlanId).priceMonthly === 0) {
+    throw new Error('Este já é o seu plano atual.')
+  }
+
+  const { data: existing } = await client
+    .from('plan_change_requests')
+    .select('id')
+    .eq('store_id', storeId)
+    .eq('status', 'pending')
+    .maybeSingle()
+  if (existing) throw new Error('Já existe um pedido de plano aguardando aprovação.')
+
+  const { data, error } = await client.from('plan_change_requests').insert({
+    store_id: storeId,
+    requested_plan_id: requestedPlanId,
+    current_plan_id: store.plan_id,
+    merchant_note: merchantNote?.trim() || null,
+  }).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function fetchPendingPlanChangeRequests() {
+  const client = await requireClient()
+  const { data, error } = await client
+    .from('plan_change_requests')
+    .select('*, store:stores(id, name, slug, city, state, plan_id, owner:users(id, name, email))')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function fetchStorePendingPlanChangeRequest(storeId) {
+  const client = await requireClient()
+  const { data, error } = await client
+    .from('plan_change_requests')
+    .select('*')
+    .eq('store_id', storeId)
+    .eq('status', 'pending')
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export async function approvePlanChangeRequest(requestId, reviewNote = '') {
+  const client = await requireClient()
+  const user = await getCurrentUser()
+
+  const { data: req, error: fetchError } = await client
+    .from('plan_change_requests')
+    .select('id, store_id, requested_plan_id, status')
+    .eq('id', requestId)
+    .single()
+  if (fetchError) throw fetchError
+  if (req.status !== 'pending') throw new Error('Este pedido já foi analisado.')
+
+  const { error: storeError } = await client.from('stores').update({
+    plan_id: req.requested_plan_id,
+    subscription_status: 'active',
+  }).eq('id', req.store_id)
+  if (storeError) throw storeError
+
+  const { error } = await client.from('plan_change_requests').update({
+    status: 'approved',
+    review_note: reviewNote?.trim() || null,
+    reviewed_by: user?.id ?? null,
+    reviewed_at: new Date().toISOString(),
+  }).eq('id', requestId)
+  if (error) throw error
+}
+
+export async function rejectPlanChangeRequest(requestId, reviewNote = '') {
+  const client = await requireClient()
+  const user = await getCurrentUser()
+  const { error } = await client.from('plan_change_requests').update({
+    status: 'rejected',
+    review_note: reviewNote?.trim() || null,
+    reviewed_by: user?.id ?? null,
+    reviewed_at: new Date().toISOString(),
+  }).eq('id', requestId).eq('status', 'pending')
+  if (error) throw error
+}
+
+export async function setModeratorPlanApprovalPermission(moderatorId, enabled) {
+  const client = await requireClient()
+  const { data: user, error: fetchError } = await client
+    .from('users')
+    .select('id, role')
+    .eq('id', moderatorId)
+    .single()
+  if (fetchError) throw fetchError
+  if (user.role !== 'moderator') throw new Error('Usuário não é moderador.')
+
+  const { data, error } = await client
+    .from('users')
+    .update({ can_approve_plan_changes: Boolean(enabled) })
+    .eq('id', moderatorId)
+    .select('id, name, email, role, created_at, can_approve_plan_changes')
     .single()
   if (error) throw error
   return data

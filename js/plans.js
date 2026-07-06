@@ -170,12 +170,24 @@ function planRank(planId) {
   return PLAN_RANK[planId] ?? 0
 }
 
-function renderPlanCardAction(plan, currentPlanId) {
+function renderPlanCardAction(plan, currentPlanId, { requestMode = false } = {}) {
   const isDashboard = Boolean(currentPlanId)
   const isCurrent = currentPlanId === plan.id
+  const whatsappBtn = (label) => `
+    <a href="${buildPlanPaymentUrl(plan)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-block btn-sm">
+      ${label}
+    </a>`
 
   if (isDashboard && isCurrent) {
     if (plan.priceMonthly > 0) {
+      if (requestMode) {
+        return `
+          <button type="button" class="btn btn-green btn-block btn-sm" data-request-plan="${plan.id}">
+            Solicitar renovação
+          </button>
+          ${whatsappBtn('Enviar comprovante no WhatsApp')}
+          <p class="plan-card__note">Seu plano atual</p>`
+      }
       return `
         <a href="${buildPlanPaymentUrl(plan)}" target="_blank" rel="noopener noreferrer" class="btn btn-green btn-block btn-sm">
           Renovar — ${escapeHtml(plan.name)}
@@ -186,6 +198,13 @@ function renderPlanCardAction(plan, currentPlanId) {
   }
 
   if (isDashboard && plan.priceMonthly > 0 && planRank(plan.id) > planRank(currentPlanId)) {
+    if (requestMode) {
+      return `
+        <button type="button" class="btn btn-green btn-block btn-sm" data-request-plan="${plan.id}">
+          Solicitar — ${escapeHtml(plan.name)}
+        </button>
+        ${whatsappBtn('Enviar comprovante no WhatsApp')}`
+    }
     return `
       <a href="${buildPlanPaymentUrl(plan)}" target="_blank" rel="noopener noreferrer" class="btn btn-green btn-block btn-sm">
         Assinar — ${escapeHtml(plan.name)}
@@ -206,7 +225,7 @@ function renderPlanCardAction(plan, currentPlanId) {
 }
 
 /** Cards de planos para /regras e painel do lojista. */
-export function renderSubscriptionPlanCards({ currentPlanId = null } = {}) {
+export function renderSubscriptionPlanCards({ currentPlanId = null, requestMode = false } = {}) {
   return SUBSCRIPTION_PLANS.map((plan) => {
     const isCurrent = currentPlanId === plan.id
     const highlight = plan.id === 'premium' || isCurrent
@@ -221,7 +240,7 @@ export function renderSubscriptionPlanCards({ currentPlanId = null } = {}) {
       <ul class="plan-card__features">
         ${plan.features.map((f) => `<li>${escapeHtml(f)}</li>`).join('')}
       </ul>
-      ${renderPlanCardAction(plan, currentPlanId)}
+      ${renderPlanCardAction(plan, currentPlanId, { requestMode })}
     </article>`
   }).join('')
 }

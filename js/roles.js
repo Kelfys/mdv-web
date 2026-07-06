@@ -33,3 +33,7 @@ const MODERATOR_READONLY_TABS = new Set(['stores', 'products'])
 export function isReadOnlyStaffTab(panel, tab) {
   return panel === 'moderator' && MODERATOR_READONLY_TABS.has(tab)
 }
+
+export function canApprovePlanChanges(user) {
+  return isAdmin(user) || (isModerator(user) && Boolean(user?.can_approve_plan_changes))
+}

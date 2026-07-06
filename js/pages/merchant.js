@@ -7,6 +7,7 @@ import {
   updatePassword, fetchMerchantOrdersAnalytics, fetchStoreViewStats,
   fetchReviewsByStore, fetchStoreAds, createStoreAd, updateOrderStatus,
   fetchProductPriceHistory, countUnreadMerchantOrders, subscribeToStoreOrders,
+  createPlanChangeRequest, fetchStorePendingPlanChangeRequest,
 } from '../api.js'
 import { getUser, setMerchantNewOrdersCount } from '../state.js'
 import {
@@ -583,10 +584,18 @@ function merchantBrandingSection(store) {
     </section>`
 }
 
-function renderMerchantPlansPanel(store) {
+async function renderMerchantPlansPanel(store) {
   const plan = getPlanById(store.plan_id)
+  const pendingRequest = await fetchStorePendingPlanChangeRequest(store.id)
+  const pendingBanner = pendingRequest
+    ? `<div class="alert alert-info" style="margin-bottom:1rem">
+        Pedido de mudança para <strong>${escapeHtml(getPlanById(pendingRequest.requested_plan_id).name)}</strong>
+        aguardando aprovação desde ${formatDate(pendingRequest.created_at)}.
+      </div>`
+    : ''
 
   return `
+    ${pendingBanner}
     <div class="merchant-plans-current">
       <div>
         <p class="merchant-plans-current__eyebrow">Plano ativo</p>
@@ -595,17 +604,41 @@ function renderMerchantPlansPanel(store) {
       </div>
       ${store.status === 'approved' ? `<span class="badge badge-approved">Loja aprovada</span>` : storeStatusBadge(store.status)}
     </div>
-    <div class="plan-grid">${renderSubscriptionPlanCards({ currentPlanId: store.plan_id })}</div>
+    <div class="plan-grid">${renderSubscriptionPlanCards({ currentPlanId: store.plan_id, requestMode: true })}</div>
     <div class="plan-payment-info">
       <p><strong>Como assinar ou renovar:</strong></p>
       <ol>
         <li>Realize o pagamento do plano escolhido.</li>
-        <li>Clique em <strong>Assinar</strong> ou <strong>Renovar</strong> no card do plano para abrir o WhatsApp com a mensagem pronta.</li>
-        <li>Envie o comprovante e informe o nome da loja e o email cadastrado.</li>
-        <li>Após confirmação, o administrador ativa o plano na sua conta.</li>
+        <li>Clique em <strong>Solicitar</strong> no card do plano para enviar o pedido ao administrador.</li>
+        <li>Use o botão do WhatsApp para enviar o comprovante com o nome da loja e o email cadastrado.</li>
+        <li>Após aprovação, o plano é ativado automaticamente na sua conta.</li>
       </ol>
       <p class="form-hint">Dúvidas sobre limites e benefícios? <a href="${routeHref('/regras')}">Leia as regras e planos</a>.</p>
     </div>`
+}
+
+function bindPlanRequestActions(main, store) {
+  main.querySelectorAll('[data-request-plan]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const planId = btn.dataset.requestPlan
+      const plan = getPlanById(planId)
+      const actionLabel = planId === store.plan_id ? 'renovação' : `upgrade para ${plan.name}`
+      if (!confirm(`Enviar pedido de ${actionLabel}?`)) return
+
+      const originalText = btn.textContent
+      btn.disabled = true
+      btn.textContent = 'Enviando...'
+      try {
+        await createPlanChangeRequest(store.id, planId)
+        showToast('Pedido enviado! Aguarde aprovação do administrador.')
+        renderMerchantDashboard(main, 'plans')
+      } catch (err) {
+        showToast(err.message)
+        btn.disabled = false
+        btn.textContent = originalText
+      }
+    })
+  })
 }
 
 function renderSettingsPreviewCard(store, plan) {
@@ -1364,8 +1397,9 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
     main.innerHTML = merchantPage(
       menuItem.label,
       'Assine ou renove o plano da sua loja ou serviço',
-      renderMerchantPlansPanel(store),
+      await renderMerchantPlansPanel(store),
     )
+    bindPlanRequestActions(main, store)
     return
   }
 
