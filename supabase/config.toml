@@ -154,6 +154,7 @@ max_indexes = 5
 
 [auth]
 enabled = true
+# Site URL e redirects de produção (maredevendas.com.br). Aplicar: npx supabase config push
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
 site_url = "https://maredevendas.com.br/"

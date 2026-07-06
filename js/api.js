@@ -209,8 +209,9 @@ export async function updatePassword(newPassword) {
 }
 
 /**
- * URL de retorno OAuth (hash routing no GitHub Pages).
- * Deve estar em Supabase → Authentication → URL Configuration → Redirect URLs.
+ * URL de retorno OAuth/recuperação de senha (hash #/auth/callback).
+ * Origin + pathname automáticos — funciona em maredevendas.com.br e github.io/Repo/.
+ * Allow-list: supabase/config.toml → site_url e additional_redirect_urls.
  */
 export function getAuthRedirectUrl() {
   return `${window.location.origin}${window.location.pathname}#/auth/callback`

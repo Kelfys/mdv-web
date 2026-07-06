@@ -18,7 +18,10 @@ export const SUPABASE_ANON_KEY = 'sb_publishable_2hCOD3j1j7FRjLMsPF3sdw_4dG7A_HW
 
 export const APP_NAME = 'MaredeVendas'
 
-/** Base path no GitHub Pages (vazio em localhost na raiz). */
+/**
+ * Prefixo de path quando o app não está na raiz do host.
+ * Vazio em maredevendas.com.br, localhost e /; preenchido em github.io/Repo/.
+ */
 export function detectAppBasePath() {
   const match = window.location.pathname.match(/^(\/[^/]+)/)
   if (match && !match[1].includes('.')) return match[1]

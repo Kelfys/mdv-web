@@ -26,7 +26,7 @@ describe('google auth', () => {
     vi.resetModules()
   })
 
-  it('getAuthRedirectUrl points to auth callback hash route', async () => {
+  it('getAuthRedirectUrl points to auth callback hash route (GitHub Pages subpath)', async () => {
     vi.doMock('../js/db.js', () => ({
       requireClient: vi.fn(),
       isSupabaseConfigured: () => true,
@@ -34,6 +34,23 @@ describe('google auth', () => {
     }))
     const { getAuthRedirectUrl } = await import('../js/api.js')
     expect(getAuthRedirectUrl()).toBe('https://example.github.io/MaredeVendas-vanilla/#/auth/callback')
+  })
+
+  it('getAuthRedirectUrl uses apex domain at site root', async () => {
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'https://maredevendas.com.br',
+        pathname: '/',
+        hash: '#/conta/entrar',
+      },
+    })
+    vi.doMock('../js/db.js', () => ({
+      requireClient: vi.fn(),
+      isSupabaseConfigured: () => true,
+      getSupabase: vi.fn(),
+    }))
+    const { getAuthRedirectUrl } = await import('../js/api.js')
+    expect(getAuthRedirectUrl()).toBe('https://maredevendas.com.br/#/auth/callback')
   })
 
   it('renderCustomerRegister includes Google signup button', async () => {
