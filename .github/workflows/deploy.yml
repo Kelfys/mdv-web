@@ -1,4 +1,5 @@
-# Deploy automático para GitHub Pages (branch gh-pages via peaceiris).
+# Deploy automático para GitHub Pages via GitHub Actions (sem Jekyll).
+# Publica index.html, css/, js/, README.md e demais estáticos.
 # Injeta ?v=<commit> em app.js e styles.css para cache bust no mobile.
 # Dispara em push na main ou manualmente: gh workflow run deploy.yml
 name: Deploy GitHub Pages
@@ -9,7 +10,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: pages
@@ -17,6 +20,9 @@ concurrency:
 
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,9 +37,11 @@ jobs:
           sed -i "s|href=\"css/styles.css\"|href=\"css/styles.css?v=${BUILD_ID}\"|" dist/index.html
           sed -i "s|src=\"js/app.js\"|src=\"js/app.js?v=${BUILD_ID}\"|" dist/index.html
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          force_orphan: true
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
