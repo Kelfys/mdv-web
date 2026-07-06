@@ -42,12 +42,13 @@ import {
   isService, getCatalogItemIcon, getCatalogItemLabel,
   catalogItemTypeFieldHtml, catalogStockFieldHtml, bindCatalogItemTypeForm, readCatalogItemForm,
 } from '../catalog.js'
+import { t } from '../strings.js'
 
 function guardStaff(main, panel = 'admin') {
   const user = getUser()
   const panelConfig = STAFF_PANELS[panel]
   if (!canAccessPanel(user, panel)) {
-    main.innerHTML = `<div class="empty-state"><h2>Acesso restrito</h2><p><a href="#${panelConfig.loginPath}">Entrar no ${escapeHtml(panelConfig.label.toLowerCase())}</a></p></div>`
+    main.innerHTML = `<div class="empty-state"><h2>${t('admin.restrictedAccess')}</h2><p><a href="#${panelConfig.loginPath}">${t('nav.login')}</a></p></div>`
     return null
   }
   return user
@@ -56,7 +57,7 @@ function guardStaff(main, panel = 'admin') {
 function staffScopeSubtitle(user, panel) {
   if (panel !== 'moderator') return ''
   const name = user.neighborhood?.name
-  return name ? `Região: ${formatNeighborhoodLabel(user.neighborhood)}` : 'Região não atribuída — contate o admin'
+  return name ? `Região: ${formatNeighborhoodLabel(user.neighborhood)}` : t('moderator.regionNotAssigned')
 }
 
 function renderNeighborhoodOptions(neighborhoods, selectedId = '') {
@@ -68,7 +69,7 @@ function renderNeighborhoodOptions(neighborhoods, selectedId = '') {
 function renderModeratorPermissionBadges(moderator) {
   const active = MODERATOR_PERMISSIONS.filter((permission) => getModeratorPermissionValue(moderator, permission.id))
   if (active.length === 0) {
-    return '<span class="admin-permission-badge admin-permission-badge--muted">Somente aprovações de loja</span>'
+    return `<span class="admin-permission-badge admin-permission-badge--muted">${t('moderator.approvalOnlyBadge')}</span>`
   }
   return active.map((permission) => `
     <span class="admin-permission-badge">${escapeHtml(permission.label)}</span>
@@ -792,7 +793,7 @@ function renderAdminOrderRows(orders, { compact = false } = {}) {
 
 function imagePreviewBlock(url, alt, variant = 'square') {
   if (!url) {
-    return `<div class="admin-image-preview admin-image-preview--empty admin-image-preview--${variant}">Sem imagem</div>`
+    return `<div class="admin-image-preview admin-image-preview--empty admin-image-preview--${variant}">${t('app.noImage')}</div>`
   }
   return `<img class="admin-image-preview admin-image-preview--${variant}" src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" />`
 }
@@ -1204,7 +1205,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
       menuItem.label,
       panel === 'moderator'
         ? staffScopeSubtitle(user, panel)
-        : 'Resumo multi-bairro da plataforma e atalhos rápidos',
+        : t('admin.overviewSubtitle'),
       `
         ${quickActions(panel)}
         ${metricCards(metrics, pendingTotal, orderMetrics, panel)}
@@ -1240,7 +1241,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
             ${pendingTotal > 0 ? `<a href="${staffHref(panel, 'aprovacoes')}" class="btn btn-outline btn-sm">Ver todas (${pendingTotal})</a>` : ''}
           </div>
           ${pendingPreview.length === 0 && planRequests.length === 0
-            ? adminEmptyState('✅', 'Tudo em dia', 'Nenhuma loja ou pedido de plano aguardando aprovação.')
+            ? adminEmptyState('✅', t('admin.allCaughtUpTitle'), t('admin.allCaughtUpBody'))
             : `${pendingPreview.length > 0 ? `<div class="admin-cards-list">
                 ${pendingPreview.map((s) => `
                   <article class="admin-list-card admin-list-card--highlight">
@@ -1250,7 +1251,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                       <p class="admin-list-card__meta">${escapeHtml(s.owner?.name ?? 'Lojista')} · ${escapeHtml(s.owner?.email ?? '')}</p>
                     </div>
                     <div class="admin-list-card__actions">
-                      <button type="button" class="btn btn-primary btn-sm" data-approve="${s.id}">Aprovar</button>
+                      <button type="button" class="btn btn-primary btn-sm" data-approve="${s.id}">${t('labels.approve')}</button>
                       <button type="button" class="btn btn-outline btn-sm" data-reject="${s.id}">Rejeitar</button>
                     </div>
                   </article>
@@ -2458,7 +2459,7 @@ function bindNeighborhoodManagement(main) {
         city: form.city.value,
         state: form.state.value,
       })
-      showToast('Bairro criado')
+      showToast(t('admin.neighborhoodCreated'))
       rerenderStaff(main, 'neighborhoods')
     } catch (err) {
       msgEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
@@ -2493,7 +2494,7 @@ function bindNeighborhoodManagement(main) {
           city: form.city.value,
           state: form.state.value,
         })
-        showToast('Bairro atualizado')
+        showToast(t('admin.neighborhoodUpdated'))
         rerenderStaff(main, 'neighborhoods')
       } catch (err) {
         showToast(err.message)
@@ -2521,7 +2522,7 @@ function bindNeighborhoodManagement(main) {
       if (!window.confirm(`Excluir o bairro "${name}"? Esta ação não pode ser desfeita.`)) return
       try {
         await deleteNeighborhood(btn.dataset.deleteNeighborhood)
-        showToast('Bairro excluído')
+        showToast(t('toasts.neighborhoodDeleted'))
         rerenderStaff(main, 'neighborhoods')
       } catch (err) {
         showToast(err.message)
@@ -2567,7 +2568,7 @@ function bindModeratorManagement(main, neighborhoods = []) {
           neighborhoodId: form.neighborhood_id.value,
           canApprovePlanChanges: permissions.canApprovePlanChanges,
         })
-        showToast('Permissões do moderador atualizadas')
+        showToast(t('admin.moderatorPermissionsUpdated'))
         rerenderStaff(main, 'moderators')
       } catch (err) {
         showToast(err.message)

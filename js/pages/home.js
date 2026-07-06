@@ -10,6 +10,7 @@ import { buildHomeFeed } from '../feed.js'
 import { setStore, addItem, getUser } from '../state.js'
 import { normalizeStorePaymentMethods } from '../payment.js'
 import { getSelectedNeighborhoodId, setSelectedNeighborhoodId, formatNeighborhoodLabel } from '../neighborhood.js'
+import { t } from '../strings.js'
 
 const FEED_PRODUCT_LIMIT = 12
 const FEED_ADS_LIMIT = 12
@@ -75,7 +76,7 @@ export async function renderHome(main) {
       if (feedEl) {
         feedEl.innerHTML = `
           <div class="empty-state">
-            <h2>Erro ao conectar</h2>
+            <h2>${t('home.connectErrorTitle')}</h2>
             <p>${escapeHtml(err.message)}</p>
           </div>
         `
@@ -117,7 +118,7 @@ export async function renderHome(main) {
 
   function renderFeedContent() {
     if (neighborhoods.length === 0) {
-      return '<div class="empty-state"><h2>Nenhum bairro configurado</h2><p>Em breve novas regiões estarão disponíveis.</p></div>'
+      return `<div class="empty-state"><h2>${t('home.noNeighborhoodsTitle')}</h2><p>${t('home.noNeighborhoodsBody')}</p></div>`
     }
 
     if (activeTab === 'ads') {
@@ -125,7 +126,7 @@ export async function renderHome(main) {
       if (ads.length === 0) {
         return search
           ? '<div class="empty-state"><h2>Nenhum anúncio encontrado</h2><p>Tente outro termo de busca.</p></div>'
-          : '<div class="empty-state"><h2>Sem anúncios no momento</h2><p>Volte em breve para ver ofertas patrocinadas neste bairro.</p></div>'
+          : `<div class="empty-state"><h2>${t('home.noAdsTitle')}</h2><p>${t('home.noAdsBody')}</p></div>`
       }
       return ads.map((ad) => renderFeedAdCard(ad)).join('')
     }
@@ -133,8 +134,8 @@ export async function renderHome(main) {
     const hasFilters = Boolean(search || categoryId)
     if (feedItems.length === 0) {
       return hasFilters
-        ? '<div class="empty-state"><h2>Nada encontrado</h2><p>Tente outra categoria ou limpe a busca.</p></div>'
-        : '<div class="empty-state"><h2>Feed vazio neste bairro</h2><p>Em breve novas lojas e produtos aparecerão aqui.</p></div>'
+        ? `<div class="empty-state"><h2>${t('home.nothingFoundTitle')}</h2><p>${t('home.nothingFoundBody')}</p></div>`
+        : `<div class="empty-state"><h2>${t('home.emptyFeedTitle')}</h2><p>${t('home.emptyFeedBody')}</p></div>`
     }
     return feedItems.map(renderFeedItem).join('')
   }
@@ -156,7 +157,7 @@ export async function renderHome(main) {
     main.innerHTML = `
       <div class="toolbar">
         <div class="container" style="display:flex;flex-direction:column;gap:0.5rem;padding:0.5rem 0">
-          <input type="search" class="search-input" id="search" placeholder="${activeTab === 'ads' ? 'Buscar anúncio...' : 'Buscar loja ou produto...'}" value="${escapeHtml(search)}" />
+          <input type="search" class="search-input" id="search" placeholder="${activeTab === 'ads' ? t('home.searchAds') : t('home.searchStoresProducts')}" value="${escapeHtml(search)}" />
           ${neighborhoods.length ? `
             <div class="category-scroll neighborhood-scroll" id="neighborhoods">
               ${neighborhoods.map((n) => `
@@ -168,7 +169,7 @@ export async function renderHome(main) {
           ` : ''}
           ${activeTab === 'feed' ? `
             <div class="category-scroll" id="categories">
-              <button type="button" class="chip ${!categoryId ? 'active' : ''}" data-cat="">Todas</button>
+              <button type="button" class="chip ${!categoryId ? 'active' : ''}" data-cat="">${t('home.allCategories')}</button>
               ${categories.map((c) => `
                 <button type="button" class="chip ${categoryId === c.id ? 'active' : ''}" data-cat="${c.id}">${escapeHtml(c.name)}</button>
               `).join('')}
@@ -178,9 +179,9 @@ export async function renderHome(main) {
       </div>
       <div class="container">
         <div class="home-tabs tabs">
-          <button type="button" class="tab ${activeTab === 'feed' ? 'active' : ''}" data-home-tab="feed">Para você</button>
+          <button type="button" class="tab ${activeTab === 'feed' ? 'active' : ''}" data-home-tab="feed">${t('home.tabFeed')}</button>
           <button type="button" class="tab ${activeTab === 'ads' ? 'active' : ''}" data-home-tab="ads">
-            Anúncios${feedAds.length ? ` (${feedAds.length})` : ''}
+            ${t('home.tabAds')}${feedAds.length ? ` (${feedAds.length})` : ''}
           </button>
         </div>
         ${label ? `<p class="feed-label">${escapeHtml(label)}</p>` : ''}

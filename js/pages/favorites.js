@@ -13,6 +13,7 @@ import { renderStoreCard, renderFeedProductCard } from '../ui.js'
 import { escapeHtml, formatCurrency, formatDate, showToast } from '../utils.js'
 import { routeHref } from '../router.js'
 import { normalizeStorePaymentMethods, getPaymentMethodLabel } from '../payment.js'
+import { t } from '../strings.js'
 
 const DELIVERY_LABELS = {
   manha: 'Manhã',
@@ -28,11 +29,11 @@ const ORDER_STATUS_LABELS = {
 }
 
 const TABS = [
-  { id: 'overview', label: 'Início', icon: '🏠' },
-  { id: 'favorites', label: 'Favoritos', icon: '❤️' },
-  { id: 'liked', label: 'Curtidos', icon: '👍' },
-  { id: 'orders', label: 'Pedidos', icon: '📦' },
-  { id: 'profile', label: 'Perfil', icon: '👤' },
+  { id: 'overview', label: t('nav.customerOverview'), icon: '🏠' },
+  { id: 'favorites', label: t('nav.customerFavorites'), icon: '❤️' },
+  { id: 'liked', label: t('nav.customerLiked'), icon: '👍' },
+  { id: 'orders', label: t('nav.customerOrders'), icon: '📦' },
+  { id: 'profile', label: t('nav.customerProfile'), icon: '👤' },
 ]
 
 function customerPage(title, subtitle, content) {
@@ -40,7 +41,7 @@ function customerPage(title, subtitle, content) {
     <div class="admin-page customer-page">
       <div class="admin-page__head">
         <div class="admin-page__head-main">
-          <p class="admin-page__eyebrow">Minha conta</p>
+          <p class="admin-page__eyebrow">${t('customer.myAccountTitle')}</p>
           <h1 class="admin-page__title">${escapeHtml(title)}</h1>
           ${subtitle ? `<p class="admin-page__subtitle">${escapeHtml(subtitle)}</p>` : ''}
         </div>
@@ -101,20 +102,20 @@ function renderMetrics({ favorites, liked, orders, cartCount }) {
     <div class="metrics admin-metrics customer-metrics">
       <button type="button" class="metric-card metric-card--link" data-customer-tab="favorites">
         <div class="metric-card__value">${favorites}</div>
-        <div class="metric-card__label">Lojas favoritas</div>
+        <div class="metric-card__label">${t('customer.metricFavoriteStores')}</div>
       </button>
       <button type="button" class="metric-card metric-card--link" data-customer-tab="liked">
         <div class="metric-card__value">${liked}</div>
-        <div class="metric-card__label">Produtos curtidos</div>
+        <div class="metric-card__label">${t('customer.metricLikedProducts')}</div>
       </button>
       <button type="button" class="metric-card metric-card--link" data-customer-tab="orders">
         <div class="metric-card__value">${orders}</div>
-        <div class="metric-card__label">Pedidos</div>
+        <div class="metric-card__label">${t('customer.metricOrders')}</div>
       </button>
       ${cartCount > 0 ? `
         <div class="metric-card metric-card--alert">
           <div class="metric-card__value">${cartCount}</div>
-          <div class="metric-card__label">Itens no carrinho</div>
+          <div class="metric-card__label">${t('customer.metricCartItems')}</div>
         </div>
       ` : ''}
     </div>
@@ -136,18 +137,18 @@ function renderOverview({ user, favorites, likedProducts, orders, cart }) {
     <div class="admin-quick-actions">
       <a href="${routeHref('/')}" class="admin-quick-card">
         <span class="admin-quick-card__icon">🔍</span>
-        <strong>Explorar lojas</strong>
-        <span>Descubra novidades no feed</span>
+        <strong>${t('customer.exploreStores')}</strong>
+        <span>${t('customer.exploreStoresDesc')}</span>
       </a>
       <button type="button" class="admin-quick-card" data-customer-tab="favorites">
         <span class="admin-quick-card__icon">❤️</span>
-        <strong>Ver favoritos</strong>
+        <strong>${t('customer.viewFavorites')}</strong>
         <span>${favorites.length ? `${favorites.length} loja(s) salva(s)` : 'Salve lojas que gostar'}</span>
       </button>
       ${cartCount > 0 ? `
         <button type="button" class="admin-quick-card" data-open-cart>
           <span class="admin-quick-card__icon">🛒</span>
-          <strong>Abrir carrinho</strong>
+          <strong>${t('customer.openCart')}</strong>
           <span>${cartCount} item(ns) · ${escapeHtml(cart.storeName ?? 'Loja')}</span>
         </button>
       ` : ''}
@@ -183,9 +184,9 @@ function renderFavoritesTab(stores) {
   if (!stores.length) {
     return customerEmpty(
       '❤️',
-      'Nenhuma loja favorita',
-      'Abra uma loja e toque no coração para salvar aqui.',
-      `<a href="${routeHref('/')}" class="btn btn-primary">Explorar lojas</a>`,
+      t('customer.noFavoriteStoresTitle'),
+      t('customer.noFavoriteStoresBody'),
+      `<a href="${routeHref('/')}" class="btn btn-primary">${t('customer.exploreStores')}</a>`,
     )
   }
   return `<div class="feed">${stores.map((store) => renderStoreCard(store)).join('')}</div>`
@@ -195,8 +196,8 @@ function renderLikedTab(products) {
   if (!products.length) {
     return customerEmpty(
       '👍',
-      'Nenhum produto curtido',
-      'Curta produtos nas vitrines para encontrá-los rapidamente aqui.',
+      t('customer.noLikedProductsTitle'),
+      t('customer.noLikedProductsBody'),
       `<a href="${routeHref('/')}" class="btn btn-primary">Ver produtos</a>`,
     )
   }
@@ -207,8 +208,8 @@ function renderOrdersTab(orders) {
   if (!orders.length) {
     return customerEmpty(
       '📦',
-      'Nenhum pedido ainda',
-      'Seus pedidos feitos pela plataforma aparecerão aqui após o checkout.',
+      t('customer.noOrdersTitle'),
+      t('customer.noOrdersBody'),
       `<a href="${routeHref('/')}" class="btn btn-primary">Fazer um pedido</a>`,
     )
   }
@@ -280,9 +281,9 @@ export async function renderFavorites(main) {
   if (!user || user.role !== 'customer') {
     main.innerHTML = `
       <div class="empty-state">
-        <h2>Faça login</h2>
-        <p>Entre na sua conta para acessar favoritos, pedidos e perfil.</p>
-        <a href="${routeHref('/conta/entrar?redirect=/favoritos')}" class="btn btn-primary">Entrar</a>
+        <h2>${t('customer.loginRequiredTitle')}</h2>
+        <p>${t('customer.loginRequiredBody')}</p>
+        <a href="${routeHref('/conta/entrar?redirect=/favoritos')}" class="btn btn-primary">${t('nav.login')}</a>
       </div>
     `
     return
@@ -425,7 +426,7 @@ export async function renderFavorites(main) {
         })
         Object.assign(user, updated)
         setUser({ ...user, ...updated })
-        showToast('Perfil atualizado')
+        showToast(t('customer.profileUpdated'))
       } catch (err) {
         showToast(err.message ?? 'Erro ao salvar perfil')
       } finally {
@@ -460,7 +461,7 @@ export async function renderFavorites(main) {
       try {
         await updatePassword(password)
         form.reset()
-        showToast('Senha atualizada')
+        showToast(t('customer.passwordUpdated'))
       } catch (err) {
         showToast(err.message ?? 'Erro ao atualizar senha')
       } finally {

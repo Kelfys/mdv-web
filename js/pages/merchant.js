@@ -40,6 +40,7 @@ import {
 import {
   getPaymentMethodLabel, PAYMENT_METHODS, normalizeStorePaymentMethods,
 } from '../payment.js'
+import { t } from '../strings.js'
 
 const ORDER_STATUS_LABELS = {
   pending: 'Pendente',
@@ -55,7 +56,7 @@ const PRODUCT_SORT_DEFAULTS = { name: 'asc', price: 'asc', stock: 'desc' }
 
 function imagePreviewBlock(url, alt, variant = 'square') {
   if (!url) {
-    return `<div class="admin-image-preview admin-image-preview--empty admin-image-preview--${variant}">Sem imagem</div>`
+    return `<div class="admin-image-preview admin-image-preview--empty admin-image-preview--${variant}">${t('app.noImage')}</div>`
   }
   return `<img class="admin-image-preview admin-image-preview--${variant}" src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" />`
 }
@@ -76,7 +77,7 @@ function bindImagePreview(input, previewEl) {
 function guardMerchant(main) {
   const user = getUser()
   if (!user || user.role !== 'merchant') {
-    main.innerHTML = `<div class="empty-state"><h2>Acesso restrito</h2><p><a href="${routeHref('/conta/entrar')}">Entrar</a></p></div>`
+    main.innerHTML = `<div class="empty-state"><h2>${t('merchant.restrictedAccess')}</h2><p><a href="${routeHref('/conta/entrar')}">${t('nav.login')}</a></p></div>`
     return null
   }
   return user
@@ -110,9 +111,9 @@ function merchantEmptyState(icon, title, text, actionHtml = '') {
 
 function storeStatusBadge(status) {
   const map = {
-    pending: '<span class="badge badge-pending">Aguardando aprovação</span>',
-    approved: '<span class="badge badge-approved">Loja aprovada</span>',
-    blocked: '<span class="badge badge-blocked">Loja bloqueada</span>',
+    pending: `<span class="badge badge-pending">${t('merchant.statusPending')}</span>`,
+    approved: `<span class="badge badge-approved">${t('merchant.statusApproved')}</span>`,
+    blocked: `<span class="badge badge-blocked">${t('merchant.statusBlocked')}</span>`,
   }
   return map[status] ?? escapeHtml(status)
 }
@@ -149,7 +150,7 @@ function storeStatusBanner(store) {
         ${storeStatusBadge(store.status)}
         <p>${escapeHtml(messages[store.status] ?? '')}</p>
       </div>
-      ${store.status === 'approved' ? `<a href="${routeHref(`/loja/${store.slug}`)}" class="btn btn-outline btn-sm">Ver loja pública</a>` : ''}
+      ${store.status === 'approved' ? `<a href="${routeHref(`/loja/${store.slug}`)}" class="btn btn-outline btn-sm">${t('merchant.viewPublicStore')}</a>` : ''}
     </div>`
 }
 
@@ -162,11 +163,11 @@ function merchantMetrics({ products, orders, store, viewStats }) {
     <div class="metrics admin-metrics merchant-metrics">
       <a href="${merchantHref('produtos')}" class="metric-card metric-card--link">
         <div class="metric-card__value">${activeProducts}</div>
-        <div class="metric-card__label">Produtos ativos</div>
+        <div class="metric-card__label">${t('merchant.activeProducts')}</div>
       </a>
       <a href="${merchantHref('pedidos')}" class="metric-card metric-card--link">
         <div class="metric-card__value">${orders.length}</div>
-        <div class="metric-card__label">Pedidos</div>
+        <div class="metric-card__label">${t('merchant.orders')}</div>
       </a>
       <div class="metric-card">
         <div class="metric-card__value">${formatCurrency(revenue)}</div>
@@ -817,7 +818,7 @@ function bindProductEdits(main, store) {
           active: form.active.value === 'true',
           image: imageFile,
         })
-        showToast('Produto atualizado!')
+        showToast(t('merchant.productUpdated'))
         renderMerchantDashboard(main, 'products')
       } catch (err) {
         showToast(err.message)
@@ -946,7 +947,7 @@ function bindSettingsForm(main, store) {
       }
 
       await updateStore(store.id, payload)
-      showToast('Configurações salvas!')
+      showToast(t('merchant.settingsSaved'))
       if (payload.logo || payload.banner || payload.remove_logo || payload.remove_banner) {
         renderMerchantDashboard(main, 'settings')
       } else {
@@ -1062,7 +1063,7 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
     main.innerHTML = merchantPage(
       'Sua loja',
       'Cadastre sua loja para começar a vender',
-      merchantEmptyState('🏪', 'Nenhuma loja cadastrada', 'Complete o cadastro para acessar o painel.', `<a href="${routeHref('/lojista/cadastro')}" class="btn btn-primary btn-sm">Cadastrar loja</a>`),
+      merchantEmptyState('🏪', t('merchant.noStoreRegistered'), 'Complete o cadastro para acessar o painel.', `<a href="${routeHref('/lojista/cadastro')}" class="btn btn-primary btn-sm">${t('auth.registerMyStore')}</a>`),
     )
     return
   }
@@ -1402,7 +1403,7 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
   if (tab === 'plans') {
     main.innerHTML = merchantPage(
       menuItem.label,
-      'Assine ou renove o plano da sua loja ou serviço',
+      t('merchant.plansSubtitle'),
       await renderMerchantPlansPanel(store),
     )
     bindPlanRequestActions(main, store)
@@ -1481,7 +1482,7 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
               </div>
             </section>
             ${merchantBrandingSection(store)}
-            <button type="submit" class="btn btn-primary">Salvar alterações</button>
+            <button type="submit" class="btn btn-primary">${t('merchant.saveChanges')}</button>
           </form>
         </div>
       `,

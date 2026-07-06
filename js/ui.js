@@ -7,6 +7,7 @@
  * Também: store-card, feed-product-card, cart-drawer e checkout com pagamentos por loja.
  */
 import { APP_NAME } from './config.js'
+import { t } from './strings.js'
 import { getStoreThemeColor } from './config.js'
 import { escapeHtml, formatCurrency, formatPhone } from './utils.js'
 import { isCatalogItemAvailable, getCatalogItemIcon, getCatalogItemLabel } from './catalog.js'
@@ -49,7 +50,7 @@ function renderStaffPanelDropdown(user, panel, activeTab) {
         <p class="admin-menu__title">${panelConfig.label}</p>
         ${renderStaffMenuItems(panel, activeTab)}
         <div class="admin-menu__divider"></div>
-        <a href="${routeHref('/')}" class="admin-menu__item admin-menu__item--muted">← Voltar ao site</a>
+        <a href="${routeHref('/')}" class="admin-menu__item admin-menu__item--muted">${t('nav.backToSite')}</a>
       </div>
     </div>`
 }
@@ -79,18 +80,18 @@ export function renderHeader() {
       <nav class="nav-desktop">
         <a href="${routeHref('/')}" class="nav-btn${onHome ? ' active' : ''}">
           <span class="nav-btn__icon" aria-hidden="true">🏠</span>
-          <span>Início</span>
+          <span>${t('nav.home')}</span>
         </a>
         ${!user ? `<a href="${routeHref('/conta/entrar')}" class="nav-btn${onLogin ? ' active' : ''}">
           <span class="nav-btn__icon" aria-hidden="true">🔑</span>
-          <span>Entrar</span>
+          <span>${t('nav.login')}</span>
         </a>` : ''}
       </nav>
 
       <div class="header__actions">
-        <button type="button" class="icon-btn" id="theme-toggle" title="Alternar tema">${getTheme() === 'dark' ? '☀️' : '🌙'}</button>
+        <button type="button" class="icon-btn" id="theme-toggle" title="${t('nav.toggleTheme')}">${getTheme() === 'dark' ? '☀️' : '🌙'}</button>
 
-        ${user?.role === 'customer' ? `<a href="#/favoritos" class="icon-btn" title="Minha conta">👤</a>` : ''}
+        ${user?.role === 'customer' ? `<a href="#/favoritos" class="icon-btn" title="${t('nav.myAccount')}">👤</a>` : ''}
         ${user?.role === 'merchant' ? `
           <div class="header-dropdown ${staffMenuOpen ? 'open' : ''}" id="staff-dropdown-merchant">
             <button type="button" class="icon-btn ${onMerchant ? 'icon-btn--active' : ''}" id="staff-menu-toggle-merchant" title="${MERCHANT_PANEL.label}" aria-expanded="${staffMenuOpen}" aria-haspopup="true">${MERCHANT_PANEL.icon}</button>
@@ -103,14 +104,14 @@ export function renderHeader() {
                 </a>
               `).join('')}
               <div class="admin-menu__divider"></div>
-              <a href="${routeHref('/')}" class="admin-menu__item admin-menu__item--muted">← Voltar ao site</a>
+              <a href="${routeHref('/')}" class="admin-menu__item admin-menu__item--muted">${t('nav.backToSite')}</a>
             </div>
           </div>` : ''}
         ${user?.role === 'admin' ? renderStaffPanelDropdown(user, 'admin', staffTab) : ''}
         ${user?.role === 'moderator' ? renderStaffPanelDropdown(user, 'moderator', staffTab) : ''}
-        ${user ? `<button type="button" class="icon-btn" id="logout-btn" title="Sair">🚪</button>` : ''}
+        ${user ? `<button type="button" class="icon-btn" id="logout-btn" title="${t('nav.logout')}">🚪</button>` : ''}
 
-        <button type="button" class="icon-btn menu-toggle" id="menu-toggle" aria-expanded="${menuOpen}">${menuOpen ? '✕' : '☰'}</button>
+        <button type="button" class="icon-btn menu-toggle" id="menu-toggle" aria-expanded="${menuOpen}">${menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}</button>
       </div>
     </div>
 
@@ -118,34 +119,34 @@ export function renderHeader() {
       <div class="nav-mobile__actions${user ? ' nav-mobile__actions--single' : ''}">
         <a href="${routeHref('/')}" class="nav-btn nav-btn--block${onHome ? ' active' : ''}">
           <span class="nav-btn__icon" aria-hidden="true">🏠</span>
-          <span>Início</span>
+          <span>${t('nav.home')}</span>
         </a>
         ${!user ? `<a href="${routeHref('/conta/entrar')}" class="nav-btn nav-btn--block${onLogin ? ' active' : ''}">
           <span class="nav-btn__icon" aria-hidden="true">🔑</span>
-          <span>Entrar</span>
+          <span>${t('nav.login')}</span>
         </a>` : ''}
       </div>
-      ${user?.role === 'customer' ? '<a href="#/favoritos">👤 Minha conta</a>' : ''}
+      ${user?.role === 'customer' ? `<a href="#/favoritos">${t('nav.myAccount')}</a>` : ''}
       ${user?.role === 'merchant' ? `
-        <p class="nav-mobile__section">Painel do Lojista</p>
+        <p class="nav-mobile__section">${t('nav.merchantPanel')}</p>
         ${MERCHANT_MENU.map((item) => {
           const badge = item.id === 'orders' && getMerchantNewOrdersCount() > 0
             ? ` (${getMerchantNewOrdersCount()})` : ''
           return `<a href="${merchantMenuHref(item)}" class="${merchantTab === item.id ? 'active' : ''}">${item.icon} ${item.label}${badge}</a>`
         }).join('')}
-        <a href="${routeHref('/')}">← Voltar ao site</a>
+        <a href="${routeHref('/')}">${t('nav.backToSite')}</a>
       ` : ''}
       ${user?.role === 'admin' ? `
-        <p class="nav-mobile__section">Painel Admin</p>
+        <p class="nav-mobile__section">${t('nav.adminPanel')}</p>
         ${renderStaffMenuItems('admin', staffTab, { compact: true })}
-        <a href="${routeHref('/')}">← Voltar ao site</a>
+        <a href="${routeHref('/')}">${t('nav.backToSite')}</a>
       ` : ''}
       ${user?.role === 'moderator' ? `
-        <p class="nav-mobile__section">Painel Moderador</p>
+        <p class="nav-mobile__section">${t('moderator.panelLabel')}</p>
         ${renderStaffMenuItems('moderator', staffTab, { compact: true })}
-        <a href="${routeHref('/')}">← Voltar ao site</a>
+        <a href="${routeHref('/')}">${t('nav.backToSite')}</a>
       ` : ''}
-      ${user ? '<button type="button" id="logout-mobile">🚪 Sair</button>' : ''}
+      ${user ? `<button type="button" id="logout-mobile">🚪 ${t('nav.logout')}</button>` : ''}
     </nav>
 
     ${onStaff ? `
@@ -161,7 +162,7 @@ export function renderHeader() {
               </a>`
             }).join('')}
           </div>
-          <button type="button" class="btn btn-outline btn-sm" id="admin-refresh" title="Atualizar dados">↻ Atualizar</button>
+          <button type="button" class="btn btn-outline btn-sm" id="admin-refresh" title="Atualizar dados">${t('nav.refresh')}</button>
         </div>
       </div>
     ` : ''}
@@ -178,7 +179,7 @@ export function renderHeader() {
               </a>`
             }).join('')}
           </div>
-          <button type="button" class="btn btn-outline btn-sm" id="merchant-refresh" title="Atualizar dados">↻ Atualizar</button>
+          <button type="button" class="btn btn-outline btn-sm" id="merchant-refresh" title="Atualizar dados">${t('nav.refresh')}</button>
         </div>
       </div>
     ` : ''}
@@ -197,12 +198,12 @@ export function renderHeader() {
 
   document.getElementById('admin-refresh')?.addEventListener('click', () => {
     rerenderRoute()
-    showToast('Painel atualizado')
+    showToast(t('toasts.panelUpdated'))
   })
 
   document.getElementById('merchant-refresh')?.addEventListener('click', () => {
     rerenderRoute()
-    showToast('Painel atualizado')
+    showToast(t('toasts.panelUpdated'))
   })
 
   header.querySelectorAll('.admin-menu__item, .admin-toolbar__tab').forEach((link) => {
@@ -280,7 +281,7 @@ export function renderStoreCard(store, options = {}) {
           ${store.opening_hours ? `<span>🕐 ${escapeHtml(store.opening_hours)}</span>` : ''}
         </div>
         <a href="#/loja/${escapeHtml(store.slug)}" class="btn btn-block" style="margin-top:1rem;background:${theme.hex};color:white">
-          Ver loja e pedir pelo WhatsApp
+          ${t('home.viewStoreCta')}
         </a>
       </div>
     </article>
@@ -295,7 +296,7 @@ export function renderFeedAdCard(ad) {
 
   return `
     <article class="feed-ad-card">
-      <div class="feed-ad-card__label">Patrocinado</div>
+      <div class="feed-ad-card__label">${t('app.sponsored')}</div>
       <div class="feed-ad-card__inner">
         <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="feed-ad-card__media">
           ${ad.image_url
@@ -308,7 +309,7 @@ export function renderFeedAdCard(ad) {
           <p class="feed-ad-card__store">🏪 ${escapeHtml(store?.name ?? 'Loja')}</p>
           <h3 class="feed-ad-card__title">${escapeHtml(ad.title)}</h3>
           <p class="feed-ad-card__message">${escapeHtml(ad.message)}</p>
-          <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="btn btn-primary btn-sm">Ver loja</a>
+          <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="btn btn-primary btn-sm">${t('home.viewStore')}</a>
         </div>
       </div>
     </article>
@@ -321,9 +322,9 @@ export function renderFeedProductCard(product, options = {}) {
   const oos = !isCatalogItemAvailable(product)
   const likesCount = product.likes_count ?? 0
   const badgeLabels = {
-    liked: 'Mais curtido',
-    new: 'Novo produto',
-    pick: 'Destaque',
+    liked: t('home.badgeMostLiked'),
+    new: t('home.badgeNewProduct'),
+    pick: t('home.badgeFeatured'),
   }
   const badgeLabel = badgeLabels[badge] ?? badgeLabels.new
   const badgeClass = badge === 'liked'
@@ -341,7 +342,7 @@ export function renderFeedProductCard(product, options = {}) {
           ${product.image
             ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" />`
             : `<div class="feed-product-card__placeholder">${getCatalogItemIcon(product)}</div>`}
-          ${oos ? '<span class="product-card__oos">Indisponível</span>' : ''}
+          ${oos ? `<span class="product-card__oos">${t('store.unavailable')}</span>` : ''}
         </a>
         <div class="feed-product-card__body">
           <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="feed-product-card__name">${escapeHtml(product.name)}</a>
@@ -353,7 +354,7 @@ export function renderFeedProductCard(product, options = {}) {
               ${likesCount > 0 ? `<span class="feed-product-card__likes">❤️ ${likesCount}</span>` : ''}
             </div>
             <button type="button" class="btn btn-primary btn-sm" data-feed-add-product="${product.id}" ${oos ? 'disabled' : ''}>
-              + Carrinho
+              ${t('home.addToCartShort')}
             </button>
           </div>
         </div>
@@ -382,7 +383,7 @@ export function renderProductCard(product, options = {}) {
         ${product.image
           ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" />`
           : `<div class="product-card__placeholder">${getCatalogItemIcon(product)}</div>`}
-        ${oos ? '<span class="product-card__oos">Indisponível</span>' : ''}
+        ${oos ? `<span class="product-card__oos">${t('store.unavailable')}</span>` : ''}
         <span class="product-card__type">${escapeHtml(typeLabel)}</span>
       </div>
       <div class="product-card__body">
@@ -397,7 +398,7 @@ export function renderProductCard(product, options = {}) {
               💬 <span data-comment-count="${product.id}">${commentsCount}</span>
             </button>
           ` : `
-            <span class="engagement-btn engagement-btn--readonly" title="Entre para curtir">🤍 ${likesCount}</span>
+            <span class="engagement-btn engagement-btn--readonly" title="${t('store.loginToLike')}">🤍 ${likesCount}</span>
             <button type="button" class="engagement-btn engagement-btn--ghost" data-toggle-comments="${product.id}" aria-expanded="${commentsOpen}">
               💬 ${commentsCount}
             </button>
@@ -408,7 +409,7 @@ export function renderProductCard(product, options = {}) {
             ${commentsLoading
               ? '<p class="product-comments__status">Carregando comentários...</p>'
               : comments.length === 0
-                ? '<p class="product-comments__status">Nenhum comentário ainda.</p>'
+                ? `<p class="product-comments__status">${t('store.noCommentsYet')}</p>`
                 : comments.map((comment) => `
                     <div class="product-comment">
                       <div class="product-comment__meta">
@@ -420,8 +421,8 @@ export function renderProductCard(product, options = {}) {
                   `).join('')}
             ${canEngage ? `
               <form class="product-comment-form" data-comment-form="${product.id}">
-                <textarea class="form-input" name="content" rows="2" maxlength="500" placeholder="Escreva um comentário..." required></textarea>
-                <button type="submit" class="btn btn-primary btn-sm">Comentar</button>
+                <textarea class="form-input" name="content" rows="2" maxlength="500" placeholder="${t('store.commentPlaceholder')}" required></textarea>
+                <button type="submit" class="btn btn-primary btn-sm">${t('store.submitComment')}</button>
               </form>
             ` : `
               <p class="product-comments__login-hint">
@@ -432,7 +433,7 @@ export function renderProductCard(product, options = {}) {
         ` : ''}
         <div class="product-card__footer">
           <span class="product-card__price">${formatCurrency(product.price)}</span>
-          <button type="button" class="btn btn-primary btn-sm" data-add-product="${product.id}" ${oos ? 'disabled' : ''}>+ Adicionar</button>
+          <button type="button" class="btn btn-primary btn-sm" data-add-product="${product.id}" ${oos ? 'disabled' : ''}>${t('store.addProduct')}</button>
         </div>
       </div>
     </article>
@@ -475,7 +476,7 @@ function renderPaymentOptions(allowedIds, selected) {
 
   return `
     <fieldset class="checkout-payment">
-      <legend class="checkout-payment__label">Como você prefere pagar?</legend>
+      <legend class="checkout-payment__label">${t('checkout.paymentLegend')}</legend>
       <div class="checkout-payment__options">
         ${allowedIds.map((id) => {
           const method = getPaymentMethod(id)
@@ -506,18 +507,18 @@ function renderCheckoutSummary(cart, total, count) {
   return `
     <div class="cart-summary">
       <div class="cart-summary__row">
-        <span>Itens (${count})</span>
+        <span>${t('cart.itemsCount', { count })}</span>
         <span>${formatCurrency(total)}</span>
       </div>
       <div class="cart-summary__row cart-summary__row--total">
-        <span>Total</span>
+        <span>${t('cart.total')}</span>
         <span class="cart-summary__total">${formatCurrency(total)}</span>
       </div>
     </div>
     <button type="button" class="btn btn-green btn-block cart-checkout-btn" id="checkout-start">
-      Finalizar pedido
+      ${t('checkout.finalizeOrder')}
     </button>
-    <p class="cart-checkout-hint">Pagamento combinado com a loja via WhatsApp</p>
+    <p class="cart-checkout-hint">${t('cart.checkoutHint')}</p>
   `
 }
 
@@ -539,11 +540,11 @@ export function renderCartDrawer() {
 
   root.innerHTML = `
     <div class="cart-overlay" id="cart-overlay"></div>
-    <aside class="cart-drawer ${cartCheckoutOpen ? 'cart-drawer--checkout' : ''}" role="dialog" aria-label="Carrinho">
+    <aside class="cart-drawer ${cartCheckoutOpen ? 'cart-drawer--checkout' : ''}" role="dialog" aria-label="${t('cart.title')}">
       <div class="cart-drawer__header">
         <div class="cart-drawer__title-group">
-          <span class="cart-drawer__eyebrow">${cartCheckoutOpen ? 'Checkout' : 'Seu pedido'}</span>
-          <strong class="cart-drawer__title">${cartCheckoutOpen ? 'Finalizar pedido' : 'Carrinho'}</strong>
+          <span class="cart-drawer__eyebrow">${cartCheckoutOpen ? t('checkout.finalizeOrder') : t('cart.yourOrder')}</span>
+          <strong class="cart-drawer__title">${cartCheckoutOpen ? t('checkout.finalizeOrder') : t('cart.title')}</strong>
           ${cart.storeName && !cartCheckoutOpen ? `<span class="cart-drawer__store">🏪 ${escapeHtml(cart.storeName)}</span>` : ''}
         </div>
         <div class="cart-drawer__header-actions">
@@ -555,25 +556,25 @@ export function renderCartDrawer() {
       ${!hasItems ? `
         <div class="cart-empty">
           <div class="cart-empty__icon" aria-hidden="true">🛒</div>
-          <h3 class="cart-empty__title">Carrinho vazio</h3>
-          <p class="cart-empty__text">Adicione produtos de uma loja para começar seu pedido.</p>
+          <h3 class="cart-empty__title">${t('cart.emptyTitle')}</h3>
+          <p class="cart-empty__text">${t('cart.emptyBody')}</p>
         </div>
       ` : cartCheckoutOpen ? `
         <div class="cart-drawer__checkout-scroll">
           <form id="checkout-form" class="cart-checkout-form">
             ${renderPaymentOptions(allowedPayments)}
             <div class="cart-checkout-form__section">
-              <p class="cart-checkout-form__section-title">Dados para entrega</p>
+              <p class="cart-checkout-form__section-title">${t('checkout.deliverySectionTitle')}</p>
               <div class="form-group">
-                <label class="form-label" for="checkout-name">Nome</label>
+                <label class="form-label" for="checkout-name">${t('labels.name')}</label>
                 <input class="form-input" id="checkout-name" name="name" placeholder="Seu nome completo" required />
               </div>
               <div class="form-group">
-                <label class="form-label" for="checkout-phone">Telefone</label>
+                <label class="form-label" for="checkout-phone">${t('labels.phone')}</label>
                 <input class="form-input" id="checkout-phone" name="phone" placeholder="(21) 99999-9999" required />
               </div>
               <div class="form-group">
-                <label class="form-label" for="checkout-address">Endereço</label>
+                <label class="form-label" for="checkout-address">${t('labels.address')}</label>
                 <textarea class="form-input" id="checkout-address" name="address" placeholder="Rua, número, bairro, complemento" rows="3" required></textarea>
               </div>
             </div>
@@ -581,13 +582,13 @@ export function renderCartDrawer() {
         </div>
         <div class="cart-drawer__footer cart-drawer__footer--checkout">
           <div class="cart-checkout-total">
-            <span>Total do pedido</span>
+            <span>${t('checkout.orderTotal')}</span>
             <strong>${formatCurrency(total)}</strong>
           </div>
           <div class="cart-checkout-actions">
-            <button type="button" class="btn btn-outline" id="checkout-back">Voltar</button>
+            <button type="button" class="btn btn-outline" id="checkout-back">${t('checkout.back')}</button>
             <button type="submit" form="checkout-form" class="btn btn-green" id="checkout-submit">
-              Enviar via WhatsApp
+              ${t('checkout.sendViaWhatsapp')}
             </button>
           </div>
         </div>
@@ -710,7 +711,7 @@ async function handleCheckout(e, allowedPayments) {
   cartCheckoutOpen = false
   clearCart()
   closeCart()
-  showToast('Pedido enviado! Confirme no WhatsApp.')
+  showToast(t('toasts.orderSent'))
 }
 
 export function initCart() {

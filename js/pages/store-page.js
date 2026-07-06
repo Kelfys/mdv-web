@@ -26,6 +26,7 @@ import { setStore, addItem, getCartItemCount, getUser } from '../state.js'
 import { normalizeStorePaymentMethods } from '../payment.js'
 import { navigate } from '../router.js'
 import { showToast } from '../utils.js'
+import { t } from '../strings.js'
 
 export async function renderStorePage(main, { slug }) {
   const store = await fetchStoreBySlug(slug)
@@ -33,9 +34,9 @@ export async function renderStorePage(main, { slug }) {
   if (!store) {
     main.innerHTML = `
       <div class="empty-state">
-        <h2>Loja indisponível</h2>
-        <p>Esta loja não existe, não foi aprovada ou está com assinatura inativa.</p>
-        <a href="#/" class="btn btn-primary">Voltar ao início</a>
+        <h2>${t('store.unavailableTitle')}</h2>
+        <p>${t('store.unavailableBody')}</p>
+        <a href="#/" class="btn btn-primary">${t('store.backToHome')}</a>
       </div>
     `
     return
@@ -109,10 +110,10 @@ export async function renderStorePage(main, { slug }) {
           </div>
           <div class="store-profile__actions">
             <button type="button" class="btn btn-primary" id="open-cart">
-              🛒 Carrinho ${cartCount > 0 ? `<span class="badge-count">${cartCount > 9 ? '9+' : cartCount}</span>` : ''}
+              ${t('store.cart')} ${cartCount > 0 ? `<span class="badge-count">${cartCount > 9 ? '9+' : cartCount}</span>` : ''}
             </button>
-            <button type="button" class="btn btn-outline" id="favorite-btn">${favorited ? '❤️ Favoritado' : '🤍 Favoritar'}</button>
-            <button type="button" class="btn btn-outline" id="share-btn">🔗 Compartilhar</button>
+            <button type="button" class="btn btn-outline" id="favorite-btn">${favorited ? t('store.favorited') : t('store.favorite')}</button>
+            <button type="button" class="btn btn-outline" id="share-btn">${t('store.share')}</button>
           </div>
         </div>
 
@@ -125,7 +126,7 @@ export async function renderStorePage(main, { slug }) {
         </div>
 
         <div class="products-header">
-          <h2 class="section-title">Produtos e serviços</h2>
+          <h2 class="section-title">${t('store.productsAndServices')}</h2>
           <p class="products-header__hint">Ordenados por popularidade — os mais curtidos aparecem com mais destaque.</p>
         </div>
         ${products.length === 0
@@ -139,7 +140,7 @@ export async function renderStorePage(main, { slug }) {
 
         ${reviews.length > 0 ? `
           <section style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
-            <h2 class="section-title">Avaliações da loja</h2>
+            <h2 class="section-title">${t('store.storeReviews')}</h2>
             ${reviews.map((r) => `
               <div class="review-card">
                 <div style="display:flex;justify-content:space-between">
@@ -161,7 +162,7 @@ export async function renderStorePage(main, { slug }) {
         await navigator.share({ title: store.name, url })
       } else {
         await navigator.clipboard.writeText(url)
-        showToast('Link copiado!')
+        showToast(t('store.linkCopiedToast'))
       }
     })
 
@@ -253,7 +254,7 @@ export async function renderStorePage(main, { slug }) {
           commentsByProduct.set(productId, [comment, ...existing])
           form.reset()
           paint()
-          showToast('Comentário publicado!')
+          showToast(t('store.commentPublished'))
         } catch (err) {
           showToast(err.message ?? 'Não foi possível publicar o comentário.')
           paint()

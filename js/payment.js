@@ -2,11 +2,13 @@
  * Formas de pagamento no checkout do carrinho.
  * Não há cobrança in-app — a escolha vai no pedido e na mensagem do WhatsApp.
  */
+import { t } from './strings.js'
+
 export const PAYMENT_METHODS = [
-  { id: 'pix', label: 'PIX', hint: 'A loja envia a chave no WhatsApp', icon: '⚡' },
-  { id: 'cash', label: 'Dinheiro na entrega', hint: 'Pague ao receber o pedido', icon: '💵' },
-  { id: 'card', label: 'Cartão na entrega', hint: 'Maquininha ou cartão com a loja', icon: '💳' },
-  { id: 'transfer', label: 'Transferência', hint: 'Dados bancários no WhatsApp', icon: '🏦' },
+  { id: 'pix', label: t('checkout.paymentPix'), hint: t('checkout.paymentPixHint'), icon: '⚡' },
+  { id: 'cash', label: t('checkout.paymentCash'), hint: t('checkout.paymentCashHint'), icon: '💵' },
+  { id: 'card', label: t('checkout.paymentCard'), hint: t('checkout.paymentCardHint'), icon: '💳' },
+  { id: 'transfer', label: t('checkout.paymentTransfer'), hint: t('checkout.paymentTransferHint'), icon: '🏦' },
 ]
 
 export const DEFAULT_PAYMENT_METHOD_IDS = PAYMENT_METHODS.map((m) => m.id)

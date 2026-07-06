@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Editor de textos — MaredeVendas</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .strings-editor {
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 1.25rem 1rem 3rem;
+    }
+
+    .strings-editor__header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .strings-editor__title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .strings-editor__subtitle {
+      margin-top: 0.35rem;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      max-width: 36rem;
+    }
+
+    .strings-editor__toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .strings-editor__filters {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 640px) {
+      .strings-editor__filters {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .strings-editor__stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .strings-editor__stats strong {
+      color: var(--text);
+    }
+
+    .strings-editor__group {
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .strings-editor__group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--surface-tertiary);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .strings-editor__group-count {
+      font-weight: 500;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+    }
+
+    .strings-editor__row {
+      display: grid;
+      grid-template-columns: 11rem 1fr auto;
+      gap: 0.75rem;
+      align-items: start;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .strings-editor__row:last-child {
+      border-bottom: none;
+    }
+
+    .strings-editor__row--changed {
+      background: color-mix(in srgb, var(--amber-500) 8%, var(--surface));
+    }
+
+    .strings-editor__row--hidden {
+      display: none;
+    }
+
+    @media (max-width: 720px) {
+      .strings-editor__row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .strings-editor__key {
+      font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      word-break: break-all;
+      padding-top: 0.5rem;
+    }
+
+    .strings-editor__key code {
+      color: var(--primary-600);
+    }
+
+    .strings-editor__input {
+      width: 100%;
+      min-height: 2.5rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface-secondary);
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    .strings-editor__input:focus {
+      outline: 2px solid color-mix(in srgb, var(--primary-600) 35%, transparent);
+      border-color: var(--primary-600);
+    }
+
+    .strings-editor__reset-btn {
+      padding: 0.35rem 0.5rem;
+      font-size: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .strings-editor__reset-btn:hover {
+      color: var(--text);
+      border-color: var(--text-muted);
+    }
+
+    .strings-editor__empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-secondary);
+    }
+
+    .strings-editor__toast {
+      position: fixed;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      padding: 0.75rem 1rem;
+      background: var(--text);
+      color: var(--surface);
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      transform: translateY(0.5rem);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    .strings-editor__toast--visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .strings-editor__badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: color-mix(in srgb, var(--amber-500) 18%, transparent);
+      color: var(--amber-500);
+    }
+  </style>
+</head>
+<body>
+  <div class="strings-editor">
+    <header class="strings-editor__header">
+      <div>
+        <h1 class="strings-editor__title">Editor de textos</h1>
+        <p class="strings-editor__subtitle">
+          Encontre e edite todos os textos estáticos do app. As alterações ficam salvas como rascunho no navegador.
+          Para aplicar no projeto, baixe o arquivo <code>strings.js</code> e substitua <code>js/strings.js</code>.
+        </p>
+      </div>
+      <a href="./" class="btn btn-outline">← Voltar ao site</a>
+    </header>
+
+    <div class="strings-editor__toolbar">
+      <button type="button" class="btn btn-primary" id="btn-download">Baixar strings.js</button>
+      <button type="button" class="btn btn-outline" id="btn-copy">Copiar arquivo</button>
+      <button type="button" class="btn btn-outline" id="btn-save-draft">Salvar rascunho</button>
+      <button type="button" class="btn btn-outline" id="btn-reset-all">Descartar alterações</button>
+      <button type="button" class="btn btn-outline" id="btn-show-changed">Só alterados</button>
+    </div>
+
+    <div class="strings-editor__filters">
+      <input
+        type="search"
+        id="search"
+        class="form-input"
+        placeholder="Buscar por chave ou texto..."
+        autocomplete="off"
+      />
+      <select id="group-filter" class="form-input" aria-label="Filtrar por grupo">
+        <option value="">Todos os grupos</option>
+      </select>
+    </div>
+
+    <div class="strings-editor__stats" id="stats"></div>
+
+    <div id="groups"></div>
+    <div class="strings-editor__empty hidden" id="empty-state">
+      Nenhum texto encontrado com os filtros atuais.
+    </div>
+  </div>
+
+  <div class="strings-editor__toast" id="toast" role="status"></div>
+
+  <script type="module">
+    import {
+      STRINGS,
+      flattenStrings,
+      unflattenStrings,
+      serializeStringsModule,
+      t,
+    } from './js/strings.js'
+
+    const STORAGE_KEY = 'maredevendas-strings-draft'
+    const originalRows = flattenStrings(STRINGS)
+    const originalMap = new Map(originalRows.map((r) => [r.key, r.value]))
+
+    let draftMap = loadDraft() ?? new Map(originalMap)
+    let showChangedOnly = false
+
+    const els = {
+      groups: document.getElementById('groups'),
+      search: document.getElementById('search'),
+      groupFilter: document.getElementById('group-filter'),
+      stats: document.getElementById('stats'),
+      empty: document.getElementById('empty-state'),
+      toast: document.getElementById('toast'),
+    }
+
+    const groupNames = [...new Set(originalRows.map((r) => r.key.split('.')[0]))].sort()
+    for (const name of groupNames) {
+      const opt = document.createElement('option')
+      opt.value = name
+      opt.textContent = name
+      els.groupFilter.appendChild(opt)
+    }
+
+    function loadDraft() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (!raw) return null
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return null
+        return new Map(parsed.map(({ key, value }) => [key, value]))
+      } catch {
+        return null
+      }
+    }
+
+    function saveDraft() {
+      const rows = [...draftMap.entries()].map(([key, value]) => ({ key, value }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(rows))
+    }
+
+    function clearDraft() {
+      localStorage.removeItem(STORAGE_KEY)
+      draftMap = new Map(originalMap)
+    }
+
+    function isChanged(key) {
+      return draftMap.get(key) !== originalMap.get(key)
+    }
+
+    function changedCount() {
+      let n = 0
+      for (const key of originalMap.keys()) {
+        if (isChanged(key)) n++
+      }
+      return n
+    }
+
+    function currentStrings() {
+      const rows = [...draftMap.entries()].map(([key, value]) => ({ key, value }))
+      return unflattenStrings(rows)
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message
+      els.toast.classList.add('strings-editor__toast--visible')
+      clearTimeout(showToast._t)
+      showToast._t = setTimeout(() => {
+        els.toast.classList.remove('strings-editor__toast--visible')
+      }, 2600)
+    }
+
+    function matchesFilter(key, value) {
+      const q = els.search.value.trim().toLowerCase()
+      const group = els.groupFilter.value
+      if (group && !key.startsWith(group + '.')) return false
+      if (showChangedOnly && !isChanged(key)) return false
+      if (!q) return true
+      return key.toLowerCase().includes(q) || value.toLowerCase().includes(q)
+    }
+
+    function render() {
+      const byGroup = new Map()
+      for (const { key } of originalRows) {
+        const value = draftMap.get(key) ?? ''
+        if (!matchesFilter(key, value)) continue
+        const group = key.split('.')[0]
+        const rest = key.slice(group.length + 1)
+        if (!byGroup.has(group)) byGroup.set(group, [])
+        byGroup.get(group).push({ key, rest, value })
+      }
+
+      els.groups.innerHTML = ''
+      let visible = 0
+
+      for (const group of groupNames) {
+        const items = byGroup.get(group)
+        if (!items?.length) continue
+        visible += items.length
+
+        const section = document.createElement('section')
+        section.className = 'strings-editor__group'
+        section.dataset.group = group
+
+        const header = document.createElement('div')
+        header.className = 'strings-editor__group-header'
+        header.innerHTML = `<span>${group}</span><span class="strings-editor__group-count">${items.length} texto(s)</span>`
+        section.appendChild(header)
+
+        for (const { key, rest, value } of items) {
+          const row = document.createElement('div')
+          row.className = 'strings-editor__row' + (isChanged(key) ? ' strings-editor__row--changed' : '')
+          row.dataset.key = key
+
+          const keyEl = document.createElement('div')
+          keyEl.className = 'strings-editor__key'
+          keyEl.innerHTML = `<code>${rest}</code>`
+          if (isChanged(key)) {
+            const badge = document.createElement('span')
+            badge.className = 'strings-editor__badge'
+            badge.textContent = 'alterado'
+            badge.style.marginLeft = '0.35rem'
+            keyEl.appendChild(badge)
+          }
+
+          const input = document.createElement('textarea')
+          input.className = 'strings-editor__input'
+          input.rows = value.length > 60 || value.includes('\n') ? 3 : 1
+          input.value = value
+          input.setAttribute('aria-label', key)
+          input.addEventListener('input', () => {
+            draftMap.set(key, input.value)
+            row.classList.toggle('strings-editor__row--changed', isChanged(key))
+            updateStats()
+            saveDraft()
+          })
+
+          const resetBtn = document.createElement('button')
+          resetBtn.type = 'button'
+          resetBtn.className = 'strings-editor__reset-btn'
+          resetBtn.textContent = 'Restaurar'
+          resetBtn.title = 'Voltar ao texto original'
+          resetBtn.addEventListener('click', () => {
+            const orig = originalMap.get(key) ?? ''
+            draftMap.set(key, orig)
+            input.value = orig
+            row.classList.toggle('strings-editor__row--changed', false)
+            updateStats()
+            saveDraft()
+            showToast('Texto restaurado')
+          })
+
+          row.append(keyEl, input, resetBtn)
+          section.appendChild(row)
+        }
+
+        els.groups.appendChild(section)
+      }
+
+      els.empty.classList.toggle('hidden', visible > 0)
+      updateStats(visible)
+    }
+
+    function updateStats(visibleCount) {
+      const total = originalRows.length
+      const changed = changedCount()
+      const visible = visibleCount ?? [...draftMap.keys()].filter((key) =>
+        matchesFilter(key, draftMap.get(key) ?? '')
+      ).length
+      const preview = t('nav.home')
+      els.stats.innerHTML = `
+        <span><strong>${total}</strong> textos no catálogo</span>
+        <span><strong>${changed}</strong> alterado(s)</span>
+        <span><strong>${visible}</strong> visível(is) com filtro</span>
+        <span>Exemplo: t('nav.home') → <strong>${preview}</strong></span>
+      `
+      document.getElementById('btn-show-changed').textContent = showChangedOnly
+        ? 'Mostrar todos'
+        : 'Só alterados'
+    }
+
+    function downloadStringsJs() {
+      const content = serializeStringsModule(currentStrings())
+      const blob = new Blob([content], { type: 'text/javascript;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'strings.js'
+      a.click()
+      URL.revokeObjectURL(url)
+      showToast('strings.js baixado — substitua js/strings.js no projeto')
+    }
+
+    async function copyStringsJs() {
+      const content = serializeStringsModule(currentStrings())
+      await navigator.clipboard.writeText(content)
+      showToast('Conteúdo copiado para a área de transferência')
+    }
+
+    document.getElementById('btn-download').addEventListener('click', downloadStringsJs)
+    document.getElementById('btn-copy').addEventListener('click', () => {
+      copyStringsJs().catch(() => showToast('Não foi possível copiar — use o download'))
+    })
+    document.getElementById('btn-save-draft').addEventListener('click', () => {
+      saveDraft()
+      showToast('Rascunho salvo neste navegador')
+    })
+    document.getElementById('btn-reset-all').addEventListener('click', () => {
+      if (changedCount() === 0) {
+        showToast('Nenhuma alteração para descartar')
+        return
+      }
+      if (!confirm('Descartar todas as alterações e remover o rascunho salvo?')) return
+      clearDraft()
+      render()
+      showToast('Alterações descartadas')
+    })
+    document.getElementById('btn-show-changed').addEventListener('click', () => {
+      showChangedOnly = !showChangedOnly
+      render()
+    })
+
+    els.search.addEventListener('input', render)
+    els.groupFilter.addEventListener('change', render)
+
+    if (changedCount() > 0) {
+      showToast(`Rascunho com ${changedCount()} alteração(ões) carregado`)
+    }
+
+    render()
+  </script>
+</body>
+</html>

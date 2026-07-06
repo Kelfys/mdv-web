@@ -2,18 +2,19 @@
  * Navegação dos painéis admin e moderador.
  */
 import { getCurrentPath } from './router.js'
+import { t } from './strings.js'
 
 export const STAFF_PANELS = {
   admin: {
     id: 'admin',
-    label: 'Painel Admin',
+    label: t('nav.adminPanel'),
     basePath: '/admin',
     loginPath: '/admin/entrar',
     icon: '⚙️',
   },
   moderator: {
     id: 'moderator',
-    label: 'Painel Moderador',
+    label: t('moderator.panelLabel'),
     basePath: '/moderador',
     loginPath: '/moderador/entrar',
     icon: '🛡️',
@@ -21,23 +22,23 @@ export const STAFF_PANELS = {
 }
 
 export const ADMIN_MENU = [
-  { id: 'overview', label: 'Visão Geral', icon: '📊', href: '#/admin' },
-  { id: 'stores', label: 'Lojas', icon: '🏪', href: '#/admin/lojas' },
-  { id: 'products', label: 'Produtos', icon: '📦', href: '#/admin/produtos' },
-  { id: 'pedidos', label: 'Pedidos', icon: '🛒', href: '#/admin/pedidos' },
-  { id: 'approvals', label: 'Aprovações', icon: '✅', href: '#/admin/aprovacoes' },
-  { id: 'neighborhoods', label: 'Bairros', icon: '📍', href: '#/admin/bairros' },
-  { id: 'moderators', label: 'Moderadores', icon: '🛡️', href: '#/admin/moderadores' },
-  { id: 'account', label: 'Minha Conta', icon: '🔑', href: '#/admin/conta' },
+  { id: 'overview', label: t('nav.staffOverview'), icon: '📊', href: '#/admin' },
+  { id: 'stores', label: t('nav.staffStores'), icon: '🏪', href: '#/admin/lojas' },
+  { id: 'products', label: t('nav.staffProducts'), icon: '📦', href: '#/admin/produtos' },
+  { id: 'pedidos', label: t('nav.staffOrders'), icon: '🛒', href: '#/admin/pedidos' },
+  { id: 'approvals', label: t('nav.staffApprovals'), icon: '✅', href: '#/admin/aprovacoes' },
+  { id: 'neighborhoods', label: t('nav.staffNeighborhoods'), icon: '📍', href: '#/admin/bairros' },
+  { id: 'moderators', label: t('nav.staffModerators'), icon: '🛡️', href: '#/admin/moderadores' },
+  { id: 'account', label: t('nav.staffAccount'), icon: '🔑', href: '#/admin/conta' },
 ]
 
 export const MODERATOR_MENU = [
-  { id: 'overview', label: 'Visão Geral', icon: '📊', href: '#/moderador' },
-  { id: 'approvals', label: 'Aprovações', icon: '✅', href: '#/moderador/aprovacoes' },
-  { id: 'stores', label: 'Lojas', icon: '🏪', href: '#/moderador/lojas', readOnly: true },
-  { id: 'products', label: 'Produtos', icon: '📦', href: '#/moderador/produtos', readOnly: true },
-  { id: 'pedidos', label: 'Pedidos', icon: '🛒', href: '#/moderador/pedidos' },
-  { id: 'account', label: 'Minha Conta', icon: '🔑', href: '#/moderador/conta' },
+  { id: 'overview', label: t('nav.staffOverview'), icon: '📊', href: '#/moderador' },
+  { id: 'approvals', label: t('nav.staffApprovals'), icon: '✅', href: '#/moderador/aprovacoes' },
+  { id: 'stores', label: t('nav.staffStores'), icon: '🏪', href: '#/moderador/lojas', readOnly: true },
+  { id: 'products', label: t('nav.staffProducts'), icon: '📦', href: '#/moderador/produtos', readOnly: true },
+  { id: 'pedidos', label: t('nav.staffOrders'), icon: '🛒', href: '#/moderador/pedidos' },
+  { id: 'account', label: t('nav.staffAccount'), icon: '🔑', href: '#/moderador/conta' },
 ]
 
 export function staffHref(panel, segment = '') {

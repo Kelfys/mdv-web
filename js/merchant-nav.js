@@ -3,23 +3,24 @@
  * loginPath aponta para o login unificado em /conta/entrar.
  */
 import { getCurrentPath, routeHref } from './router.js'
+import { t } from './strings.js'
 
 export const MERCHANT_PANEL = {
   id: 'merchant',
-  label: 'Painel do Lojista',
+  label: t('nav.merchantPanel'),
   basePath: '/dashboard',
   loginPath: '/conta/entrar',
   icon: '📊',
 }
 
 export const MERCHANT_MENU = [
-  { id: 'overview', label: 'Visão Geral', icon: '📊', href: '#/dashboard' },
-  { id: 'products', label: 'Catálogo', icon: '📦', href: '#/dashboard/produtos' },
-  { id: 'orders', label: 'Pedidos', icon: '🛒', href: '#/dashboard/pedidos' },
-  { id: 'ads', label: 'Anúncios', icon: '📣', href: '#/dashboard/anuncios' },
-  { id: 'plans', label: 'Planos', icon: '💎', href: '#/dashboard/planos' },
-  { id: 'settings', label: 'Configurações', icon: '⚙️', href: '#/dashboard/configuracoes' },
-  { id: 'account', label: 'Minha Conta', icon: '🔑', href: '#/dashboard/conta' },
+  { id: 'overview', label: t('nav.merchantOverview'), icon: '📊', href: '#/dashboard' },
+  { id: 'products', label: t('nav.merchantCatalog'), icon: '📦', href: '#/dashboard/produtos' },
+  { id: 'orders', label: t('nav.staffOrders'), icon: '🛒', href: '#/dashboard/pedidos' },
+  { id: 'ads', label: t('nav.merchantAds'), icon: '📣', href: '#/dashboard/anuncios' },
+  { id: 'plans', label: t('nav.merchantPlans'), icon: '💎', href: '#/dashboard/planos' },
+  { id: 'settings', label: t('nav.merchantSettings'), icon: '⚙️', href: '#/dashboard/configuracoes' },
+  { id: 'account', label: t('nav.staffAccount'), icon: '🔑', href: '#/dashboard/conta' },
 ]
 
 export function isMerchantPath(path = getCurrentPath()) {

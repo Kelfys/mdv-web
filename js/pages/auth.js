@@ -20,6 +20,7 @@ import { signIn, signUpCustomer } from '../api.js'
 import { setUser } from '../state.js'
 import { navigate, getHashSection, routeHref } from '../router.js'
 import { escapeHtml, getMaxBirthDateForRegistration, validateRegistrationBirthDate } from '../utils.js'
+import { t } from '../strings.js'
 
 const GOOGLE_ICON_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>`
 
@@ -41,13 +42,13 @@ function bindPasswordReset(main, buttonId) {
     const errEl = main.querySelector('#auth-error')
     const email = main.querySelector('#login-form input[name="email"]')?.value?.trim()
     if (!email) {
-      errEl.innerHTML = '<div class="alert alert-error">Informe seu email acima primeiro.</div>'
+      errEl.innerHTML = `<div class="alert alert-error">${escapeHtml(t('auth.resetEmailFirst'))}</div>`
       return
     }
     try {
       const { requestPasswordReset } = await import('../api.js')
       await requestPasswordReset(email)
-      errEl.innerHTML = '<div class="alert" style="background:var(--primary-50);color:var(--primary-700);padding:0.75rem;border-radius:var(--radius)">Link de redefinição enviado para seu email.</div>'
+      errEl.innerHTML = `<div class="alert" style="background:var(--primary-50);color:var(--primary-700);padding:0.75rem;border-radius:var(--radius)">${escapeHtml(t('auth.resetLinkSent'))}</div>`
     } catch (err) {
       errEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
     }
@@ -147,29 +148,29 @@ export async function renderLogin(main) {
   const { renderRulesAndPlansContent } = await import('../rules-plans-panel.js')
 
   main.innerHTML = authLayout(
-    'Entrar',
-    'Use o mesmo login para conta de cliente ou lojista.',
+    t('auth.loginTitle'),
+    t('auth.loginDescription'),
     `
-      ${renderGoogleAuthButton('Entrar com Google')}
-      ${renderAuthDivider('ou use email e senha')}
+      ${renderGoogleAuthButton(t('auth.loginWithGoogle'))}
+      ${renderAuthDivider(t('auth.dividerOrEmail'))}
       <form id="login-form">
         <div class="form-group">
-          <label class="form-label">Email</label>
+          <label class="form-label">${t('labels.email')}</label>
           <input class="form-input" type="email" name="email" required />
         </div>
         <div class="form-group">
-          <label class="form-label">Senha</label>
+          <label class="form-label">${t('labels.password')}</label>
           <input class="form-input" type="password" name="password" required minlength="6" />
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+        <button type="submit" class="btn btn-primary btn-block">${t('auth.submitLogin')}</button>
       </form>
       <p class="auth-forgot">
-        <button type="button" class="btn btn-outline btn-sm" id="login-reset-password">Esqueci minha senha</button>
+        <button type="button" class="btn btn-outline btn-sm" id="login-reset-password">${t('auth.forgotPassword')}</button>
       </p>
       <div class="auth-links">
-        <a href="${routeHref('/conta/criar')}">Criar conta de cliente</a>
-        <a href="${routeHref('/lojista/cadastro')}">Cadastrar minha loja</a>
-        <a href="${routeHref('/admin/entrar')}">Acesso admin</a>
+        <a href="${routeHref('/conta/criar')}">${t('auth.createCustomerAccount')}</a>
+        <a href="${routeHref('/lojista/cadastro')}">${t('auth.registerMyStore')}</a>
+        <a href="${routeHref('/admin/entrar')}">${t('auth.adminAccess')}</a>
       </div>
       ${renderRulesToggleButton()}
     `,
@@ -219,23 +220,23 @@ export async function renderCustomerRegister(main) {
   const { renderRulesAndPlansContent } = await import('../rules-plans-panel.js')
 
   main.innerHTML = authLayout(
-    'Criar Conta',
-    'Cadastre-se para favoritar lojas e agilizar seus pedidos.',
+    t('auth.registerTitle'),
+    t('auth.registerDescription'),
     `
-      ${renderGoogleAuthButton('Criar conta com Google')}
+      ${renderGoogleAuthButton(t('auth.registerWithGoogle'))}
       <p class="form-hint form-hint--center">Rápido e seguro — sua conta será de cliente.</p>
-      ${renderAuthDivider('ou preencha o formulário')}
+      ${renderAuthDivider(t('auth.dividerOrForm'))}
       <form id="register-form">
-        <div class="form-group"><label class="form-label">Nome</label><input class="form-input" name="name" required /></div>
-        <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" name="email" required /></div>
-        <div class="form-group"><label class="form-label">Senha</label><input class="form-input" type="password" name="password" required minlength="6" /></div>
+        <div class="form-group"><label class="form-label">${t('labels.name')}</label><input class="form-input" name="name" required /></div>
+        <div class="form-group"><label class="form-label">${t('labels.email')}</label><input class="form-input" type="email" name="email" required /></div>
+        <div class="form-group"><label class="form-label">${t('labels.password')}</label><input class="form-input" type="password" name="password" required minlength="6" /></div>
         <div class="form-group">
-          <label class="form-label">Data de nascimento</label>
+          <label class="form-label">${t('labels.birthDate')}</label>
           <input class="form-input" type="date" name="birth_date" required max="${getMaxBirthDateForRegistration()}" />
-          <p class="form-hint">É necessário ter 18 anos ou mais para criar conta.</p>
+          <p class="form-hint">${t('errors.minAgeRegistration')}</p>
         </div>
-        <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" name="phone" required /></div>
-        <div class="form-group"><label class="form-label">Endereço</label><textarea class="form-input" name="address" rows="2" required></textarea></div>
+        <div class="form-group"><label class="form-label">${t('labels.phone')}</label><input class="form-input" name="phone" required /></div>
+        <div class="form-group"><label class="form-label">${t('labels.address')}</label><textarea class="form-input" name="address" rows="2" required></textarea></div>
         <div class="form-group">
           <label class="form-label">Melhor horário para entrega</label>
           <select class="form-input" name="delivery_period" required>
@@ -245,10 +246,10 @@ export async function renderCustomerRegister(main) {
             <option value="madrugada">Madrugada</option>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Criar conta</button>
+        <button type="submit" class="btn btn-primary btn-block">${t('auth.submitRegister')}</button>
       </form>
       <p style="margin-top:1rem;font-size:0.875rem;text-align:center;color:var(--text-secondary)">
-        <a href="${routeHref('/conta/entrar')}">Já tenho conta</a>
+        <a href="${routeHref('/conta/entrar')}">${t('auth.alreadyHaveAccount')}</a>
       </p>
       ${renderRulesToggleButton()}
     `,
@@ -291,19 +292,19 @@ export const renderMerchantLogin = renderLogin
 
 export async function renderAdminLogin(main) {
   main.innerHTML = authLayout(
-    'Painel Admin',
-    'Acesso restrito a administradores da plataforma.',
+    t('auth.adminLoginTitle'),
+    t('auth.adminLoginDescription'),
     `
       <form id="login-form">
-        <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" name="email" required /></div>
-        <div class="form-group"><label class="form-label">Senha</label><input class="form-input" type="password" name="password" required /></div>
-        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+        <div class="form-group"><label class="form-label">${t('labels.email')}</label><input class="form-input" type="email" name="email" required /></div>
+        <div class="form-group"><label class="form-label">${t('labels.password')}</label><input class="form-input" type="password" name="password" required /></div>
+        <button type="submit" class="btn btn-primary btn-block">${t('auth.submitLogin')}</button>
       </form>
       <p style="margin-top:1rem;font-size:0.875rem;text-align:center;color:var(--text-secondary)">
-        <button type="button" class="btn btn-outline btn-sm" id="admin-reset-password">Esqueci minha senha</button>
+        <button type="button" class="btn btn-outline btn-sm" id="admin-reset-password">${t('auth.forgotPassword')}</button>
       </p>
       <p style="margin-top:0.75rem;font-size:0.8125rem;text-align:center;color:var(--text-muted)">
-        <a href="${routeHref('/moderador/entrar')}">Acesso moderador</a>
+        <a href="${routeHref('/moderador/entrar')}">${t('auth.moderatorAccess')}</a>
       </p>
     `
   )
@@ -322,7 +323,7 @@ export async function renderAdminLogin(main) {
       if (getUser()?.role !== 'admin') {
         const { logout } = await import('../state.js')
         await logout()
-        errEl.innerHTML = '<div class="alert alert-error">Acesso negado.</div>'
+        errEl.innerHTML = `<div class="alert alert-error">${escapeHtml(t('auth.accessDenied'))}</div>`
         return
       }
       navigate('/admin')
@@ -334,19 +335,19 @@ export async function renderAdminLogin(main) {
 
 export async function renderModeratorLogin(main) {
   main.innerHTML = authLayout(
-    'Painel Moderador',
-    'Acesso restrito a moderadores da plataforma.',
+    t('auth.moderatorLoginTitle'),
+    t('auth.moderatorLoginDescription'),
     `
       <form id="login-form">
-        <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" name="email" required /></div>
-        <div class="form-group"><label class="form-label">Senha</label><input class="form-input" type="password" name="password" required /></div>
-        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+        <div class="form-group"><label class="form-label">${t('labels.email')}</label><input class="form-input" type="email" name="email" required /></div>
+        <div class="form-group"><label class="form-label">${t('labels.password')}</label><input class="form-input" type="password" name="password" required /></div>
+        <button type="submit" class="btn btn-primary btn-block">${t('auth.submitLogin')}</button>
       </form>
       <p style="margin-top:1rem;font-size:0.875rem;text-align:center;color:var(--text-secondary)">
-        <button type="button" class="btn btn-outline btn-sm" id="moderator-reset-password">Esqueci minha senha</button>
+        <button type="button" class="btn btn-outline btn-sm" id="moderator-reset-password">${t('auth.forgotPassword')}</button>
       </p>
       <p style="margin-top:0.75rem;font-size:0.8125rem;text-align:center;color:var(--text-muted)">
-        <a href="${routeHref('/admin/entrar')}">Acesso admin</a>
+        <a href="${routeHref('/admin/entrar')}">${t('auth.adminAccess')}</a>
       </p>
     `
   )
@@ -365,7 +366,7 @@ export async function renderModeratorLogin(main) {
       if (getUser()?.role !== 'moderator') {
         const { logout } = await import('../state.js')
         await logout()
-        errEl.innerHTML = '<div class="alert alert-error">Acesso negado.</div>'
+        errEl.innerHTML = `<div class="alert alert-error">${escapeHtml(t('auth.accessDenied'))}</div>`
         return
       }
       navigate('/moderador')
@@ -382,17 +383,17 @@ export async function renderMerchantRegister(main) {
   let user = getUser()
   if (!user) {
     main.innerHTML = authLayout(
-      'Cadastrar Loja',
-      'Primeiro crie sua conta de lojista.',
+      t('auth.registerStoreTitle'),
+      t('auth.registerStoreAccountFirst'),
       `
-        ${renderGoogleAuthButton('Cadastrar loja com Google')}
+        ${renderGoogleAuthButton(t('auth.registerStoreWithGoogle'))}
         <p class="form-hint form-hint--center">Conta de lojista — em seguida você preenche os dados da loja.</p>
-        ${renderAuthDivider('ou preencha o formulário')}
+        ${renderAuthDivider(t('auth.dividerOrForm'))}
         <form id="merchant-signup">
-          <div class="form-group"><label class="form-label">Nome</label><input class="form-input" name="name" required /></div>
-          <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" name="email" required /></div>
-          <div class="form-group"><label class="form-label">Senha</label><input class="form-input" type="password" name="password" required minlength="6" /></div>
-          <button type="submit" class="btn btn-primary btn-block">Criar conta de lojista</button>
+          <div class="form-group"><label class="form-label">${t('labels.name')}</label><input class="form-input" name="name" required /></div>
+          <div class="form-group"><label class="form-label">${t('labels.email')}</label><input class="form-input" type="email" name="email" required /></div>
+          <div class="form-group"><label class="form-label">${t('labels.password')}</label><input class="form-input" type="password" name="password" required minlength="6" /></div>
+          <button type="submit" class="btn btn-primary btn-block">${t('auth.createMerchantAccount')}</button>
         </form>
       `
     )
@@ -430,31 +431,31 @@ export async function renderMerchantRegister(main) {
   ])
 
   main.innerHTML = authLayout(
-    'Cadastrar Loja',
-    'Preencha os dados da sua loja. Após envio, aguarde aprovação do moderador da região.',
+    t('auth.registerStoreTitle'),
+    t('auth.registerStoreFormDescription'),
     `
       <form id="store-form">
-        <div class="form-group"><label class="form-label">Nome da loja</label><input class="form-input" name="name" required /></div>
-        <div class="form-group"><label class="form-label">Bairro / região</label>
+        <div class="form-group"><label class="form-label">${t('auth.storeName')}</label><input class="form-input" name="name" required /></div>
+        <div class="form-group"><label class="form-label">${t('auth.neighborhoodRegion')}</label>
           <select class="form-input" name="neighborhood_id" required>
-            <option value="">Selecione...</option>
+            <option value="">${t('app.selectPlaceholder')}</option>
             ${neighborhoods.map((n) => `<option value="${n.id}">${escapeHtml(n.name)} · ${escapeHtml(n.city)}</option>`).join('')}
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Categoria</label>
+        <div class="form-group"><label class="form-label">${t('labels.category')}</label>
           <select class="form-input" name="category_id" required>
             ${categories.map((c) => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
           </select>
         </div>
         <div class="form-group"><label class="form-label">WhatsApp (com DDD)</label><input class="form-input" name="whatsapp" required placeholder="11999999999" /></div>
-        <div class="form-group"><label class="form-label">Descrição</label><textarea class="form-input" name="description" rows="2"></textarea></div>
-        <div class="form-group"><label class="form-label">Endereço</label><input class="form-input" name="address" /></div>
+        <div class="form-group"><label class="form-label">${t('labels.description')}</label><textarea class="form-input" name="description" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">${t('labels.address')}</label><input class="form-input" name="address" /></div>
         <div style="display:grid;grid-template-columns:1fr 80px;gap:0.5rem">
-          <div class="form-group"><label class="form-label">Cidade</label><input class="form-input" name="city" required /></div>
-          <div class="form-group"><label class="form-label">UF</label><input class="form-input" name="state" required maxlength="2" /></div>
+          <div class="form-group"><label class="form-label">${t('labels.city')}</label><input class="form-input" name="city" required /></div>
+          <div class="form-group"><label class="form-label">${t('labels.state')}</label><input class="form-input" name="state" required maxlength="2" /></div>
         </div>
         <div class="form-group"><label class="form-label">Horário de funcionamento</label><input class="form-input" name="opening_hours" placeholder="Seg-Sex 9h-18h" /></div>
-        <button type="submit" class="btn btn-primary btn-block">Enviar cadastro</button>
+        <button type="submit" class="btn btn-primary btn-block">${t('auth.submitStoreRegistration')}</button>
       </form>
     `
   )
@@ -474,7 +475,7 @@ export async function renderMerchantRegister(main) {
         state: form.state.value.toUpperCase(),
         opening_hours: form.opening_hours.value,
       })
-      main.querySelector('#auth-error').innerHTML = '<div class="alert alert-success">Loja enviada! Aguarde aprovação.</div>'
+      main.querySelector('#auth-error').innerHTML = `<div class="alert alert-success">${escapeHtml(t('auth.storeSubmittedSuccess'))}</div>`
       setTimeout(() => navigate('/dashboard'), 1500)
     } catch (err) {
       main.querySelector('#auth-error').innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
