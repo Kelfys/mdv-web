@@ -97,7 +97,7 @@ export async function renderHome(main) {
       ? `Resultados para "${search}"`
       : categoryId
         ? `${categories.find((c) => c.id === categoryId)?.name ?? 'Categoria'}`
-        : 'Feed de lojas e produtos'
+        : ''
 
     const emptyMessage = hasFilters
       ? '<div class="empty-state"><h2>Nada encontrado</h2><p>Tente outra categoria ou limpe a busca.</p></div>'
@@ -116,10 +116,7 @@ export async function renderHome(main) {
         </div>
       </div>
       <div class="container">
-        <p class="feed-label">${escapeHtml(label)}</p>
-        ${!hasFilters ? `
-          <p class="feed-hint">Ordenado por plano, engajamento e novidades — com diversidade entre lojas</p>
-        ` : ''}
+        ${label ? `<p class="feed-label">${escapeHtml(label)}</p>` : ''}
         <div class="feed" id="feed">
           ${feedItems.length === 0 ? emptyMessage : feedItems.map(renderFeedItem).join('')}
         </div>
