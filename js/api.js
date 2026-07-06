@@ -16,6 +16,7 @@
  */
 import { requireClient, isSupabaseConfigured, getSupabase } from './db.js'
 import { generateSlug, sanitizeSearch } from './utils.js'
+import { t } from './strings.js'
 import { DEFAULT_THEME_COLOR } from './config.js'
 import { STORAGE_BUCKETS, uploadImage } from './uploads.js'
 import { normalizeItemType } from './catalog.js'
@@ -125,33 +126,33 @@ export async function signUpCustomer({ email, password, name, phone, address, de
 export function formatAuthError(error) {
   const msg = error?.message ?? error?.msg ?? ''
   if (/provider is not enabled|unsupported provider/i.test(msg)) {
-    return 'Login com Google não está ativado no Supabase. Habilite em Authentication → Providers → Google (Client ID e Secret do Google Cloud).'
+    return t('errors.googleProviderDisabled')
   }
   if (/invalid login credentials/i.test(msg)) {
-    return 'Email ou senha incorretos. Verifique os dados ou use "Esqueci minha senha".'
+    return t('errors.invalidCredentials')
   }
   if (/email not confirmed/i.test(msg)) {
-    return 'Confirme seu email antes de entrar.'
+    return t('errors.emailNotConfirmed')
   }
   if (/already registered|already been registered/i.test(msg)) {
-    return 'Este email já está em uso.'
+    return t('errors.emailAlreadyInUse')
   }
   if (/invalid email/i.test(msg)) {
-    return 'Email inválido.'
+    return t('errors.invalidEmail')
   }
-  return msg || 'Não foi possível concluir a operação. Tente novamente.'
+  return msg || t('errors.generic')
 }
 
 export async function updateEmail(newEmail) {
   const email = String(newEmail ?? '').trim().toLowerCase()
-  if (!email) throw new Error('Informe o novo email.')
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Email inválido.')
+  if (!email) throw new Error(t('errors.informNewEmail'))
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error(t('errors.invalidEmail'))
 
   const client = await requireClient()
   const { data: { user: before } } = await client.auth.getUser()
-  if (!before) throw new Error('Sessão expirada. Entre novamente.')
+  if (!before) throw new Error(t('errors.sessionExpired'))
   if ((before.email ?? '').toLowerCase() === email) {
-    throw new Error('Este já é o seu email atual.')
+    throw new Error(t('errors.emailAlreadyCurrent'))
   }
 
   const { data, error } = await client.auth.updateUser({ email })
@@ -299,7 +300,7 @@ export async function getCurrentUser() {
   if (error || !data) {
     return {
       id: user.id,
-      name: user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'Usuário',
+      name: user.user_metadata?.name ?? user.email?.split('@')[0] ?? t('common.defaultUser'),
       email: user.email ?? '',
       role: user.user_metadata?.role ?? 'customer',
       created_at: user.created_at,
@@ -326,9 +327,9 @@ export async function createNeighborhood({ name, city, state }) {
   const trimmedName = String(name ?? '').trim()
   const trimmedCity = String(city ?? '').trim()
   const trimmedState = String(state ?? '').trim().toUpperCase()
-  if (!trimmedName) throw new Error('Informe o nome do bairro.')
-  if (!trimmedCity) throw new Error('Informe a cidade.')
-  if (trimmedState.length !== 2) throw new Error('UF deve ter 2 letras.')
+  if (!trimmedName) throw new Error(t('errors.informNeighborhoodName'))
+  if (!trimmedCity) throw new Error(t('errors.informCity'))
+  if (trimmedState.length !== 2) throw new Error(t('errors.stateMustBe2Letters'))
 
   const { data, error } = await client.from('neighborhoods').insert({
     name: trimmedName,
@@ -346,19 +347,19 @@ export async function updateNeighborhood(neighborhoodId, updates) {
   const payload = {}
   if (updates.name !== undefined) {
     const trimmed = String(updates.name).trim()
-    if (!trimmed) throw new Error('Informe o nome do bairro.')
+    if (!trimmed) throw new Error(t('errors.informNeighborhoodName'))
     payload.name = trimmed
     payload.slug = generateSlug(trimmed)
   }
   if (updates.city !== undefined) payload.city = String(updates.city).trim()
   if (updates.state !== undefined) {
     const uf = String(updates.state).trim().toUpperCase()
-    if (uf.length !== 2) throw new Error('UF deve ter 2 letras.')
+    if (uf.length !== 2) throw new Error(t('errors.stateMustBe2Letters'))
     payload.state = uf
   }
   if (updates.active !== undefined) payload.active = Boolean(updates.active)
 
-  if (Object.keys(payload).length === 0) throw new Error('Nenhuma alteração informada.')
+  if (Object.keys(payload).length === 0) throw new Error(t('errors.noChanges'))
 
   const { data, error } = await client
     .from('neighborhoods')
@@ -372,7 +373,7 @@ export async function updateNeighborhood(neighborhoodId, updates) {
 
 export async function deleteNeighborhood(neighborhoodId) {
   const client = await requireClient()
-  if (!neighborhoodId) throw new Error('Bairro inválido.')
+  if (!neighborhoodId) throw new Error(t('errors.invalidNeighborhood'))
 
   const { count: storeCount, error: storeError } = await client
     .from('stores')
@@ -380,9 +381,7 @@ export async function deleteNeighborhood(neighborhoodId) {
     .eq('neighborhood_id', neighborhoodId)
   if (storeError) throw storeError
   if ((storeCount ?? 0) > 0) {
-    throw new Error(
-      `Não é possível excluir: ${storeCount} loja${storeCount === 1 ? '' : 's'} vinculada${storeCount === 1 ? '' : 's'}. Mova as lojas para outro bairro antes.`
-    )
+    throw new Error(t('errors.cannotDeleteNeighborhoodStores', { count: storeCount }))
   }
 
   const { count: moderatorCount, error: moderatorError } = await client
@@ -392,9 +391,7 @@ export async function deleteNeighborhood(neighborhoodId) {
     .eq('neighborhood_id', neighborhoodId)
   if (moderatorError) throw moderatorError
   if ((moderatorCount ?? 0) > 0) {
-    throw new Error(
-      `Não é possível excluir: ${moderatorCount} moderador${moderatorCount === 1 ? '' : 'es'} vinculado${moderatorCount === 1 ? '' : 's'}. Reatribua-os em Moderadores antes.`
-    )
+    throw new Error(t('errors.cannotDeleteNeighborhoodModerators', { count: moderatorCount }))
   }
 
   const { error } = await client.from('neighborhoods').delete().eq('id', neighborhoodId)
@@ -403,7 +400,7 @@ export async function deleteNeighborhood(neighborhoodId) {
 
 export async function setModeratorNeighborhood(moderatorId, neighborhoodId) {
   const client = await requireClient()
-  if (!neighborhoodId) throw new Error('Selecione o bairro do moderador.')
+  if (!neighborhoodId) throw new Error(t('errors.selectModeratorNeighborhood'))
 
   const { data: user, error: fetchError } = await client
     .from('users')
@@ -411,7 +408,7 @@ export async function setModeratorNeighborhood(moderatorId, neighborhoodId) {
     .eq('id', moderatorId)
     .single()
   if (fetchError) throw fetchError
-  if (user.role !== 'moderator') throw new Error('Usuário não é moderador.')
+  if (user.role !== 'moderator') throw new Error(t('errors.userNotModerator'))
 
   const { data, error } = await client
     .from('users')
@@ -482,7 +479,7 @@ export async function fetchStoreByOwner(ownerId) {
 
 export async function createStore(ownerId, form) {
   const client = await requireClient()
-  if (!form.neighborhood_id) throw new Error('Selecione o bairro da loja.')
+  if (!form.neighborhood_id) throw new Error(t('errors.selectStoreNeighborhood'))
   const slug = generateSlug(form.name)
   const { data, error } = await client.from('stores').insert({
     owner_id: ownerId,
@@ -615,7 +612,7 @@ function isMissingEngagementTableError(error) {
   return code === 'PGRST205' || /could not find the table/i.test(msg)
 }
 
-const ENGAGEMENT_UNAVAILABLE = 'Recurso de curtidas/comentários indisponível. Rode a migration 011 no Supabase.'
+const ENGAGEMENT_UNAVAILABLE = t('errors.engagementUnavailable')
 
 function withZeroEngagement(products) {
   return products.map((product) => ({
@@ -830,7 +827,7 @@ export async function updateProduct(productId, form) {
     if (newPrice !== oldPrice) {
       const cooldown = getPriceCooldownRemaining(existing.store?.plan_id ?? 'free', existing.price_changed_at)
       if (!cooldown.allowed) {
-        throw new Error(`Aguarde ${formatPriceCooldownRemaining(cooldown.remainingMs)} para alterar o preço novamente.`)
+        throw new Error(t('merchant.priceCooldownWait', { remaining: formatPriceCooldownRemaining(cooldown.remainingMs) }))
       }
     }
   }
@@ -920,8 +917,8 @@ export async function fetchProductComments(productId) {
 export async function addProductComment(userId, productId, content) {
   const client = await requireClient()
   const trimmed = content.trim()
-  if (!trimmed) throw new Error('Escreva um comentário antes de enviar.')
-  if (trimmed.length > 500) throw new Error('O comentário deve ter no máximo 500 caracteres.')
+  if (!trimmed) throw new Error(t('errors.commentRequired'))
+  if (trimmed.length > 500) throw new Error(t('errors.commentTooLong'))
 
   const { data, error } = await client
     .from('product_comments')
@@ -1083,10 +1080,10 @@ export async function updateCustomerProfile(userId, { name, phone, address, deli
   const trimmedName = String(name ?? '').trim()
   const trimmedPhone = String(phone ?? '').trim()
   const trimmedAddress = String(address ?? '').trim()
-  if (!trimmedName) throw new Error('Informe seu nome.')
-  if (!trimmedPhone) throw new Error('Informe seu telefone.')
-  if (!trimmedAddress) throw new Error('Informe seu endereço.')
-  if (!DELIVERY_PERIODS.has(delivery_period)) throw new Error('Selecione um horário de entrega.')
+  if (!trimmedName) throw new Error(t('errors.informName'))
+  if (!trimmedPhone) throw new Error(t('errors.informPhone'))
+  if (!trimmedAddress) throw new Error(t('errors.informAddress'))
+  if (!DELIVERY_PERIODS.has(delivery_period)) throw new Error(t('errors.selectDeliveryPeriod'))
 
   const client = await requireClient()
   const { data, error } = await client
@@ -1157,13 +1154,13 @@ export async function fetchUserByEmail(email) {
 
 export async function promoteUserToModerator(email, neighborhoodId, permissions = {}) {
   const trimmed = email.trim()
-  if (!trimmed) throw new Error('Informe o email do usuário.')
-  if (!neighborhoodId) throw new Error('Selecione o bairro do moderador.')
+  if (!trimmed) throw new Error(t('errors.informUserEmail'))
+  if (!neighborhoodId) throw new Error(t('errors.selectModeratorNeighborhood'))
 
   const user = await fetchUserByEmail(trimmed)
-  if (!user) throw new Error('Usuário não encontrado. A pessoa precisa ter uma conta no site.')
-  if (user.role === 'admin') throw new Error('Não é possível alterar o papel de um administrador.')
-  if (user.role === 'moderator') throw new Error('Este usuário já é moderador.')
+  if (!user) throw new Error(t('errors.userNotFound'))
+  if (user.role === 'admin') throw new Error(t('errors.cannotChangeAdminRole'))
+  if (user.role === 'moderator') throw new Error(t('errors.userAlreadyModerator'))
 
   const client = await requireClient()
   const { data, error } = await client
@@ -1188,17 +1185,17 @@ export async function updateModeratorPermissions(moderatorId, { neighborhoodId, 
     .eq('id', moderatorId)
     .single()
   if (fetchError) throw fetchError
-  if (user.role !== 'moderator') throw new Error('Usuário não é moderador.')
+  if (user.role !== 'moderator') throw new Error(t('errors.userNotModerator'))
 
   const payload = {}
   if (neighborhoodId !== undefined) {
-    if (!neighborhoodId) throw new Error('Selecione o bairro do moderador.')
+    if (!neighborhoodId) throw new Error(t('errors.selectModeratorNeighborhood'))
     payload.neighborhood_id = neighborhoodId
   }
   if (canApprovePlanChanges !== undefined) {
     payload.can_approve_plan_changes = Boolean(canApprovePlanChanges)
   }
-  if (Object.keys(payload).length === 0) throw new Error('Nenhuma permissão informada.')
+  if (Object.keys(payload).length === 0) throw new Error(t('errors.noPermissionsInformed'))
 
   const { data, error } = await client
     .from('users')
@@ -1213,7 +1210,7 @@ export async function updateModeratorPermissions(moderatorId, { neighborhoodId, 
 export async function createPlanChangeRequest(storeId, requestedPlanId, merchantNote = '') {
   const client = await requireClient()
   const user = await getCurrentUser()
-  if (!user) throw new Error('Faça login para solicitar um plano.')
+  if (!user) throw new Error(t('errors.loginRequiredForPlan'))
 
   const { data: store, error: storeError } = await client
     .from('stores')
@@ -1221,13 +1218,13 @@ export async function createPlanChangeRequest(storeId, requestedPlanId, merchant
     .eq('id', storeId)
     .single()
   if (storeError) throw storeError
-  if (store.owner_id !== user.id) throw new Error('Sem permissão para solicitar plano desta loja.')
+  if (store.owner_id !== user.id) throw new Error(t('errors.noPermissionPlanRequest'))
 
   if (!['free', 'starter', 'plus', 'premium'].includes(requestedPlanId)) {
-    throw new Error('Plano inválido.')
+    throw new Error(t('errors.invalidPlan'))
   }
   if (requestedPlanId === store.plan_id && getPlanById(requestedPlanId).priceMonthly === 0) {
-    throw new Error('Este já é o seu plano atual.')
+    throw new Error(t('errors.planAlreadyCurrent'))
   }
 
   const { data: existing } = await client
@@ -1236,7 +1233,7 @@ export async function createPlanChangeRequest(storeId, requestedPlanId, merchant
     .eq('store_id', storeId)
     .eq('status', 'pending')
     .maybeSingle()
-  if (existing) throw new Error('Já existe um pedido de plano aguardando aprovação.')
+  if (existing) throw new Error(t('errors.planRequestPending'))
 
   const { data, error } = await client.from('plan_change_requests').insert({
     store_id: storeId,
@@ -1283,7 +1280,7 @@ export async function approvePlanChangeRequest(requestId, reviewNote = '') {
     .eq('id', requestId)
     .single()
   if (fetchError) throw fetchError
-  if (req.status !== 'pending') throw new Error('Este pedido já foi analisado.')
+  if (req.status !== 'pending') throw new Error(t('errors.planRequestAlreadyReviewed'))
 
   const { error: storeError } = await client.from('stores').update({
     plan_id: req.requested_plan_id,
@@ -1320,7 +1317,7 @@ export async function setModeratorPlanApprovalPermission(moderatorId, enabled) {
     .eq('id', moderatorId)
     .single()
   if (fetchError) throw fetchError
-  if (user.role !== 'moderator') throw new Error('Usuário não é moderador.')
+  if (user.role !== 'moderator') throw new Error(t('errors.userNotModerator'))
 
   const { data, error } = await client
     .from('users')
@@ -1340,7 +1337,7 @@ export async function demoteModerator(userId) {
     .eq('id', userId)
     .single()
   if (fetchError) throw fetchError
-  if (user.role !== 'moderator') throw new Error('Usuário não é moderador.')
+  if (user.role !== 'moderator') throw new Error(t('errors.userNotModerator'))
 
   const { data: store } = await client
     .from('stores')
@@ -1394,7 +1391,7 @@ export async function createStoreAsAdmin(form) {
   const slug = form.slug?.trim() || generateSlug(form.name)
   const approved = form.approved !== false
 
-  if (!form.neighborhood_id) throw new Error('Selecione o bairro da loja.')
+  if (!form.neighborhood_id) throw new Error(t('errors.selectStoreNeighborhood'))
 
   const { data, error } = await client.from('stores').insert({
     owner_id: form.owner_id,
