@@ -135,8 +135,7 @@ Ou execute cada arquivo em `supabase/migrations/` no **SQL Editor** (ordem numé
 | Site URL (prod) | `https://kelfys.github.io/MaredeVendas-vanilla/` |
 | Redirect URLs | `https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback` |
 | | `https://kelfys.github.io/MaredeVendas-vanilla/` |
-| | `https://maredevendas.com.br/#/auth/callback` (quando DNS ativo) |
-| | `https://maredevendas.com.br/` (quando DNS ativo) |
+
 | Local | `http://localhost:8080` |
 
 Aplicar no projeto remoto: `npx supabase config push` (valores em `supabase/config.toml`).
@@ -190,7 +189,7 @@ Botões na UI em `/conta/entrar`, `/conta/criar` e `/lojista/cadastro`. **Requer
 1. **APIs & Services → Credentials → OAuth client ID** (Web application)
 2. **Authorized JavaScript origins:**
    - `https://kelfys.github.io`
-   - `https://maredevendas.com.br` (quando DNS ativo)
+
    - `https://ulpjsxmilumqedkkfuqw.supabase.co`
 3. **Authorized redirect URIs** (apenas Supabase, não o GitHub Pages):
    - `https://ulpjsxmilumqedkkfuqw.supabase.co/auth/v1/callback`
