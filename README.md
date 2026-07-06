@@ -21,7 +21,7 @@ Marketplace local de lojas — **HTML, CSS e JavaScript vanilla** com backend [S
 ## Stack
 
 - **Frontend:** ES Modules nativos, lazy-load de páginas, sem bundler
-- **Roteamento:** History API em produção (GitHub Pages); hash (`#/`) em localhost na raiz
+- **Roteamento:** Hash (`#/rota`) em produção e local — único modo confiável no GitHub Pages
 - **Backend:** Supabase (Auth, PostgreSQL, Storage, Row Level Security)
 - **Deploy:** GitHub Pages via `peaceiris/actions-gh-pages` (branch `gh-pages`)
 - **Testes:** Vitest (`npm test`)
@@ -50,7 +50,7 @@ maredevendas-vanilla/
 │   ├── merchant-nav.js     # Menu do painel do lojista
 │   ├── staff-nav.js        # Menu dos painéis admin e moderador
 │   └── pages/              # Uma página por rota
-├── supabase/migrations/    # Migrations SQL (001 → 024)
+├── supabase/migrations/    # Migrations SQL (001 → 029)
 ├── tests/                  # Testes unitários (Vitest)
 └── .github/workflows/
     └── deploy.yml          # Pipeline de deploy para GitHub Pages
@@ -89,8 +89,12 @@ Ou execute cada arquivo em `supabase/migrations/` no **SQL Editor** (ordem numé
 
 **Authentication → URL Configuration:**
 
-- `http://localhost:8080`
-- `https://kelfys.github.io/MaredeVendas-vanilla/`
+| Campo | Valor |
+|-------|--------|
+| Site URL (prod) | `https://kelfys.github.io/MaredeVendas-vanilla/` |
+| Redirect URLs | `https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback` |
+| | `https://kelfys.github.io/MaredeVendas-vanilla/` |
+| Local | `http://localhost:8080` |
 
 Credenciais em `js/config.js` (chave **publishable** / anon — pública por design):
 
@@ -125,25 +129,56 @@ npm test
 - **Login unificado** em `/conta/entrar` (e alias `/lojista/entrar`): mesma tela para cliente, lojista, admin e moderador
 - Após login, redirecionamento automático por papel: `/favoritos`, `/dashboard`, `/admin` ou `/moderador`
 - Parâmetro `?redirect=` funciona para clientes (ex.: voltar à loja após login)
+- **Esqueci minha senha** na tela de login (email do formulário → link por email)
 - **Cadastro de cliente** em `/conta/criar` exige data de nascimento (18+), validada no front, API e banco
 - **Cadastro de loja** em `/lojista/cadastro` (link na tela de login)
 - Admin e moderador têm telas dedicadas em `/admin/entrar` e `/moderador/entrar` (com recuperação de senha)
 
+### Login com Google (opcional)
+
+Botões na UI em `/conta/entrar`, `/conta/criar` e `/lojista/cadastro`. **Requer configuração manual no Supabase** — o código já está pronto; sem isso aparece `provider is not enabled`.
+
+#### 1. Google Cloud Console
+
+1. **APIs & Services → Credentials → OAuth client ID** (Web application)
+2. **Authorized JavaScript origins:**
+   - `https://kelfys.github.io`
+   - `https://ulpjsxmilumqedkkfuqw.supabase.co`
+3. **Authorized redirect URIs** (apenas Supabase, não o GitHub Pages):
+   - `https://ulpjsxmilumqedkkfuqw.supabase.co/auth/v1/callback`
+
+#### 2. Supabase Dashboard
+
+1. **Authentication → Providers → Google:** Enable + Client ID + Client Secret → Save
+2. **Authentication → URL Configuration:** Site URL e Redirect URLs (tabela acima)
+
+#### 3. Fluxo no app
+
+1. Usuário clica no botão Google → `signInWithGoogle()` em `js/api.js`
+2. Google redireciona com `?code=` → `handleAuthCallback()` em `js/app.js`
+3. Rota `#/auth/callback` envia para `oauth-next` (ex.: `/favoritos` ou `/lojista/cadastro`)
+4. Cadastro de loja com Google: `completeOAuthSignup()` promove `customer` → `merchant`
+
 ### Navegação (header)
 
-- **Desktop:** `Lojas · Regras · Entrar` no menu superior (sem botão Entrar nas ações do header)
-- **Mobile:** `Lojas · Regras · 🔑 Entrar` no menu hambúrguer (☰)
+- **Desktop:** `Início · Entrar` (pills no menu; Entrar só para visitantes)
+- **Mobile:** `Início` e `Entrar` no topo do menu hambúrguer (☰)
 - Logado: ícones de favoritos, painel ou sair conforme o papel
+- Painéis admin/moderador/lojista: link **← Voltar ao site** (feed)
 
 ---
 
 ## Deploy
 
-Deploy automático ao fazer push na `main`. O workflow:
+Deploy automático ao fazer push na `main` (após testes passarem no CI).
 
-1. Copia `index.html`, `css/`, `js/`, `favicon.svg` e `404.html` para `dist/`
-2. Injeta `?v=<commit>` em `app.js` e `styles.css` (cache bust)
-3. Publica na branch `gh-pages` via Peaceiris
+O workflow (`.github/workflows/deploy.yml`):
+
+1. `npm ci` + `npm test` (Vitest)
+2. Copia `index.html`, `css/`, `js/`, `favicon.svg` e `404.html` para `dist/`
+3. Injeta `?v=<commit>` em todos os `.js` e em `styles.css` (cache bust)
+4. Gera shells SPA por rota (`copy-spa-shells.sh`) para deep links no GitHub Pages
+5. Publica na branch `gh-pages` via Peaceiris
 
 **Deploy manual:**
 
@@ -167,8 +202,9 @@ gh workflow run deploy.yml
 | `/moderador` | Painel moderador |
 | `/favoritos` | Lojas favoritas |
 | `/regras` | Regras e planos |
+| `/auth/callback` | Retorno OAuth Google / recovery de senha |
 
-> Em localhost as rotas usam hash (`#/conta/entrar`). Em produção (GitHub Pages) usam URLs limpas com base `/MaredeVendas-vanilla/`.
+> Rotas sempre em hash: `https://kelfys.github.io/MaredeVendas-vanilla/#/conta/entrar`. O `404.html` redireciona rotas diretas para `/#/rota`.
 
 ---
 
@@ -200,6 +236,7 @@ gh workflow run deploy.yml
 
 ## Melhorias futuras
 
+- [ ] Ativar Google OAuth em produção (Supabase Providers — ver seção acima)
 - [ ] Notificações em tempo real (Supabase Realtime) para novos pedidos
 - [ ] Integração de pagamento/assinatura (Stripe)
 - [ ] Service Worker para cache offline

@@ -18,6 +18,7 @@ const lazy = (loader) => async (main, params) => {
 
 let postAuthRedirect = null
 
+/** Troca ?code= da URL por sessão Supabase (OAuth Google e recovery). Funciona com hash #/auth/callback. */
 async function handleAuthCallback() {
   const params = new URLSearchParams(window.location.search)
   const code = params.get('code')

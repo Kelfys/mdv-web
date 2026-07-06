@@ -201,10 +201,26 @@ export async function updatePassword(newPassword) {
   return data
 }
 
+/**
+ * URL de retorno OAuth (hash routing no GitHub Pages).
+ * Deve estar em Supabase → Authentication → URL Configuration → Redirect URLs.
+ */
 export function getAuthRedirectUrl() {
   return `${window.location.origin}${window.location.pathname}#/auth/callback`
 }
 
+/**
+ * Login/cadastro com Google (Supabase Auth).
+ *
+ * Pré-requisito no dashboard Supabase (não é configurável só no código):
+ * 1. Authentication → Providers → Google: Enable + Client ID/Secret (Google Cloud)
+ * 2. Google Cloud redirect URI: https://<ref>.supabase.co/auth/v1/callback
+ * 3. Redirect URLs: .../MaredeVendas-vanilla/#/auth/callback
+ *
+ * Sem o provider ativo, a API retorna "provider is not enabled".
+ * @param {string} [nextPath] — rota após callback (sessionStorage oauth-next)
+ * @param {'merchant'} [role] — em /lojista/cadastro promove customer → merchant
+ */
 export async function signInWithGoogle({ nextPath = '/favoritos', role } = {}) {
   const client = await requireClient()
   try {
@@ -230,6 +246,7 @@ export async function signInWithGoogle({ nextPath = '/favoritos', role } = {}) {
   return data
 }
 
+/** Após OAuth: aplica papel lojista se veio de /lojista/cadastro (oauth-role em sessionStorage). */
 export async function completeOAuthSignup() {
   let intendedRole = null
   try {

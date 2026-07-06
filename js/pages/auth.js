@@ -8,6 +8,11 @@
  * Cadastro cliente: birth_date obrigatório (18+), validado aqui, em api.js e no banco.
  * Cadastro lojista: conta merchant + formulário da loja em renderMerchantRegister.
  * Admin/moderador: telas separadas com reset de senha.
+ *
+ * Google OAuth (opcional — requer provider ativo no Supabase):
+ * - /conta/entrar → Entrar com Google
+ * - /conta/criar → Criar conta com Google (cliente)
+ * - /lojista/cadastro → Cadastrar loja com Google (promove a merchant)
  */
 import { signIn, signUpCustomer } from '../api.js'
 import { setUser } from '../state.js'

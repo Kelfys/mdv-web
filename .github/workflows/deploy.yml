@@ -1,7 +1,6 @@
-# Deploy automático para GitHub Pages via GitHub Actions (sem Jekyll).
-# Publica index.html, css/, js/, README.md e demais estáticos.
-# Injeta ?v=<commit> em app.js e styles.css para cache bust no mobile.
-# Dispara em push na main ou manualmente: gh workflow run deploy.yml
+# Deploy automático para GitHub Pages.
+# 1) Roda testes Vitest  2) Monta dist/ com cache bust  3) Publica gh-pages
+# Dispara: push na main ou manualmente: gh workflow run deploy.yml
 name: Deploy GitHub Pages
 
 on:
@@ -19,7 +18,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
   deploy:
+    needs: test
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
