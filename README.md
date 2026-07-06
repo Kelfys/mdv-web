@@ -13,8 +13,8 @@ Marketplace local de lojas — **HTML, CSS e JavaScript vanilla** com backend [S
 | **Visitante** | Ver feed de lojas e produtos (abas **Para você** e **Anúncios**), buscar, adicionar ao carrinho e pedir pelo WhatsApp |
 | **Cliente** | Dashboard em **Minha conta** (`/favoritos`): favoritos, produtos curtidos, histórico de pedidos e perfil editável; curtir/comentar produtos; checkout com dados pré-preenchidos |
 | **Lojista** | Painel com produtos, pedidos, anúncios e configurações (após aprovação do admin); **logo da loja** em qualquer plano; **banner personalizado** só em planos pagos |
-| **Moderador** | Aprovações, lojas, produtos e pedidos (somente leitura em lojas/produtos) |
-| **Admin** | Métricas, moderação, gestão de lojistas/moderadores e configuração da plataforma |
+| **Moderador** | Aprovações e pedidos **do bairro atribuído**; lojas/produtos somente leitura na região |
+| **Admin** | Métricas globais, gestão de **bairros**, moderadores por região, lojistas e configuração |
 
 ---
 
@@ -50,7 +50,7 @@ maredevendas-vanilla/
 │   ├── merchant-nav.js     # Menu do painel do lojista
 │   ├── staff-nav.js        # Menu dos painéis admin e moderador
 │   └── pages/              # Uma página por rota
-├── supabase/migrations/    # Migrations SQL (001 → 032)
+├── supabase/migrations/    # Migrations SQL (001 → 033)
 ├── tests/                  # Testes unitários (Vitest)
 └── .github/workflows/
     └── deploy.yml          # Pipeline de deploy para GitHub Pages
@@ -205,6 +205,16 @@ gh workflow run deploy.yml
 | `/auth/callback` | Retorno OAuth Google / recovery de senha |
 
 > Rotas sempre em hash: `https://kelfys.github.io/MaredeVendas-vanilla/#/conta/entrar`. O `404.html` redireciona rotas diretas para `/#/rota`.
+
+---
+
+## Bairros e moderadores regionais
+
+- Tabela `neighborhoods` + `stores.neighborhood_id` + `users.neighborhood_id` (moderadores)
+- **Home:** chips de bairro filtram lojas, produtos e anúncios (preferência salva no navegador)
+- **Admin → Bairros** (`#/admin/bairros`): criar/ativar regiões
+- **Admin → Moderadores:** promover usuário **com bairro obrigatório**
+- **Moderador:** vê e aprova apenas lojas/pedidos do seu bairro (RLS no Supabase — migration `033`)
 
 ---
 

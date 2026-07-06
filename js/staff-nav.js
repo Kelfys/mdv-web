@@ -26,6 +26,7 @@ export const ADMIN_MENU = [
   { id: 'products', label: 'Produtos', icon: '📦', href: '#/admin/produtos' },
   { id: 'pedidos', label: 'Pedidos', icon: '🛒', href: '#/admin/pedidos' },
   { id: 'approvals', label: 'Aprovações', icon: '✅', href: '#/admin/aprovacoes' },
+  { id: 'neighborhoods', label: 'Bairros', icon: '📍', href: '#/admin/bairros' },
   { id: 'moderators', label: 'Moderadores', icon: '🛡️', href: '#/admin/moderadores' },
   { id: 'account', label: 'Minha Conta', icon: '🔑', href: '#/admin/conta' },
 ]

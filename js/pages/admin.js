@@ -12,7 +12,9 @@ import {
   fetchAllStoresAdmin,
   fetchAdminProducts, createStoreAsAdmin, createProduct, updateProduct,
   updateStoreAsAdmin, deleteProduct, fetchCategories,
+  fetchNeighborhoods, createNeighborhood, updateNeighborhood, setModeratorNeighborhood,
 } from '../api.js'
+import { getStaffNeighborhoodScope, formatNeighborhoodLabel } from '../neighborhood.js'
 import { getUser, setAdminPendingCount } from '../state.js'
 import { navigate } from '../router.js'
 import {
@@ -48,10 +50,23 @@ function guardStaff(main, panel = 'admin') {
   return user
 }
 
-async function loadStaffApprovalQueue(user) {
-  const pendingStores = await fetchPendingStoreApprovals()
+function staffScopeSubtitle(user, panel) {
+  if (panel !== 'moderator') return ''
+  const name = user.neighborhood?.name
+  return name ? `Região: ${formatNeighborhoodLabel(user.neighborhood)}` : 'Região não atribuída — contate o admin'
+}
+
+function renderNeighborhoodOptions(neighborhoods, selectedId = '') {
+  return neighborhoods.map((n) => `
+    <option value="${n.id}" ${selectedId === n.id ? 'selected' : ''}>${escapeHtml(formatNeighborhoodLabel(n))}</option>
+  `).join('')
+}
+
+async function loadStaffApprovalQueue(user, panel = 'admin') {
+  const scopeId = getStaffNeighborhoodScope(user, panel)
+  const pendingStores = await fetchPendingStoreApprovals(scopeId)
   const planRequests = canApprovePlanChanges(user)
-    ? await fetchPendingPlanChangeRequests()
+    ? await fetchPendingPlanChangeRequests(scopeId)
     : []
   return {
     pendingStores,
@@ -987,8 +1002,8 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
   if (tab === 'overview') {
     const [metrics, queue, stores, orderAnalytics, recentOrders] = await Promise.all([
       fetchAdminMetrics(),
-      loadStaffApprovalQueue(user),
-      fetchAllStoresAdmin(),
+      loadStaffApprovalQueue(user, panel),
+      fetchAllStoresAdmin(getStaffNeighborhoodScope(user, panel)),
       fetchAdminOrdersAnalytics(),
       fetchAdminOrders(5),
     ])
@@ -1002,7 +1017,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
 
     main.innerHTML = adminPage(
       menuItem.label,
-      'Resumo da plataforma e atalhos rápidos',
+      panel === 'moderator' ? staffScopeSubtitle(user, panel) : 'Resumo da plataforma e atalhos rápidos',
       `
         ${quickActions(panel)}
         ${metricCards(metrics, pendingTotal, orderMetrics, panel)}
@@ -1043,7 +1058,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                   <article class="admin-list-card admin-list-card--highlight">
                     <div class="admin-list-card__main">
                       <strong>${escapeHtml(s.name)}</strong>
-                      <p>${escapeHtml(s.city)}, ${escapeHtml(s.state)} · ${formatDate(s.created_at)}</p>
+                      <p>${escapeHtml(s.neighborhood?.name ?? '—')} · ${escapeHtml(s.city)}, ${escapeHtml(s.state)} · ${formatDate(s.created_at)}</p>
                       <p class="admin-list-card__meta">${escapeHtml(s.owner?.name ?? 'Lojista')} · ${escapeHtml(s.owner?.email ?? '')}</p>
                     </div>
                     <div class="admin-list-card__actions">
@@ -1066,13 +1081,15 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
   }
 
   if (tab === 'approvals') {
-    const { pendingStores: pending, planRequests, pendingTotal } = await loadStaffApprovalQueue(user)
+    const { pendingStores: pending, planRequests, pendingTotal } = await loadStaffApprovalQueue(user, panel)
     setAdminPendingCount(pendingTotal)
     import('../ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
 
     main.innerHTML = adminPage(
       menuItem.label,
-      `${pendingTotal} pendência${pendingTotal === 1 ? '' : 's'} aguardando sua revisão`,
+      panel === 'moderator'
+        ? `${staffScopeSubtitle(user, panel)} · ${pendingTotal} pendência${pendingTotal === 1 ? '' : 's'}`
+        : `${pendingTotal} pendência${pendingTotal === 1 ? '' : 's'} aguardando sua revisão`,
       pendingTotal === 0
         ? adminEmptyState('✅', 'Fila vazia', 'Nenhuma loja ou pedido de plano aguardando aprovação.')
         : `${renderPlanChangeApprovalCards(planRequests)}
@@ -1088,7 +1105,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                     <div class="admin-approval-card__head">
                       <div>
                         <h3>${escapeHtml(s.name)}</h3>
-                        <p>${escapeHtml(s.city)}, ${escapeHtml(s.state)} · ${formatDate(s.created_at)}</p>
+                        <p>${escapeHtml(s.neighborhood?.name ?? '—')} · ${escapeHtml(s.city)}, ${escapeHtml(s.state)} · ${formatDate(s.created_at)}</p>
                       </div>
                       ${statusBadge(s.status)}
                     </div>
@@ -1116,10 +1133,11 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
   }
 
   if (tab === 'stores') {
-    const [stores, categories, queue] = await Promise.all([
-      fetchAllStoresAdmin(),
+    const [stores, categories, queue, neighborhoods] = await Promise.all([
+      fetchAllStoresAdmin(getStaffNeighborhoodScope(user, panel)),
       fetchCategories(),
-      loadStaffApprovalQueue(user),
+      loadStaffApprovalQueue(user, panel),
+      fetchNeighborhoods({ activeOnly: false }),
     ])
     const merchants = storesReadOnly ? [] : await fetchMerchants()
 
@@ -1128,7 +1146,11 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
 
     main.innerHTML = adminPage(
       menuItem.label,
-      storesReadOnly ? `${stores.length} loja(s) — somente leitura` : `${stores.length} loja(s) cadastradas`,
+      panel === 'moderator'
+        ? `${staffScopeSubtitle(user, panel)} · ${stores.length} loja(s) na região`
+        : storesReadOnly
+          ? `${stores.length} loja(s) — somente leitura`
+          : `${stores.length} loja(s) cadastradas`,
       `
         <div id="admin-store-msg"></div>
         ${storesReadOnly ? '<p class="admin-readonly-hint">Moderadores podem visualizar lojas, mas não criar nem editar.</p>' : ''}
@@ -1158,6 +1180,13 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
             <div class="form-group">
               <label class="form-label">WhatsApp</label>
               <input class="form-input" name="whatsapp" required placeholder="5521999999999" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bairro / região</label>
+              <select class="form-input" name="neighborhood_id" required>
+                <option value="">Selecione...</option>
+                ${renderNeighborhoodOptions(neighborhoods)}
+              </select>
             </div>
             <div class="form-group">
               <label class="form-label">Cidade</label>
@@ -1221,16 +1250,17 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
         ${storeStatusSummary(stores)}
         <div class="table-wrap admin-stores-table" style="margin-top:1rem">
           <table>
-            <thead><tr><th>Loja</th><th>Lojista</th><th>Cidade</th><th>Status</th><th>Plano</th><th></th></tr></thead>
+            <thead><tr><th>Loja</th><th>Bairro</th><th>Lojista</th><th>Cidade</th><th>Status</th><th>Plano</th><th></th></tr></thead>
             <tbody>
-              ${stores.length === 0 ? `<tr><td colspan="6">${adminEmptyState('🏪', 'Nenhuma loja', 'Cadastre a primeira loja usando o formulário acima.')}</td></tr>` : stores.map((s) => `
-                <tr data-store-row data-store-id="${s.id}" data-store-status="${s.status}" data-store-search="${escapeHtml(`${s.name} ${s.city} ${s.state} ${s.owner?.name ?? ''} ${s.owner?.email ?? ''}`.toLowerCase())}">
+              ${stores.length === 0 ? `<tr><td colspan="7">${adminEmptyState('🏪', 'Nenhuma loja', 'Cadastre a primeira loja usando o formulário acima.')}</td></tr>` : stores.map((s) => `
+                <tr data-store-row data-store-id="${s.id}" data-store-status="${s.status}" data-store-search="${escapeHtml(`${s.name} ${s.neighborhood?.name ?? ''} ${s.city} ${s.state} ${s.owner?.name ?? ''} ${s.owner?.email ?? ''}`.toLowerCase())}">
                   <td>
                     <div class="admin-table-thumb">
                       ${s.logo ? `<img src="${escapeHtml(s.logo)}" alt="" />` : '<span>🏪</span>'}
                     </div>
                     <strong>${escapeHtml(s.name)}</strong><br><small>/${escapeHtml(s.slug)}</small>
                   </td>
+                  <td>${escapeHtml(s.neighborhood?.name ?? '—')}</td>
                   <td>${escapeHtml(s.owner?.name ?? '—')}<br><small>${escapeHtml(s.owner?.email ?? '')}</small></td>
                   <td>${escapeHtml(s.city)}, ${escapeHtml(s.state)}</td>
                   <td>${statusBadge(s.status)}</td>
@@ -1242,11 +1272,17 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                   </td>
                 </tr>
                 ${storesReadOnly ? '' : `<tr class="admin-edit-row" id="edit-store-row-${s.id}" hidden>
-                  <td colspan="6">
+                  <td colspan="7">
                     <form class="admin-edit-panel admin-form-grid" data-store-edit="${s.id}" data-plan-branding-form>
                       <div class="form-group">
                         <label class="form-label">Nome</label>
                         <input class="form-input" name="name" value="${escapeHtml(s.name)}" required />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">Bairro / região</label>
+                        <select class="form-input" name="neighborhood_id" required>
+                          ${renderNeighborhoodOptions(neighborhoods, s.neighborhood_id)}
+                        </select>
                       </div>
                       <div class="form-group">
                         <label class="form-label">WhatsApp</label>
@@ -1339,9 +1375,9 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
   if (tab === 'products') {
     const [allProducts, stores, categories, queue] = await Promise.all([
       fetchAdminProducts(),
-      fetchAllStoresAdmin(),
+      fetchAllStoresAdmin(getStaffNeighborhoodScope(user, panel)),
       fetchCategories(),
-      loadStaffApprovalQueue(user),
+      loadStaffApprovalQueue(user, panel),
     ])
 
     setAdminPendingCount(queue.pendingTotal)
@@ -1391,7 +1427,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
     const [orders, orderAnalytics, queue] = await Promise.all([
       fetchAdminOrders(),
       fetchAdminOrdersAnalytics(),
-      loadStaffApprovalQueue(user),
+      loadStaffApprovalQueue(user, panel),
     ])
     const orderMetrics = orderAnalytics.metrics
 
@@ -1443,17 +1479,90 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
     return
   }
 
+  if (tab === 'neighborhoods') {
+    if (panel !== 'admin') {
+      navigate('/moderador')
+      return
+    }
+
+    const neighborhoods = await fetchNeighborhoods({ activeOnly: false })
+
+    main.innerHTML = adminPage(
+      menuItem.label,
+      'Cadastre bairros e regiões para filtrar o marketplace e escopar moderadores',
+      `
+        <section class="admin-section">
+          <div class="admin-section__head"><h2>Novo bairro</h2></div>
+          <form id="neighborhood-form" class="admin-form-grid">
+            <div class="form-group">
+              <label class="form-label">Nome</label>
+              <input class="form-input" name="name" required placeholder="Copacabana" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cidade</label>
+              <input class="form-input" name="city" required placeholder="Rio de Janeiro" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">UF</label>
+              <input class="form-input" name="state" maxlength="2" required value="RJ" />
+            </div>
+            <div class="admin-form-grid__full">
+              <div id="neighborhood-form-msg"></div>
+              <button type="submit" class="btn btn-primary btn-sm">Criar bairro</button>
+            </div>
+          </form>
+        </section>
+        <section class="admin-section">
+          <div class="admin-section__head">
+            <h2>Bairros cadastrados</h2>
+            <span class="admin-stat-chip admin-stat-chip--sent">${neighborhoods.length} região${neighborhoods.length === 1 ? '' : 'ões'}</span>
+          </div>
+          ${neighborhoods.length === 0
+            ? adminEmptyState('📍', 'Nenhum bairro', 'Crie o primeiro bairro para segmentar lojas e moderadores.')
+            : `<div class="table-wrap">
+                <table>
+                  <thead><tr><th>Nome</th><th>Cidade</th><th>Slug</th><th>Status</th><th></th></tr></thead>
+                  <tbody>
+                    ${neighborhoods.map((n) => `
+                      <tr>
+                        <td><strong>${escapeHtml(n.name)}</strong></td>
+                        <td>${escapeHtml(n.city)}, ${escapeHtml(n.state)}</td>
+                        <td><code>/${escapeHtml(n.slug)}</code></td>
+                        <td>${n.active ? '<span class="badge badge-approved">Ativo</span>' : '<span class="badge badge-blocked">Inativo</span>'}</td>
+                        <td>
+                          <button type="button" class="btn btn-outline btn-sm" data-toggle-neighborhood="${n.id}" data-active="${n.active ? '0' : '1'}">
+                            ${n.active ? 'Desativar' : 'Ativar'}
+                          </button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>`}
+        </section>
+      `,
+      '',
+      panel
+    )
+
+    bindNeighborhoodManagement(main)
+    return
+  }
+
   if (tab === 'moderators') {
     if (panel !== 'admin') {
       navigate('/moderador')
       return
     }
 
-    const moderators = await fetchModerators()
+    const [moderators, neighborhoods] = await Promise.all([
+      fetchModerators(),
+      fetchNeighborhoods({ activeOnly: false }),
+    ])
 
     main.innerHTML = adminPage(
       menuItem.label,
-      'Promova usuários existentes ao papel de moderador',
+      'Promova usuários e vincule cada moderador a um bairro/região',
       `
         <section class="admin-section admin-moderators-promote">
           <div class="admin-section__head">
@@ -1461,12 +1570,19 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
           </div>
           <p class="admin-moderators-promote__hint">
             O usuário precisa já ter conta como cliente ou lojista. Após a promoção, ele acessa em
-            <a href="#/moderador/entrar">#/moderador/entrar</a>.
+            <a href="#/moderador/entrar">#/moderador/entrar</a> e vê apenas lojas do bairro atribuído.
           </p>
           <form id="promote-moderator-form" class="admin-moderators-promote__form">
             <div class="form-group">
               <label class="form-label" for="promote-moderator-email">Email do usuário</label>
               <input class="form-input" type="email" id="promote-moderator-email" name="email" placeholder="usuario@email.com" required autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="promote-moderator-neighborhood">Bairro / região</label>
+              <select class="form-input" id="promote-moderator-neighborhood" name="neighborhood_id" required>
+                <option value="">Selecione...</option>
+                ${renderNeighborhoodOptions(neighborhoods.filter((n) => n.active))}
+              </select>
             </div>
             <div id="promote-moderator-msg"></div>
             <button type="submit" class="btn btn-primary btn-sm">Promover a moderador</button>
@@ -1503,6 +1619,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                         Email <span class="admin-table-sort__icon" aria-hidden="true"></span>
                       </button>
                     </th>
+                    <th>Bairro</th>
                     <th class="admin-table-sortable">
                       <button type="button" class="admin-table-sort active" id="admin-moderators-sort-created" data-moderator-sort="created" data-moderator-sort-dir="desc" aria-label="Ordenar por data, mais recentes primeiro">
                         Desde <span class="admin-table-sort__icon" aria-hidden="true">↓</span>
@@ -1512,9 +1629,9 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                     <th></th>
                   </tr></thead>
                   <tbody id="admin-moderators-tbody">
-                    ${renderModeratorTableRows(moderators)}
+                    ${renderModeratorTableRows(moderators, neighborhoods)}
                     <tr data-moderators-empty hidden>
-                      <td colspan="5">${adminEmptyState('🔍', 'Nenhum resultado', 'Nenhum moderador corresponde à busca.')}</td>
+                      <td colspan="6">${adminEmptyState('🔍', 'Nenhum resultado', 'Nenhum moderador corresponde à busca.')}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1526,7 +1643,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
       panel
     )
 
-    bindModeratorManagement(main)
+    bindModeratorManagement(main, neighborhoods)
     return
   }
 
@@ -1553,6 +1670,11 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
       `
         <div class="admin-account-card">
           <p class="admin-account-card__email"><span>Conta</span> ${escapeHtml(user.email)}</p>
+          ${panel === 'moderator' ? `
+            <p class="form-hint" style="margin-bottom:1rem">
+              <strong>Região:</strong> ${user.neighborhood ? escapeHtml(formatNeighborhoodLabel(user.neighborhood)) : 'Não atribuída — contate o administrador'}
+            </p>
+          ` : ''}
           ${emailSection}
           <form id="admin-password-form" class="admin-password-form">
             <h3 class="admin-account-card__section-title">Alterar senha</h3>
@@ -1615,6 +1737,7 @@ function bindStoreForm(main) {
         name: f.name.value.trim(),
         category_id: f.category_id.value,
         whatsapp: f.whatsapp.value.trim(),
+        neighborhood_id: f.neighborhood_id.value,
         city: f.city.value.trim(),
         state: f.state.value.trim().toUpperCase(),
         description: f.description.value.trim(),
@@ -1690,6 +1813,7 @@ function bindStoreEdits(main) {
           theme_color: form.theme_color.value,
           status: form.status.value,
           plan_id: form.plan_id.value,
+          neighborhood_id: form.neighborhood_id.value,
           description: form.description.value.trim(),
           address: form.address.value.trim(),
           opening_hours: form.opening_hours.value.trim(),
@@ -1888,19 +2012,25 @@ function updateModeratorsSortButtons(main, sortField, sortDirection) {
   })
 }
 
-function renderModeratorTableRows(moderators) {
+function renderModeratorTableRows(moderators, neighborhoods = []) {
   if (moderators.length === 0) return ''
 
   return moderators.map((m) => `
     <tr
       data-moderator-row
-      data-moderator-search="${escapeHtml(`${m.name} ${m.email}`.toLowerCase())}"
+      data-moderator-search="${escapeHtml(`${m.name} ${m.email} ${m.neighborhood?.name ?? ''}`.toLowerCase())}"
       data-moderator-name="${escapeHtml(m.name)}"
       data-moderator-email="${escapeHtml(m.email)}"
       data-moderator-created="${m.created_at}"
     >
       <td><strong>${escapeHtml(m.name)}</strong></td>
       <td>${escapeHtml(m.email)}</td>
+      <td>
+        <select class="form-input" data-moderator-neighborhood="${m.id}" style="min-width:10rem">
+          <option value="">—</option>
+          ${renderNeighborhoodOptions(neighborhoods.filter((n) => n.active), m.neighborhood_id)}
+        </select>
+      </td>
       <td>${formatDate(m.created_at)}</td>
       <td>
         <label class="admin-check">
@@ -2033,8 +2163,53 @@ function bindModeratorsList(main) {
   apply()
 }
 
-function bindModeratorManagement(main) {
+function bindNeighborhoodManagement(main) {
+  main.querySelector('#neighborhood-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const form = e.target
+    const msgEl = main.querySelector('#neighborhood-form-msg')
+    try {
+      await createNeighborhood({
+        name: form.name.value,
+        city: form.city.value,
+        state: form.state.value,
+      })
+      showToast('Bairro criado')
+      rerenderStaff(main, 'neighborhoods')
+    } catch (err) {
+      msgEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
+    }
+  })
+
+  main.querySelectorAll('[data-toggle-neighborhood]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await updateNeighborhood(btn.dataset.toggleNeighborhood, { active: btn.dataset.active === '1' })
+        showToast(btn.dataset.active === '1' ? 'Bairro ativado' : 'Bairro desativado')
+        rerenderStaff(main, 'neighborhoods')
+      } catch (err) {
+        showToast(err.message)
+      }
+    })
+  })
+}
+
+function bindModeratorManagement(main, neighborhoods = []) {
   bindModeratorsList(main)
+
+  main.querySelectorAll('[data-moderator-neighborhood]').forEach((select) => {
+    select.addEventListener('change', async () => {
+      const prev = select.dataset.prevValue ?? select.value
+      select.dataset.prevValue = select.value
+      try {
+        await setModeratorNeighborhood(select.dataset.moderatorNeighborhood, select.value)
+        showToast('Região do moderador atualizada')
+      } catch (err) {
+        select.value = prev
+        showToast(err.message)
+      }
+    })
+  })
 
   main.querySelectorAll('[data-moderator-plan-approval]').forEach((checkbox) => {
     checkbox.addEventListener('change', async () => {
@@ -2056,7 +2231,7 @@ function bindModeratorManagement(main) {
     const submitBtn = form.querySelector('button[type="submit"]')
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Promovendo...' }
     try {
-      const promoted = await promoteUserToModerator(form.email.value)
+      const promoted = await promoteUserToModerator(form.email.value, form.neighborhood_id.value)
       showToast(`${promoted.name} agora é moderador`)
       rerenderStaff(main, 'moderators')
     } catch (err) {

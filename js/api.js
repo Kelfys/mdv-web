@@ -291,7 +291,11 @@ export async function getCurrentUser() {
   const { data: { user } } = await client.auth.getUser()
   if (!user) return null
 
-  const { data, error } = await client.from('users').select('*').eq('id', user.id).single()
+  const { data, error } = await client
+    .from('users')
+    .select('*, neighborhood:neighborhoods(id, name, slug, city, state)')
+    .eq('id', user.id)
+    .single()
   if (error || !data) {
     return {
       id: user.id,
@@ -301,6 +305,88 @@ export async function getCurrentUser() {
       created_at: user.created_at,
     }
   }
+  return data
+}
+
+// --- Neighborhoods (bairros / regiões) ---
+export async function fetchNeighborhoods({ activeOnly = true } = {}) {
+  const client = await requireClient()
+  let query = client.from('neighborhoods').select('*').order('name')
+  if (activeOnly) query = query.eq('active', true)
+  const { data, error } = await query
+  if (error) {
+    if (error.code === '42P01') return []
+    throw error
+  }
+  return data ?? []
+}
+
+export async function createNeighborhood({ name, city, state }) {
+  const client = await requireClient()
+  const trimmedName = String(name ?? '').trim()
+  const trimmedCity = String(city ?? '').trim()
+  const trimmedState = String(state ?? '').trim().toUpperCase()
+  if (!trimmedName) throw new Error('Informe o nome do bairro.')
+  if (!trimmedCity) throw new Error('Informe a cidade.')
+  if (trimmedState.length !== 2) throw new Error('UF deve ter 2 letras.')
+
+  const { data, error } = await client.from('neighborhoods').insert({
+    name: trimmedName,
+    slug: generateSlug(trimmedName),
+    city: trimmedCity,
+    state: trimmedState,
+    active: true,
+  }).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateNeighborhood(neighborhoodId, updates) {
+  const client = await requireClient()
+  const payload = {}
+  if (updates.name !== undefined) {
+    const trimmed = String(updates.name).trim()
+    if (!trimmed) throw new Error('Informe o nome do bairro.')
+    payload.name = trimmed
+    payload.slug = generateSlug(trimmed)
+  }
+  if (updates.city !== undefined) payload.city = String(updates.city).trim()
+  if (updates.state !== undefined) {
+    const uf = String(updates.state).trim().toUpperCase()
+    if (uf.length !== 2) throw new Error('UF deve ter 2 letras.')
+    payload.state = uf
+  }
+  if (updates.active !== undefined) payload.active = Boolean(updates.active)
+
+  const { data, error } = await client
+    .from('neighborhoods')
+    .update(payload)
+    .eq('id', neighborhoodId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function setModeratorNeighborhood(moderatorId, neighborhoodId) {
+  const client = await requireClient()
+  if (!neighborhoodId) throw new Error('Selecione o bairro do moderador.')
+
+  const { data: user, error: fetchError } = await client
+    .from('users')
+    .select('id, role')
+    .eq('id', moderatorId)
+    .single()
+  if (fetchError) throw fetchError
+  if (user.role !== 'moderator') throw new Error('Usuário não é moderador.')
+
+  const { data, error } = await client
+    .from('users')
+    .update({ neighborhood_id: neighborhoodId })
+    .eq('id', moderatorId)
+    .select('id, name, email, role, created_at, can_approve_plan_changes, neighborhood_id, neighborhood:neighborhoods(id, name, slug, city, state)')
+    .single()
+  if (error) throw error
   return data
 }
 
@@ -315,12 +401,16 @@ export async function fetchCategories() {
 // --- Stores ---
 export async function fetchStores(filters = {}) {
   const client = await requireClient()
-  let query = client.from('stores').select('*, category:categories(*)').order('created_at', { ascending: false })
+  let query = client
+    .from('stores')
+    .select('*, category:categories(*), neighborhood:neighborhoods(id, name, slug, city, state)')
+    .order('created_at', { ascending: false })
 
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.marketplaceVisible) {
     query = query.eq('status', 'approved').in('subscription_status', ['active', 'trialing'])
   }
+  if (filters.neighborhoodId) query = query.eq('neighborhood_id', filters.neighborhoodId)
   if (filters.categoryId) query = query.eq('category_id', filters.categoryId)
   if (filters.search) {
     const term = sanitizeSearch(filters.search)
@@ -359,6 +449,7 @@ export async function fetchStoreByOwner(ownerId) {
 
 export async function createStore(ownerId, form) {
   const client = await requireClient()
+  if (!form.neighborhood_id) throw new Error('Selecione o bairro da loja.')
   const slug = generateSlug(form.name)
   const { data, error } = await client.from('stores').insert({
     owner_id: ownerId,
@@ -369,6 +460,7 @@ export async function createStore(ownerId, form) {
     address: form.address,
     city: form.city,
     state: form.state,
+    neighborhood_id: form.neighborhood_id,
     category_id: form.category_id || null,
     opening_hours: form.opening_hours,
     instagram: form.instagram || null,
@@ -384,7 +476,7 @@ export async function createStore(ownerId, form) {
 export async function updateStore(storeId, form) {
   const client = await requireClient()
   const updates = {}
-  for (const key of ['name', 'description', 'whatsapp', 'address', 'city', 'state', 'opening_hours', 'instagram', 'category_id', 'theme_color', 'payment_methods']) {
+  for (const key of ['name', 'description', 'whatsapp', 'address', 'city', 'state', 'opening_hours', 'instagram', 'category_id', 'theme_color', 'payment_methods', 'neighborhood_id']) {
     if (form[key] !== undefined) updates[key] = form[key]
   }
 
@@ -412,7 +504,7 @@ export async function updateStore(storeId, form) {
 export async function updateStoreAsAdmin(storeId, form) {
   const client = await requireClient()
   const updates = {}
-  for (const key of ['name', 'description', 'whatsapp', 'address', 'city', 'state', 'opening_hours', 'instagram', 'category_id', 'theme_color', 'plan_id', 'status']) {
+  for (const key of ['name', 'description', 'whatsapp', 'address', 'city', 'state', 'opening_hours', 'instagram', 'category_id', 'theme_color', 'plan_id', 'status', 'neighborhood_id']) {
     if (form[key] !== undefined) updates[key] = form[key]
   }
 
@@ -448,13 +540,15 @@ export async function recordStoreView(storeId) {
   await client.from('store_views').insert({ store_id: storeId })
 }
 
-export async function fetchPendingStoreApprovals() {
+export async function fetchPendingStoreApprovals(neighborhoodId = null) {
   const client = await requireClient()
-  const { data, error } = await client
+  let query = client
     .from('stores')
-    .select('*, category:categories(*), owner:users(id, name, email, phone, created_at)')
+    .select('*, category:categories(*), neighborhood:neighborhoods(id, name, slug), owner:users(id, name, email, phone, created_at)')
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
+  if (neighborhoodId) query = query.eq('neighborhood_id', neighborhoodId)
+  const { data, error } = await query
   if (error) throw error
   return data ?? []
 }
@@ -553,6 +647,7 @@ function normalizeMarketplaceProduct(row) {
       state: store.state,
       plan_id: store.plan_id,
       category_id: store.category_id,
+      neighborhood_id: store.neighborhood_id,
       category: store.category ?? null,
     },
   }
@@ -562,6 +657,10 @@ function filterMarketplaceProducts(rows, filters = {}) {
   let products = rows
     .filter((row) => row.store && ['active', 'trialing'].includes(row.store.subscription_status))
     .map(normalizeMarketplaceProduct)
+
+  if (filters.neighborhoodId) {
+    products = products.filter((p) => p.store.neighborhood_id === filters.neighborhoodId)
+  }
 
   if (filters.categoryId) {
     products = products.filter((p) => p.store.category_id === filters.categoryId)
@@ -592,11 +691,15 @@ export async function fetchMarketplaceProducts(filters = {}) {
 
   let query = client
     .from('products')
-    .select('*, category:categories(*), store:stores!inner(id, name, slug, whatsapp, theme_color, city, state, plan_id, status, subscription_status, category_id, payment_methods, category:categories(id, name))')
+    .select('*, category:categories(*), store:stores!inner(id, name, slug, whatsapp, theme_color, city, state, plan_id, status, subscription_status, category_id, neighborhood_id, payment_methods, category:categories(id, name))')
     .eq('active', true)
     .eq('stores.status', 'approved')
     .order('created_at', { ascending: false })
     .limit(fetchLimit)
+
+  if (filters.neighborhoodId) {
+    query = query.eq('stores.neighborhood_id', filters.neighborhoodId)
+  }
 
   const { data, error } = await query
   if (error) throw error
@@ -998,7 +1101,7 @@ export async function fetchModerators() {
   const client = await requireClient()
   const { data, error } = await client
     .from('users')
-    .select('id, name, email, role, created_at, can_approve_plan_changes')
+    .select('id, name, email, role, created_at, can_approve_plan_changes, neighborhood_id, neighborhood:neighborhoods(id, name, slug, city, state)')
     .eq('role', 'moderator')
     .order('name')
   if (error) throw error
@@ -1019,9 +1122,10 @@ export async function fetchUserByEmail(email) {
   return data
 }
 
-export async function promoteUserToModerator(email) {
+export async function promoteUserToModerator(email, neighborhoodId) {
   const trimmed = email.trim()
   if (!trimmed) throw new Error('Informe o email do usuário.')
+  if (!neighborhoodId) throw new Error('Selecione o bairro do moderador.')
 
   const user = await fetchUserByEmail(trimmed)
   if (!user) throw new Error('Usuário não encontrado. A pessoa precisa ter uma conta no site.')
@@ -1031,9 +1135,9 @@ export async function promoteUserToModerator(email) {
   const client = await requireClient()
   const { data, error } = await client
     .from('users')
-    .update({ role: 'moderator' })
+    .update({ role: 'moderator', neighborhood_id: neighborhoodId })
     .eq('id', user.id)
-    .select('id, name, email, role, created_at')
+    .select('id, name, email, role, created_at, neighborhood_id, neighborhood:neighborhoods(id, name, slug, city, state)')
     .single()
   if (error) throw error
   return data
@@ -1077,15 +1181,17 @@ export async function createPlanChangeRequest(storeId, requestedPlanId, merchant
   return data
 }
 
-export async function fetchPendingPlanChangeRequests() {
+export async function fetchPendingPlanChangeRequests(neighborhoodId = null) {
   const client = await requireClient()
   const { data, error } = await client
     .from('plan_change_requests')
-    .select('*, store:stores(id, name, slug, city, state, plan_id, owner:users(id, name, email))')
+    .select('*, store:stores(id, name, slug, city, state, plan_id, neighborhood_id, owner:users(id, name, email))')
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
   if (error) throw error
-  return data ?? []
+  const rows = data ?? []
+  if (!neighborhoodId) return rows
+  return rows.filter((row) => row.store?.neighborhood_id === neighborhoodId)
 }
 
 export async function fetchStorePendingPlanChangeRequest(storeId) {
@@ -1187,12 +1293,14 @@ export async function demoteModerator(userId) {
   return data
 }
 
-export async function fetchAllStoresAdmin() {
+export async function fetchAllStoresAdmin(neighborhoodId = null) {
   const client = await requireClient()
-  const { data, error } = await client
+  let query = client
     .from('stores')
-    .select('*, category:categories(*), owner:users(id, name, email)')
+    .select('*, category:categories(*), neighborhood:neighborhoods(id, name, slug, city, state), owner:users(id, name, email)')
     .order('created_at', { ascending: false })
+  if (neighborhoodId) query = query.eq('neighborhood_id', neighborhoodId)
+  const { data, error } = await query
   if (error) throw error
   return data ?? []
 }
@@ -1215,6 +1323,8 @@ export async function createStoreAsAdmin(form) {
   const slug = form.slug?.trim() || generateSlug(form.name)
   const approved = form.approved !== false
 
+  if (!form.neighborhood_id) throw new Error('Selecione o bairro da loja.')
+
   const { data, error } = await client.from('stores').insert({
     owner_id: form.owner_id,
     name: form.name,
@@ -1224,6 +1334,7 @@ export async function createStoreAsAdmin(form) {
     address: form.address ?? '',
     city: form.city,
     state: form.state,
+    neighborhood_id: form.neighborhood_id,
     category_id: form.category_id || null,
     opening_hours: form.opening_hours ?? '',
     instagram: form.instagram || null,
@@ -1232,7 +1343,7 @@ export async function createStoreAsAdmin(form) {
     plan_id: form.plan_id ?? 'free',
     subscription_status: approved ? 'active' : 'inactive',
     approved_at: approved ? new Date().toISOString() : null,
-  }).select('*, category:categories(*)').single()
+  }).select('*, category:categories(*), neighborhood:neighborhoods(id, name, slug)').single()
   if (error) throw error
   return data
 }
@@ -1458,20 +1569,24 @@ export async function fetchProductPriceHistory(productId, limit = 10) {
   return data ?? []
 }
 
-export async function fetchActiveFeedAds(limit = 6) {
+export async function fetchActiveFeedAds(limit = 6, neighborhoodId = null) {
   const client = await requireClient()
   const { data, error } = await client
     .from('store_ads')
-    .select('*, store:stores(id, name, slug, theme_color, logo, plan_id, city, state)')
+    .select('*, store:stores(id, name, slug, theme_color, logo, plan_id, city, state, neighborhood_id)')
     .eq('status', 'approved')
     .gt('expires_at', new Date().toISOString())
     .order('approved_at', { ascending: false })
-    .limit(limit)
+    .limit(neighborhoodId ? limit * 3 : limit)
   if (error) {
     if (error.code === '42P01') return []
     throw error
   }
-  return data ?? []
+  let rows = data ?? []
+  if (neighborhoodId) {
+    rows = rows.filter((ad) => ad.store?.neighborhood_id === neighborhoodId)
+  }
+  return rows.slice(0, limit)
 }
 
 export async function fetchStoreAds(storeId) {

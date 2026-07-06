@@ -81,7 +81,8 @@ describe('google auth', () => {
     vi.doMock('../js/api.js', () => ({
       signUp: vi.fn(),
       signInWithGoogle: vi.fn(),
-      fetchCategories: vi.fn(),
+      fetchCategories: vi.fn().mockResolvedValue([]),
+      fetchNeighborhoods: vi.fn().mockResolvedValue([]),
       createStore: vi.fn(),
       fetchStoreByOwner: vi.fn(),
     }))

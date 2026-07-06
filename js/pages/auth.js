@@ -377,7 +377,7 @@ export async function renderModeratorLogin(main) {
 
 export async function renderMerchantRegister(main) {
   const { getUser, loadUser } = await import('../state.js')
-  const { signUp, fetchCategories, createStore, fetchStoreByOwner } = await import('../api.js')
+  const { signUp, fetchCategories, fetchNeighborhoods, createStore, fetchStoreByOwner } = await import('../api.js')
 
   let user = getUser()
   if (!user) {
@@ -424,14 +424,23 @@ export async function renderMerchantRegister(main) {
     return
   }
 
-  const categories = await fetchCategories()
+  const [categories, neighborhoods] = await Promise.all([
+    fetchCategories(),
+    fetchNeighborhoods(),
+  ])
 
   main.innerHTML = authLayout(
     'Cadastrar Loja',
-    'Preencha os dados da sua loja. Após envio, aguarde aprovação do admin.',
+    'Preencha os dados da sua loja. Após envio, aguarde aprovação do moderador da região.',
     `
       <form id="store-form">
         <div class="form-group"><label class="form-label">Nome da loja</label><input class="form-input" name="name" required /></div>
+        <div class="form-group"><label class="form-label">Bairro / região</label>
+          <select class="form-input" name="neighborhood_id" required>
+            <option value="">Selecione...</option>
+            ${neighborhoods.map((n) => `<option value="${n.id}">${escapeHtml(n.name)} · ${escapeHtml(n.city)}</option>`).join('')}
+          </select>
+        </div>
         <div class="form-group"><label class="form-label">Categoria</label>
           <select class="form-input" name="category_id" required>
             ${categories.map((c) => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
@@ -456,6 +465,7 @@ export async function renderMerchantRegister(main) {
     try {
       await createStore(user.id, {
         name: form.name.value,
+        neighborhood_id: form.neighborhood_id.value,
         category_id: form.category_id.value,
         whatsapp: form.whatsapp.value,
         description: form.description.value,

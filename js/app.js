@@ -112,6 +112,7 @@ function boot() {
   registerRoute('/admin/produtos', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'products') }))))
   registerRoute('/admin/pedidos', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'pedidos') }))))
   registerRoute('/admin/aprovacoes', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'approvals') }))))
+  registerRoute('/admin/bairros', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'neighborhoods') }))))
   registerRoute('/admin/moderadores', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'moderators') }))))
   registerRoute('/admin/conta', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderAdminDashboard(main, 'account') }))))
   registerRoute('/moderador', lazy(() => import('./pages/admin.js').then((m) => ({ default: (main) => m.renderModeratorDashboard(main, 'overview') }))))
