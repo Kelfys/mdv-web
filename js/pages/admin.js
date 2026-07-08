@@ -963,7 +963,7 @@ function renderStoreProductsSidebar(stores, counts, selectedStoreId, panel = 'ad
         type="search"
         class="form-input admin-store-products-nav__search"
         id="admin-store-products-search"
-        placeholder="${t('admin.searchStoresNeighborhood')}"
+        placeholder="${t('admin.searchStorePlaceholder')}"
         autocomplete="off"
       />
       <div class="admin-store-products-nav__list" id="admin-store-products-list">
@@ -974,12 +974,11 @@ function renderStoreProductsSidebar(stores, counts, selectedStoreId, panel = 'ad
               href="#${staffProductsPath(panel, s.id)}"
               class="admin-store-products-nav__item ${s.id === selectedStoreId ? 'active' : ''}"
               data-store-nav="${s.id}"
-              data-store-search="${escapeHtml(`${s.name} ${s.neighborhood?.name ?? ''} ${s.city} ${s.state} ${s.owner?.name ?? ''}`.toLowerCase())}"
+              data-store-name="${escapeHtml(s.name.toLowerCase())}"
             >
               <span class="admin-store-products-nav__item-name">${escapeHtml(s.name)}</span>
               <span class="admin-store-products-nav__item-meta">
-                ${escapeHtml(s.neighborhood?.name ?? s.city ?? '—')}
-                · ${t('admin.productCount', { count: counts[s.id] ?? 0 })}
+                ${t('admin.productCount', { count: counts[s.id] ?? 0 })}
               </span>
             </a>
           `).join('')}
@@ -2108,8 +2107,8 @@ function bindStoreProductsNav(main) {
   search?.addEventListener('input', () => {
     const term = search.value.trim().toLowerCase()
     items.forEach((item) => {
-      const haystack = item.dataset.storeSearch ?? ''
-      item.hidden = term.length > 0 && !haystack.includes(term)
+      const name = item.dataset.storeName ?? ''
+      item.hidden = term.length > 0 && !name.includes(term)
     })
   })
 }
