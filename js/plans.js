@@ -101,7 +101,7 @@ export function planAllowsStoreBranding(planId) {
 export const PLAN_LIMITS = {
   // Gratuito: 2 itens publicáveis, sem foto no catálogo
   free: { products: 2, productImages: 0 },
-  starter: { products: 15, productImages: 10 },
+  starter: { products: 6, productImages: 6 },
   plus: { products: 30, productImages: 30 },
   premium: { products: 80, productImages: 80 },
 }
@@ -202,11 +202,11 @@ const PLAN_CONFIGS = [
     id: 'starter',
     nameKey: 'plans.planStarter',
     descriptionKey: 'plans.planStarterDesc',
-    priceMonthly: 5,
+    priceMonthly: 2.99,
     priceCooldownHours: PLAN_COOLDOWN_HOURS.starter,
     featureKeys: [
-      'plans.featureStarterItems15',
-      'plans.featureStarterImages10',
+      'plans.featureStarterItems6',
+      'plans.featureStarterImages6',
       'plans.featureCustomBanner',
       'plans.featureHomeHighlight',
       'plans.featureToggleProducts',

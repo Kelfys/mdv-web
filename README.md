@@ -362,7 +362,7 @@ Lojistas no Gratuito podem publicar até **dois** produtos ou serviços **sem fo
 | Plano | Itens no catálogo | Produtos com imagem | Banner personalizado | Anúncios no feed | Cooldown de preço |
 |-------|-------------------|---------------------|----------------------|------------------|-------------------|
 | **Gratuito** | 2 | 0 | Não | Não | 24 h |
-| **Starter** | 15 | 10 | Sim | Não | 12 h |
+| **Starter** | 6 | 6 | Sim | Não | 12 h |
 | **Plus** | 30 | 30 | Sim | Não | 4 h |
 | **Premium** | 80 | 80 | Sim | **4/mês** | Sem limite |
 
