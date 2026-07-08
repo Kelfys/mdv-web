@@ -42,6 +42,7 @@ export const STRINGS = {
   },
   "nav": {
     "home": "Início",
+    "createStore": "Criar loja",
     "login": "Entrar",
     "logout": "Sair",
     "myAccount": "👤 Minha conta",
