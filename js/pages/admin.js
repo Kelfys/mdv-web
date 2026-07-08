@@ -18,7 +18,7 @@ import { getStaffNeighborhoodScope, formatNeighborhoodLabel } from '../neighborh
 import { getUser, loadUser, setAdminPendingCount } from '../state.js'
 import { navigate } from '../router.js'
 import {
-  escapeHtml, formatDate, formatCurrency, showToast, normalizeForSearch, buildStoreSearchKey,
+  escapeHtml, formatDate, formatCurrency, showToast, buildStoreSearchKey, matchesStoreSearch,
   formatDateTimeCsv, buildCsv, downloadTextFile, validateInstagramHandle,
 } from '../utils.js'
 import { STORE_THEME_COLORS, stringsEditorHref } from '../config.js'
@@ -518,9 +518,9 @@ function bindListFilters(main, {
   let activeFilter = 'all'
 
   const apply = () => {
-    const term = search?.value.trim().toLowerCase() ?? ''
+    const term = search?.value ?? ''
     rows.forEach((row) => {
-      const matchesSearch = !term || getSearchText(row).includes(term)
+      const matchesSearch = matchesStoreSearch(getSearchText(row), term)
       const matchesFilter = activeFilter === 'all' || getFilterValue(row) === activeFilter
       const visible = matchesSearch && matchesFilter
       row.hidden = !visible
@@ -550,9 +550,9 @@ function bindStoreListFilters(main) {
   let activeNeighborhood = 'all'
 
   const apply = () => {
-    const term = normalizeForSearch(search?.value ?? '')
+    const term = search?.value ?? ''
     rows.forEach((row) => {
-      const matchesSearch = !term || (row.dataset.storeSearch ?? '').includes(term)
+      const matchesSearch = matchesStoreSearch(row.dataset.storeSearch ?? '', term)
       const matchesStatus = activeFilter === 'all' || row.dataset.storeStatus === activeFilter
       const matchesNeighborhood = activeNeighborhood === 'all' || row.dataset.storeNeighborhood === activeNeighborhood
       const visible = matchesSearch && matchesStatus && matchesNeighborhood
@@ -2110,16 +2110,16 @@ function bindStoreProductsNav(main) {
   const emptyMsg = list.querySelector('[data-store-search-empty]')
 
   const apply = () => {
-    const term = normalizeForSearch(search.value)
+    const term = search.value
     let visibleCount = 0
     list.querySelectorAll('[data-store-nav]').forEach((item) => {
       const haystack = item.dataset.storeSearch ?? ''
-      const visible = !term || haystack.includes(term)
+      const visible = matchesStoreSearch(haystack, term)
       item.classList.toggle('hidden', !visible)
       if (visible) visibleCount += 1
     })
     if (emptyMsg) {
-      emptyMsg.classList.toggle('hidden', visibleCount > 0 || !term)
+      emptyMsg.classList.toggle('hidden', visibleCount > 0 || !term.trim())
     }
   }
 

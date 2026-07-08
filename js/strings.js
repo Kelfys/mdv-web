@@ -599,7 +599,7 @@ export const STRINGS = {
     "planFree": "Gratuito",
     "publishStoreImmediately": "Publicar loja imediatamente (aprovada e ativa)",
     "createStore": "Criar loja",
-    "searchStoresNeighborhood": "Buscar loja, bairro ou lojista...",
+    "searchStoresNeighborhood": "Buscar loja, bairro, lojista ou telefone...",
     "searchStoresCity": "Buscar loja, cidade ou lojista...",
     "noStoresTitle": "Nenhuma loja",
     "noStoresBody": "Cadastre a primeira loja usando o formulário acima.",

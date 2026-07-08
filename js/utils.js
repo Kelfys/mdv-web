@@ -121,11 +121,28 @@ export function normalizeForSearch(value) {
     .trim()
 }
 
-/** Chave de busca para lojas no painel admin (nome, bairro, cidade, lojista). */
+/** Apenas dígitos — para busca por telefone/WhatsApp. */
+export function normalizePhoneDigits(value) {
+  return String(value ?? '').replace(/\D/g, '')
+}
+
+/** Chave de busca para lojas no painel admin (nome, bairro, cidade, lojista, telefone). */
 export function buildStoreSearchKey(store) {
+  const phone = store.whatsapp ?? ''
   return normalizeForSearch(
-    `${store.name ?? ''} ${store.neighborhood?.name ?? ''} ${store.city ?? ''} ${store.state ?? ''} ${store.owner?.name ?? ''} ${store.owner?.email ?? ''}`,
+    `${store.name ?? ''} ${store.neighborhood?.name ?? ''} ${store.city ?? ''} ${store.state ?? ''} ${store.owner?.name ?? ''} ${store.owner?.email ?? ''} ${phone} ${normalizePhoneDigits(phone)}`,
   )
+}
+
+/** Verifica se o termo corresponde à chave de busca da loja (texto ou dígitos de telefone). */
+export function matchesStoreSearch(haystack, term) {
+  const normalized = normalizeForSearch(term)
+  if (!normalized) return true
+  if (haystack.includes(normalized)) return true
+
+  const termDigits = normalizePhoneDigits(term)
+  if (termDigits.length < 3) return false
+  return normalizePhoneDigits(haystack).includes(termDigits)
 }
 
 const ENGAGEMENT_LIKE_WEIGHT = 5

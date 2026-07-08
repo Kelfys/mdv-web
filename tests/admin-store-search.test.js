@@ -1,14 +1,13 @@
 // @vitest-environment happy-dom
 
 import { describe, it, expect } from 'vitest'
-import { buildStoreSearchKey, normalizeForSearch } from '../js/utils.js'
+import { buildStoreSearchKey, matchesStoreSearch } from '../js/utils.js'
 
 function filterStoreNavItems(list, term) {
-  const normalized = normalizeForSearch(term)
   let visibleCount = 0
   list.querySelectorAll('[data-store-nav]').forEach((item) => {
     const haystack = item.dataset.storeSearch ?? ''
-    const visible = !normalized || haystack.includes(normalized)
+    const visible = matchesStoreSearch(haystack, term)
     item.classList.toggle('hidden', !visible)
     if (visible) visibleCount += 1
   })
@@ -16,17 +15,26 @@ function filterStoreNavItems(list, term) {
 }
 
 describe('admin products store search', () => {
-  it('buildStoreSearchKey includes neighborhood and ignores accents', () => {
+  it('buildStoreSearchKey includes neighborhood, phone digits and ignores accents', () => {
     const key = buildStoreSearchKey({
       name: 'Padária Pão Quente',
       neighborhood: { name: 'Nova Holanda' },
       city: 'Rio de Janeiro',
       state: 'RJ',
+      whatsapp: '5521975286720',
       owner: { name: 'José Silva', email: 'jose@loja.com' },
     })
     expect(key).toContain('padaria pao quente')
     expect(key).toContain('nova holanda')
     expect(key).toContain('jose@loja.com')
+    expect(key).toContain('5521975286720')
+  })
+
+  it('matchesStoreSearch finds stores by partial phone digits', () => {
+    const key = buildStoreSearchKey({ name: 'Loja Teste', whatsapp: '5521975286720' })
+    expect(matchesStoreSearch(key, '(21) 97528-6720')).toBe(true)
+    expect(matchesStoreSearch(key, '97528')).toBe(true)
+    expect(matchesStoreSearch(key, '99999')).toBe(false)
   })
 
   it('filters store nav items by name or neighborhood', () => {
