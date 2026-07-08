@@ -26,7 +26,23 @@ function createMockSupabase({
   productOwnerId = 'other-owner',
   insertError = null,
 } = {}) {
-  return {
+  const reportInsert = vi.fn((payload) => ({
+    select: vi.fn(() => ({
+      single: vi.fn(async () => ({
+        data: {
+          id: 'report-1',
+          target_type: payload.target_type,
+          store_id: payload.store_id,
+          product_id: payload.product_id ?? null,
+          reason: payload.reason,
+        },
+        error: insertError,
+      })),
+    })),
+  }))
+
+  const mock = {
+    reportInsert,
     from: vi.fn((table) => {
       if (table === 'stores') {
         return chainable(() => ({
@@ -42,11 +58,7 @@ function createMockSupabase({
       }
       if (table === 'content_reports') {
         const builder = chainable(() => ({ data: { id: 'report-1' }, error: insertError }))
-        builder.insert = vi.fn(() => ({
-          select: vi.fn(() => ({
-            single: vi.fn(async () => ({ data: { id: 'report-1', target_type: 'store' }, error: insertError })),
-          })),
-        }))
+        builder.insert = reportInsert
         return builder
       }
       return chainable(() => ({ data: null, error: null }))
@@ -55,6 +67,7 @@ function createMockSupabase({
       getUser: vi.fn(async () => ({ data: { user: { id: 'staff-1' } } })),
     },
   }
+  return mock
 }
 
 async function loadApi(mockClient) {
@@ -98,6 +111,46 @@ describe('content reports', () => {
     const { submitStoreReport } = await loadApi(createMockSupabase({ storeOwnerId: 'other-owner' }))
     await expect(submitStoreReport('merchant-1', 'store-1', 'spam')).resolves.toMatchObject({
       id: 'report-1',
+      target_type: 'store',
     })
+  })
+
+  it('submits a product report for another users product', async () => {
+    const mock = createMockSupabase()
+    const { submitProductReport } = await loadApi(mock)
+    await expect(submitProductReport('user-1', 'product-1', 'inappropriate', 'conteúdo impróprio'))
+      .resolves.toMatchObject({
+        id: 'report-1',
+        target_type: 'product',
+        store_id: 'store-1',
+        product_id: 'product-1',
+        reason: 'inappropriate',
+      })
+
+    expect(mock.reportInsert).toHaveBeenCalledWith(expect.objectContaining({
+      reporter_id: 'user-1',
+      target_type: 'product',
+      store_id: 'store-1',
+      product_id: 'product-1',
+      reason: 'inappropriate',
+      details: 'conteúdo impróprio',
+    }))
+  })
+
+  it('submits a store report with target_type store and no product_id', async () => {
+    const mock = createMockSupabase()
+    const { submitStoreReport } = await loadApi(mock)
+    await expect(submitStoreReport('user-1', 'store-1', 'spam')).resolves.toMatchObject({
+      target_type: 'store',
+      product_id: null,
+    })
+
+    expect(mock.reportInsert).toHaveBeenCalledWith(expect.objectContaining({
+      reporter_id: 'user-1',
+      target_type: 'store',
+      store_id: 'store-1',
+      reason: 'spam',
+    }))
+    expect(mock.reportInsert.mock.calls[0][0]).not.toHaveProperty('product_id')
   })
 })
