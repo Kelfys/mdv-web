@@ -10,24 +10,38 @@
  * Manutenção: preferir variáveis CSS a cores hardcoded.
  * Melhorias futuras: separar em arquivos por domínio (layout.css, components.css).
  */
-:root {
-  --primary-50: #eff6ff;
-  --primary-100: #dbeafe;
-  --primary-600: #2563eb;
-  --primary-700: #1d4ed8;
+:root,
+[data-theme='light'] {
+  /* Paleta Instagram — tema claro */
+  --ig-purple: #833ab4;
+  --ig-pink: #e1306c;
+  --ig-red: #fd1d1d;
+  --ig-orange: #f56040;
+  --ig-yellow: #fcaf45;
+  --ig-gradient: linear-gradient(135deg, #833ab4 0%, #e1306c 45%, #f56040 100%);
+  --ig-gradient-subtle: linear-gradient(
+    135deg,
+    rgb(252 175 69 / 0.14) 0%,
+    rgb(225 48 108 / 0.1) 45%,
+    rgb(131 58 180 / 0.12) 100%
+  );
+  --primary-50: #fff0f6;
+  --primary-100: #ffd6e8;
+  --primary-600: #e1306c;
+  --primary-700: #c13584;
   --green-600: #16a34a;
   --green-700: #15803d;
   --red-500: #ef4444;
   --amber-500: #f59e0b;
   --surface: #ffffff;
-  --surface-secondary: #f8fafc;
-  --surface-tertiary: #f1f5f9;
-  --text: #0f172a;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --border: #e2e8f0;
-  --shadow: 0 1px 3px rgb(0 0 0 / 0.08);
-  --shadow-lg: 0 10px 25px rgb(0 0 0 / 0.12);
+  --surface-secondary: #fafafa;
+  --surface-tertiary: #f5f5f5;
+  --text: #262626;
+  --text-secondary: #8e8e8e;
+  --text-muted: #a8a8a8;
+  --border: #dbdbdb;
+  --shadow: 0 1px 3px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 25px rgb(0 0 0 / 0.1);
   --radius: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
@@ -44,6 +58,10 @@
 }
 
 [data-theme='dark'] {
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
   --surface: #0f172a;
   --surface-secondary: #020617;
   --surface-tertiary: #1e293b;
@@ -126,7 +144,17 @@ img { max-width: 100%; display: block; }
   font-size: 0.875rem;
 }
 
-.logo span.accent { color: var(--primary-600); }
+[data-theme='light'] .logo span.accent,
+:root:not([data-theme='dark']) .logo span.accent {
+  background: var(--ig-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+[data-theme='dark'] .logo span.accent {
+  color: var(--primary-600);
+}
 
 .nav-desktop {
   display: none;
@@ -380,8 +408,27 @@ img { max-width: 100%; display: block; }
 
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.btn-primary { background: var(--primary-600); color: white; }
-.btn-primary:hover:not(:disabled) { background: var(--primary-700); }
+[data-theme='light'] .btn-primary,
+:root:not([data-theme='dark']) .btn-primary {
+  background: var(--ig-gradient);
+  color: white;
+  border: none;
+}
+
+[data-theme='light'] .btn-primary:hover:not(:disabled),
+:root:not([data-theme='dark']) .btn-primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+[data-theme='dark'] .btn-primary {
+  background: var(--primary-600);
+  color: white;
+}
+
+[data-theme='dark'] .btn-primary:hover:not(:disabled) {
+  background: var(--primary-700);
+  filter: none;
+}
 
 .btn-green { background: var(--green-600); color: white; }
 .btn-green:hover:not(:disabled) { background: var(--green-700); }
@@ -525,13 +572,15 @@ img { max-width: 100%; display: block; }
   padding-bottom: 2rem;
 }
 
-.home-hero {
-  background: linear-gradient(135deg, var(--primary-50), var(--surface));
+[data-theme='light'] .home-hero,
+:root:not([data-theme='dark']) .home-hero {
+  background: var(--ig-gradient-subtle);
   border-bottom: 1px solid var(--border);
 }
 
 [data-theme='dark'] .home-hero {
   background: linear-gradient(135deg, rgb(37 99 235 / 0.12), var(--surface));
+  border-bottom: 1px solid var(--border);
 }
 
 .home-hero__inner {
@@ -652,7 +701,13 @@ img { max-width: 100%; display: block; }
   color: #b45309;
 }
 
-.home-tab.active .home-tab__count {
+[data-theme='light'] .home-tab.active .home-tab__count,
+:root:not([data-theme='dark']) .home-tab.active .home-tab__count {
+  background: rgb(225 48 108 / 0.15);
+  color: var(--primary-600);
+}
+
+[data-theme='dark'] .home-tab.active .home-tab__count {
   background: rgb(37 99 235 / 0.15);
   color: var(--primary-600);
 }
