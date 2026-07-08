@@ -110,6 +110,17 @@ export function sanitizeSearch(query) {
   return query.trim().replace(/[%_\\]/g, '')
 }
 
+/** Texto de busca local: minúsculas, sem acentos e espaços extras. */
+export function normalizeForSearch(value) {
+  return String(value ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 const ENGAGEMENT_LIKE_WEIGHT = 5
 const ENGAGEMENT_NEW_DAYS = 14
 const ENGAGEMENT_NEW_MAX_BOOST = 1.5

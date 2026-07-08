@@ -18,7 +18,7 @@ import { getStaffNeighborhoodScope, formatNeighborhoodLabel } from '../neighborh
 import { getUser, loadUser, setAdminPendingCount } from '../state.js'
 import { navigate } from '../router.js'
 import {
-  escapeHtml, formatDate, formatCurrency, showToast,
+  escapeHtml, formatDate, formatCurrency, showToast, normalizeForSearch,
   formatDateTimeCsv, buildCsv, downloadTextFile, validateInstagramHandle,
 } from '../utils.js'
 import { STORE_THEME_COLORS, stringsEditorHref } from '../config.js'
@@ -859,6 +859,12 @@ function productCountMap(products) {
   return counts
 }
 
+function buildStoreSearchKey(store) {
+  return normalizeForSearch(
+    `${store.name} ${store.neighborhood?.name ?? ''} ${store.city ?? ''} ${store.state ?? ''} ${store.owner?.name ?? ''}`,
+  )
+}
+
 function productImageLimitHintHtml(store, products, product = null) {
   if (!store) return ''
 
@@ -963,7 +969,7 @@ function renderStoreProductsSidebar(stores, counts, selectedStoreId, panel = 'ad
         type="search"
         class="form-input admin-store-products-nav__search"
         id="admin-store-products-search"
-        placeholder="${t('admin.searchStorePlaceholder')}"
+        placeholder="${t('admin.searchStoresNeighborhood')}"
         autocomplete="off"
       />
       <div class="admin-store-products-nav__list" id="admin-store-products-list">
@@ -974,11 +980,12 @@ function renderStoreProductsSidebar(stores, counts, selectedStoreId, panel = 'ad
               href="#${staffProductsPath(panel, s.id)}"
               class="admin-store-products-nav__item ${s.id === selectedStoreId ? 'active' : ''}"
               data-store-nav="${s.id}"
-              data-store-name="${escapeHtml(s.name.toLowerCase())}"
+              data-store-search="${escapeHtml(buildStoreSearchKey(s))}"
             >
               <span class="admin-store-products-nav__item-name">${escapeHtml(s.name)}</span>
               <span class="admin-store-products-nav__item-meta">
-                ${t('admin.productCount', { count: counts[s.id] ?? 0 })}
+                ${escapeHtml(s.neighborhood?.name ?? s.city ?? '—')}
+                · ${t('admin.productCount', { count: counts[s.id] ?? 0 })}
               </span>
             </a>
           `).join('')}
@@ -2102,15 +2109,19 @@ function bindStoreEdits(main) {
 
 function bindStoreProductsNav(main) {
   const search = main.querySelector('#admin-store-products-search')
-  const items = main.querySelectorAll('[data-store-nav]')
+  const list = main.querySelector('#admin-store-products-list')
+  if (!search || !list) return
 
-  search?.addEventListener('input', () => {
-    const term = search.value.trim().toLowerCase()
-    items.forEach((item) => {
-      const name = item.dataset.storeName ?? ''
-      item.hidden = term.length > 0 && !name.includes(term)
+  const apply = () => {
+    const term = normalizeForSearch(search.value)
+    list.querySelectorAll('[data-store-nav]').forEach((item) => {
+      const haystack = item.dataset.storeSearch ?? ''
+      const visible = !term || haystack.includes(term)
+      item.classList.toggle('hidden', !visible)
     })
-  })
+  }
+
+  search.addEventListener('input', apply)
 }
 
 function bindProductForm(main, selectedStoreId = null) {

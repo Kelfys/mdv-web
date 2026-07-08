@@ -3196,6 +3196,10 @@ tr:last-child td { border-bottom: none; }
   color: var(--text-muted);
 }
 
+.admin-store-products-nav__item.hidden {
+  display: none !important;
+}
+
 .admin-store-products-nav__item {
   display: flex;
   flex-direction: column;
