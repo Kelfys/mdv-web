@@ -380,7 +380,7 @@ function renderAdsSummary(ads, store) {
     </section>`
 }
 
-/** Formulário de novo anúncio ou bloqueios (aprovação, plano, limite 4/mês). */
+/** Formulário de novo anúncio ou bloqueios (aprovação, plano, limite 2/mês). */
 function merchantAdsCreatePanel(store, ads) {
   const planId = store.plan_id ?? 'free'
   const approved = store.status === 'approved' && ['active', 'trialing'].includes(store.subscription_status)

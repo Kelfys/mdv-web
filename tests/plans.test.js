@@ -31,7 +31,7 @@ describe('plan price cooldown', () => {
   it('returns hours per plan', () => {
     expect(getPlanPriceCooldownHours('free')).toBe(24)
     expect(getPlanPriceCooldownHours('plus')).toBe(12)
-    expect(getPlanPriceCooldownHours('premium')).toBeNull()
+    expect(getPlanPriceCooldownHours('premium')).toBe(6)
   })
 
   it('blocks price change inside cooldown window', () => {
@@ -162,15 +162,15 @@ describe('plan catalog limits', () => {
     expect(getPlanProductImageLimit('free')).toBe(0)
     expect(getPlanProductLimit('plus')).toBe(6)
     expect(getPlanProductImageLimit('plus')).toBe(6)
-    expect(getPlanProductLimit('premium')).toBe(80)
-    expect(getPlanProductImageLimit('premium')).toBe(80)
+    expect(getPlanProductLimit('premium')).toBe(20)
+    expect(getPlanProductImageLimit('premium')).toBe(20)
   })
 
   it('blocks product creation at plan cap', () => {
     expect(canCreateProduct('free', 1)).toBe(true)
     expect(canCreateProduct('free', 2)).toBe(false)
-    expect(canCreateProduct('premium', 79)).toBe(true)
-    expect(canCreateProduct('premium', 80)).toBe(false)
+    expect(canCreateProduct('premium', 19)).toBe(true)
+    expect(canCreateProduct('premium', 20)).toBe(false)
   })
 
   it('blocks new product images at plan cap', () => {
@@ -183,11 +183,11 @@ describe('plan catalog limits', () => {
 })
 
 describe('premium store ads limits', () => {
-  it('allows ads only on premium with monthly cap of 4', () => {
+  it('allows ads only on premium with monthly cap of 2', () => {
     expect(planAllowsStoreAds('free')).toBe(false)
     expect(planAllowsStoreAds('plus')).toBe(false)
     expect(planAllowsStoreAds('premium')).toBe(true)
-    expect(getPlanMonthlyAdLimit('premium')).toBe(4)
+    expect(getPlanMonthlyAdLimit('premium')).toBe(2)
     expect(getPlanMonthlyAdLimit('free')).toBe(0)
   })
 
@@ -203,19 +203,21 @@ describe('premium store ads limits', () => {
 
   it('blocks creation after monthly limit', () => {
     expect(canCreateStoreAd('premium', 0)).toBe(true)
-    expect(canCreateStoreAd('premium', 3)).toBe(true)
-    expect(canCreateStoreAd('premium', 4)).toBe(false)
+    expect(canCreateStoreAd('premium', 1)).toBe(true)
+    expect(canCreateStoreAd('premium', 2)).toBe(false)
     expect(canCreateStoreAd('plus', 0)).toBe(false)
   })
 
   it('lists premium ads feature on premium only', () => {
-    expect(getPlanById('plus').features).not.toContain('Até 4 anúncios por mês no feed')
-    expect(getPlanById('premium').features).toContain('Até 4 anúncios por mês no feed')
+    expect(getPlanById('plus').features).not.toContain('Até 2 anúncios por mês na aba Anúncios')
+    expect(getPlanById('premium').features).toContain('Até 2 anúncios por mês na aba Anúncios')
+    expect(getPlanById('premium').features).toContain('Ativar ou ocultar produtos à venda')
+    expect(getPlanById('premium').features).toContain('Rotação de prioridade no feed a cada 24h')
   })
 
   it('formats monthly ad hint for premium merchants', () => {
-    expect(formatStoreAdLimitHint('premium', 2)).toMatch(/2\/4/)
-    expect(formatStoreAdLimitHint('premium', 2)).toMatch(/2 restante/)
+    expect(formatStoreAdLimitHint('premium', 1)).toMatch(/1\/2/)
+    expect(formatStoreAdLimitHint('premium', 1)).toMatch(/1 restante/)
   })
 })
 

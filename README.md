@@ -12,7 +12,7 @@ Marketplace local de lojas — **HTML, CSS e JavaScript vanilla** com backend [S
 |-------|------------------|
 | **Visitante** | Ver feed de lojas e produtos (abas **Para você** e **Anúncios**), buscar, adicionar ao carrinho e pedir pelo WhatsApp |
 | **Cliente** | Dashboard em **Minha conta** (`/favoritos`): favoritos, produtos curtidos, histórico de pedidos e perfil editável; curtir/comentar produtos; checkout com dados pré-preenchidos |
-| **Lojista** | Painel com produtos, pedidos, anúncios e configurações (após aprovação do admin); **logo da loja** em qualquer plano; **banner personalizado** só em planos pagos; **anúncios no feed** só no plano **Premium** (4/mês) |
+| **Lojista** | Painel com produtos, pedidos, anúncios e configurações (após aprovação do admin); **logo da loja** em qualquer plano; **banner personalizado** só em planos pagos; **anúncios no feed** só no plano **Premium** (2/mês) |
 | **Moderador** | Aprovações e pedidos **do bairro atribuído**; lojas/produtos somente leitura na região |
 | **Admin** | Métricas globais, gestão de **bairros**, moderadores por região, lojistas e configuração |
 
@@ -360,7 +360,7 @@ Lojistas no Gratuito podem publicar até **dois** produtos ou serviços **sem fo
 |-------|-------------------|---------------------|----------------------|------------------|-------------------|
 | **Gratuito** | 2 | 0 | Não | Não | 24 h |
 | **Plus** | 6 | 6 | Sim | Não | 12 h |
-| **Premium** | 80 | 80 | Sim | **4/mês** | Sem limite |
+| **Premium** | 20 | 20 | Sim | **2/mês** | 6 h |
 
 Detalhes de preços, destaques no feed e lista completa de benefícios: `#/regras` (seção planos) ou painel **Planos** do lojista.
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const PREMIUM_ONLY_ERROR = 'Anúncios no feed são exclusivos do plano Premium.'
-const MONTHLY_LIMIT_ERROR = 'Limite de 4 anúncios por mês no plano Premium.'
+const MONTHLY_LIMIT_ERROR = 'Limite de 2 anúncios por mês no plano Premium.'
 
 function chainable(resolveValue) {
   const resolve = () => Promise.resolve(resolveValue())
@@ -79,7 +79,7 @@ describe('createStoreAd plan limits', () => {
 
   it('rejects ads when monthly limit is reached', async () => {
     vi.doMock('../js/db.js', () => ({
-      requireClient: vi.fn(async () => createMockSupabase({ planId: 'premium', adsThisMonth: 4 })),
+      requireClient: vi.fn(async () => createMockSupabase({ planId: 'premium', adsThisMonth: 2 })),
       getSupabase: vi.fn(),
       isSupabaseConfigured: () => true,
     }))
@@ -95,7 +95,7 @@ describe('createStoreAd plan limits', () => {
 
   it('allows premium store under monthly limit', async () => {
     vi.doMock('../js/db.js', () => ({
-      requireClient: vi.fn(async () => createMockSupabase({ planId: 'premium', adsThisMonth: 2 })),
+      requireClient: vi.fn(async () => createMockSupabase({ planId: 'premium', adsThisMonth: 1 })),
       getSupabase: vi.fn(),
       isSupabaseConfigured: () => true,
     }))

@@ -134,9 +134,12 @@ export function buildHomeFeed(stores, newProducts, likedProducts, ads = [], opti
   )
 
   const productPool = [...mergedProducts]
-  const adPool = [...(ads ?? [])].sort(
-    (a, b) => getPlanFeedWeight(b.store?.plan_id) - getPlanFeedWeight(a.store?.plan_id),
-  )
+  const adBucket = dayBucket(now)
+  const adPool = [...(ads ?? [])].sort((a, b) => {
+    const planDiff = getPlanFeedWeight(b.store?.plan_id) - getPlanFeedWeight(a.store?.plan_id)
+    if (planDiff !== 0) return planDiff
+    return rotationJitter(b.id, adBucket) - rotationJitter(a.id, adBucket)
+  })
   const seenProductIds = new Set()
   const seenAdIds = new Set()
   const items = []

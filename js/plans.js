@@ -7,7 +7,7 @@
  *   • 0 imagens de produto (productImages: 0 → canAddProductImage sempre false)
  *   • logo da loja sim; banner personalizado não (planAllowsStoreBanner)
  *   • alteração de preço a cada 24 h (PLAN_COOLDOWN_HOURS.free)
- * Anúncios no feed (store_ads): exclusivo Premium — até 4 por mês (PLAN_MONTHLY_AD_LIMIT).
+ * Anúncios no feed (store_ads): exclusivo Premium — até 2 por mês (PLAN_MONTHLY_AD_LIMIT).
  * Validação na API: js/api.js (assertProductCountAllowed, assertProductImageAllowed, assertStoreAdAllowed).
  */
 import { formatCurrency, escapeHtml } from './utils.js'
@@ -46,11 +46,11 @@ export function planAllowsStoreBanner(planId) {
   return Boolean(planId && planId !== 'free')
 }
 
-/** Anúncios no feed (store_ads): Premium = 4/mês calendário; demais = 0. */
+/** Anúncios no feed (store_ads): Premium = 2/mês calendário; demais = 0. */
 export const PLAN_MONTHLY_AD_LIMIT = {
   free: 0,
   plus: 0,
-  premium: 4,
+  premium: 2,
 }
 
 export function planAllowsStoreAds(planId) {
@@ -101,7 +101,7 @@ export const PLAN_LIMITS = {
   // Gratuito: 2 itens publicáveis, sem foto no catálogo
   free: { products: 2, productImages: 0 },
   plus: { products: 6, productImages: 6 },
-  premium: { products: 80, productImages: 80 },
+  premium: { products: 20, productImages: 20 },
 }
 
 export function getPlanProductLimit(planId) {
@@ -170,11 +170,11 @@ export function formatProductImageLimitHint(planId, productsWithImages) {
   return remaining > 0 ? `${hint}${t('plans.productLimitRemaining', { remaining })}` : hint
 }
 
-/** Intervalo mínimo entre mudanças de preço; free = 24 h, premium = sem limite (null). */
+/** Intervalo mínimo entre mudanças de preço (horas). */
 const PLAN_COOLDOWN_HOURS = {
   free: 24,
   plus: 12,
-  premium: null,
+  premium: 6,
 }
 
 const PLAN_CONFIGS = [
@@ -214,17 +214,18 @@ const PLAN_CONFIGS = [
     id: 'premium',
     nameKey: 'plans.planPremium',
     descriptionKey: 'plans.planPremiumDesc',
-    priceMonthly: 35,
+    priceMonthly: 10,
     priceCooldownHours: PLAN_COOLDOWN_HOURS.premium,
     featureKeys: [
-      'plans.featurePremiumItems80',
-      'plans.featurePlusImagesAll',
+      'plans.featurePremiumItems20',
+      'plans.featurePremiumImages20',
       'plans.featureCustomBanner',
-      'plans.featurePremiumAds4',
-      'plans.featureMaxHighlight',
-      'plans.featureRotationPriority',
+      'plans.featureToggleProducts',
+      'plans.featurePremiumAds2',
+      'plans.featurePremiumAdsRotation24h',
+      'plans.featureFeedRotation24h',
     ],
-    cooldownAfterIndex: 3,
+    cooldownAfterIndex: 4,
   },
 ]
 
