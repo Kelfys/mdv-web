@@ -150,8 +150,12 @@ export async function renderHome(main) {
     const neighborhoodLabel = selectedNeighborhood ? formatNeighborhoodLabel(selectedNeighborhood) : ''
     const productCount = countUniqueProducts(newProducts, likedProducts)
     const statsText = productCount > 0
-      ? t('home.heroStats', { stores: stores.length, products: productCount })
-      : t('home.heroStatsStoresOnly', { stores: stores.length })
+      ? (neighborhoodId
+        ? t('home.heroStats', { stores: stores.length, products: productCount })
+        : t('home.heroStatsAll', { stores: stores.length, products: productCount }))
+      : (neighborhoodId
+        ? t('home.heroStatsStoresOnly', { stores: stores.length })
+        : t('home.heroStatsStoresOnlyAll', { stores: stores.length }))
 
     return `
       <section class="home-hero">
@@ -188,6 +192,7 @@ export async function renderHome(main) {
             <div class="home-toolbar__row">
               <span class="home-toolbar__label">${t('home.neighborhoodsLabel')}</span>
               <div class="category-scroll category-scroll--fade neighborhood-scroll" id="neighborhoods">
+                <button type="button" class="chip chip--neighborhood ${!neighborhoodId ? 'active' : ''}" data-neighborhood="">${t('home.allNeighborhoods')}</button>
                 ${neighborhoods.map((n) => `
                   <button type="button" class="chip chip--neighborhood ${neighborhoodId === n.id ? 'active' : ''}" data-neighborhood="${n.id}">
                     ${escapeHtml(n.name)}
@@ -241,6 +246,7 @@ export async function renderHome(main) {
     }
     if (activeTab === 'ads' && search) return t('home.adsFor', { term: search })
     if (neighborhoodLabel) return t('home.neighborhoodLabel', { name: neighborhoodLabel })
+    if (neighborhoods.length) return t('home.allNeighborhoodsLabel')
     return ''
   }
 
@@ -280,7 +286,7 @@ export async function renderHome(main) {
 
     main.querySelectorAll('[data-neighborhood]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        neighborhoodId = btn.dataset.neighborhood
+        neighborhoodId = btn.dataset.neighborhood || null
         setSelectedNeighborhoodId(neighborhoodId)
         load()
       })
@@ -317,11 +323,6 @@ export async function renderHome(main) {
     try {
       const user = getUser()
       neighborhoods = await fetchNeighborhoods()
-
-      if (!neighborhoodId && neighborhoods.length > 0) {
-        neighborhoodId = neighborhoods[0].id
-        setSelectedNeighborhoodId(neighborhoodId)
-      }
 
       const productFilters = {
         categoryId: categoryId ?? undefined,
