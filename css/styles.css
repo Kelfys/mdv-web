@@ -651,6 +651,12 @@ img { max-width: 100%; display: block; }
   .home-toolbar__filters {
     transition: none;
   }
+
+  @media (max-width: 767px) {
+    .header {
+      transition: none;
+    }
+  }
 }
 
 .home-toolbar__row {

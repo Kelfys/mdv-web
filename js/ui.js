@@ -256,6 +256,13 @@ export function renderHeader() {
   document.getElementById('logout-mobile')?.addEventListener('click', doLogout)
 }
 
+export function closeMobileMenu() {
+  if (!menuOpen && !staffMenuOpen) return
+  menuOpen = false
+  staffMenuOpen = false
+  renderHeader()
+}
+
 export function initHeader() {
   renderHeader()
   onAuthChange(() => renderHeader())

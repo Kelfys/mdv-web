@@ -11,6 +11,7 @@ import { getSupabase } from './db.js'
 import { completeOAuthSignup } from './api.js'
 import { getProductionSiteUrl, isLegacyCustomDomainHost } from './config.js'
 import { initScrollToTop } from './scroll-to-top.js'
+import { initHeaderScroll } from './header-scroll.js'
 
 const PROTECTED_ROUTE_PREFIXES = ['/dashboard', '/admin', '/moderador']
 
@@ -196,6 +197,7 @@ function boot() {
   initHeader()
   initCart()
   initScrollToTop()
+  initHeaderScroll()
   setupAuthListeners()
   initRouter()
   delete window.__MV_INITIAL_ROUTE__

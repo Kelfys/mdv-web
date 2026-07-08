@@ -131,6 +131,7 @@ export async function render() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
     import('./home-filters-scroll.js').then(({ resetHomeFiltersScroll }) => resetHomeFiltersScroll()).catch(() => {})
     import('./scroll-to-top.js').then(({ resetScrollToTop }) => resetScrollToTop()).catch(() => {})
+    import('./header-scroll.js').then(({ resetHeaderScroll }) => resetHeaderScroll()).catch(() => {})
   } catch (err) {
     if (epoch !== renderEpoch) return
     main.innerHTML = `<div class="empty-state"><h2>Erro ao carregar</h2><p>${err.message}</p></div>`
