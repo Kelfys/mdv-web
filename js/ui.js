@@ -1,7 +1,7 @@
 /**
  * Componentes de UI reutilizáveis (renderização imperativa).
  *
- * Header: logo, nav-desktop (Início/Entrar), ações (tema, painel, sair)
+ * Header: logo, nav-desktop (Entrar), ações (tema, painel, sair)
  * e nav-mobile (hambúrguer). Entrar fica no menu — não nas ações do header.
  *
  * Também: store-card, feed-product-card, cart-drawer e checkout com pagamentos por loja.
@@ -72,7 +72,6 @@ export function renderHeader() {
   const onMerchant = user?.role === 'merchant' && isMerchantPath(currentPath)
   const staffTab = onStaff ? getStaffTab(currentPath, staffPanel) : null
   const merchantTab = onMerchant ? getMerchantTab(currentPath) : null
-  const onHome = currentPath === '/' || currentPath === ''
   const onLogin = currentPath === '/conta/entrar'
 
   header.innerHTML = `
@@ -83,10 +82,6 @@ export function renderHeader() {
       </a>
 
       <nav class="nav-desktop">
-        <a href="${routeHref('/')}" class="nav-btn${onHome ? ' active' : ''}">
-          <span class="nav-btn__icon" aria-hidden="true">🏠</span>
-          <span>${t('nav.home')}</span>
-        </a>
         ${!user ? `<a href="${routeHref('/conta/entrar')}" class="nav-btn${onLogin ? ' active' : ''}">
           <span class="nav-btn__icon" aria-hidden="true">🔑</span>
           <span>${t('nav.login')}</span>
@@ -121,16 +116,14 @@ export function renderHeader() {
     </div>
 
     <nav class="nav-mobile ${menuOpen ? 'open' : ''}" id="nav-mobile">
-      <div class="nav-mobile__actions${user ? ' nav-mobile__actions--single' : ''}">
-        <a href="${routeHref('/')}" class="nav-btn nav-btn--block${onHome ? ' active' : ''}">
-          <span class="nav-btn__icon" aria-hidden="true">🏠</span>
-          <span>${t('nav.home')}</span>
-        </a>
-        ${!user ? `<a href="${routeHref('/conta/entrar')}" class="nav-btn nav-btn--block${onLogin ? ' active' : ''}">
-          <span class="nav-btn__icon" aria-hidden="true">🔑</span>
-          <span>${t('nav.login')}</span>
-        </a>` : ''}
-      </div>
+      ${!user ? `
+        <div class="nav-mobile__actions">
+          <a href="${routeHref('/conta/entrar')}" class="nav-btn nav-btn--block${onLogin ? ' active' : ''}">
+            <span class="nav-btn__icon" aria-hidden="true">🔑</span>
+            <span>${t('nav.login')}</span>
+          </a>
+        </div>
+      ` : ''}
       ${user?.role === 'customer' ? `<a href="#/favoritos">${t('nav.myAccount')}</a>` : ''}
       ${user?.role === 'merchant' ? `
         <p class="nav-mobile__section">${t('nav.merchantPanel')}</p>
