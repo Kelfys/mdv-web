@@ -46,7 +46,12 @@ export function planAllowsStoreBanner(planId) {
   return Boolean(planId && planId !== 'free')
 }
 
-/** Anúncios no feed (store_ads): Premium = 2 inclusos/mês calendário; demais = 0. */
+/**
+ * Anúncios no feed (store_ads):
+ * - Premium: 2 inclusos/mês calendário (is_extra=false).
+ * - Acima do limite: extras pagos (STORE_AD_EXTRA_FEE), duração STORE_AD_DURATION_HOURS após aprovação staff.
+ * - Aprovação obrigatória antes de aparecer no feed (status pending → approved).
+ */
 export const PLAN_MONTHLY_AD_LIMIT = {
   free: 0,
   plus: 0,

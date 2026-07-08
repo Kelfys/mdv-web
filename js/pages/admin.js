@@ -103,6 +103,7 @@ function renderModeratorPermissionFields(moderator = null, { idPrefix = '' } = {
   }).join('')
 }
 
+/** Fila unificada da aba Aprovações: lojas, planos, denúncias e anúncios de loja (pendingAds). */
 async function loadStaffApprovalQueue(user, panel = 'admin') {
   const scopeId = getStaffNeighborhoodScope(user, panel)
   const [pendingStores, planRequests, pendingReports, pendingAds] = await Promise.all([
@@ -170,6 +171,7 @@ function renderContentReportCards(reports) {
     </section>`
 }
 
+/** Cards de anúncios pending na aba Aprovações (admin + moderador). Exibe ID, taxa extra e ações data-approve-ad / data-reject-ad. */
 function renderStoreAdApprovalCards(ads) {
   if (ads.length === 0) return ''
 
@@ -3045,6 +3047,7 @@ function bindApprovalActions(main, tab) {
   })
 }
 
+/** Aprovar/rejeitar anúncios; rerenderStaff atualiza fila e contador do header. */
 function bindStoreAdApprovalActions(main, tab) {
   main.querySelectorAll('[data-approve-ad]').forEach((btn) => {
     btn.addEventListener('click', async () => {

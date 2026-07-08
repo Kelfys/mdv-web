@@ -383,7 +383,12 @@ function renderAdsSummary(ads, store) {
     </section>`
 }
 
-/** Formulário de novo anúncio ou bloqueios (aprovação, plano, limite incluso / extra). */
+/**
+ * Formulário de novo anúncio (aba Anúncios do lojista).
+ * Bloqueios: loja não aprovada, plano não Premium, limite incluso esgotado sem slot extra.
+ * Após 2 inclusos/mês: checkbox de taxa R$ 5 + link WhatsApp; createStoreAd exige feeAcknowledged.
+ * Toast pós-envio mostra o UUID (merchant.adCreatedWithId).
+ */
 function merchantAdsCreatePanel(store, ads) {
   const planId = store.plan_id ?? 'free'
   const approved = store.status === 'approved' && ['active', 'trialing'].includes(store.subscription_status)
@@ -1065,6 +1070,7 @@ function bindSettingsForm(main, store) {
   })
 }
 
+/** Submit do anúncio: envia feeAcknowledged, exibe toast com UUID retornado por createStoreAd. */
 function bindAdForm(main, store) {
   const form = main.querySelector('#ad-form')
   bindImagePreview(form?.querySelector('input[name="image"]'), main.querySelector('[data-preview-ad-create]'))

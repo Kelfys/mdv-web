@@ -2049,6 +2049,15 @@ export async function fetchStoreAds(storeId) {
   return data ?? []
 }
 
+/**
+ * Anúncios de loja (store_ads) — fluxo completo:
+ * 1. Lojista Premium cria anúncio → status pending, retorna UUID (id).
+ * 2. Slots inclusos: até 2/mês calendário (is_extra=false). Acima disso: extra R$ 5 (STORE_AD_EXTRA_FEE).
+ * 3. Extra exige fee_acknowledged + comprovante WhatsApp (UI em merchant.js).
+ * 4. Admin/moderador aprova → approved_at + expires_at (+24h, STORE_AD_DURATION_HOURS).
+ * 5. Feed público só lê approved com expires_at > now() (RLS migration 044).
+ * Validação de plano/limites: js/plans.js · Aprovações staff: js/pages/admin.js
+ */
 async function countIncludedStoreAdsCreatedThisMonth(client, storeId) {
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
@@ -2082,6 +2091,7 @@ async function loadStoreAdContext(client, storeId) {
   return { planId, includedThisMonth }
 }
 
+/** Fila de anúncios pending para admin/moderador. Escopo regional filtrado no cliente (como content_reports). */
 export async function fetchPendingStoreAds(neighborhoodId = null) {
   const client = await requireClient()
   let query = client
@@ -2105,6 +2115,7 @@ function storeAdExpiryFromNow(now = Date.now()) {
   return new Date(now + STORE_AD_DURATION_HOURS * 60 * 60 * 1000).toISOString()
 }
 
+/** Aprova anúncio pending e define vigência de 24h a partir de agora. */
 export async function approveStoreAd(adId) {
   const client = await requireClient()
   const approvedAt = new Date().toISOString()
@@ -2142,6 +2153,10 @@ export async function rejectStoreAd(adId) {
   return data
 }
 
+/**
+ * Cria anúncio pending. Incluso se ainda houver slot no mês; senão marca is_extra e cobra taxa na UI.
+ * @returns registro com id (UUID) exibido ao lojista após envio
+ */
 export async function createStoreAd(storeId, { title, message, image, feeAcknowledged = false }) {
   const client = await requireClient()
   const { planId, includedThisMonth } = await loadStoreAdContext(client, storeId)

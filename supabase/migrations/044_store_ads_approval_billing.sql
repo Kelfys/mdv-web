@@ -1,4 +1,6 @@
--- Anúncios: aprovação staff, slots inclusos vs. extras pagos (R$ 5 / 24h).
+-- Anúncios (store_ads): aprovação admin/moderador, slots inclusos vs. extras pagos.
+-- Premium: 2 inclusos/mês (is_extra=false). Extras: fee_amount >= 5, fee_acknowledged, 24h após approve.
+-- Lojista cria pending; staff atualiza para approved/rejected; feed lê só approved com expires_at > now().
 
 ALTER TABLE public.store_ads
   ADD COLUMN IF NOT EXISTS is_extra BOOLEAN NOT NULL DEFAULT false,

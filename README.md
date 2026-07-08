@@ -12,9 +12,9 @@ Marketplace local de lojas — **HTML, CSS e JavaScript vanilla** com backend [S
 |-------|------------------|
 | **Visitante** | Ver feed de lojas e produtos (abas **Para você** e **Anúncios**), buscar, adicionar ao carrinho e pedir pelo WhatsApp |
 | **Cliente** | Dashboard em **Minha conta** (`/favoritos`): favoritos, produtos curtidos, histórico de pedidos e perfil editável; curtir/comentar produtos; checkout com dados pré-preenchidos |
-| **Lojista** | Painel com produtos, pedidos, anúncios e configurações (após aprovação do admin); **logo da loja** em qualquer plano; **banner personalizado** só em planos pagos; **anúncios no feed** só no plano **Premium** (2/mês) |
-| **Moderador** | Aprovações e pedidos **do bairro atribuído**; lojas/produtos somente leitura na região |
-| **Admin** | Métricas globais, gestão de **bairros**, moderadores por região, lojistas e configuração |
+| **Lojista** | Painel com produtos, pedidos, anúncios e configurações (após aprovação do admin); **logo da loja** em qualquer plano; **banner personalizado** só em planos pagos; **anúncios no feed** só no plano **Premium** (2 inclusos/mês; extras **R$ 5** com aprovação staff) |
+| **Moderador** | Aprovações (lojas, planos, **anúncios** e denúncias) e pedidos **do bairro atribuído**; lojas/produtos somente leitura na região |
+| **Admin** | Métricas globais, gestão de **bairros**, moderadores por região, lojistas, **aprovação de anúncios** e configuração |
 
 ---
 
@@ -56,7 +56,8 @@ maredevendas-vanilla/
 │   ├── merchant-nav.js     # Menu do painel do lojista
 │   ├── staff-nav.js        # Menu dos painéis admin e moderador
 │   └── pages/              # Uma página por rota
-├── supabase/migrations/    # Migrations SQL (001 → 043)
+├── supabase/migrations/    # Migrations SQL (001 → 044)
+├── tools/                  # Scripts de DB (apply-sql, register-migration, db-push)
 ├── tests/                  # Testes unitários (Vitest)
 └── .github/workflows/
     └── deploy.yml          # Pipeline de deploy para GitHub Pages
@@ -389,11 +390,32 @@ Lojistas no Gratuito podem publicar até **dois** produtos ou serviços **sem fo
 |-------|-------------------|---------------------|----------------------|------------------|-------------------|
 | **Gratuito** | 2 | 0 | Não | Não | 24 h |
 | **Plus** | 6 | 6 | Sim | Não | 12 h |
-| **Premium** | 30 | 30 | Sim | **2/mês** | 6 h |
+| **Premium** | 30 | 30 | Sim | **2 inclusos/mês** (+ extras pagos) | 6 h |
 
 Detalhes de preços, destaques no feed e lista completa de benefícios: `#/regras` (seção planos) ou painel **Planos** do lojista.
 
-### Implementação
+### Anúncios no feed (`store_ads`)
+
+Fluxo completo (migration `044_store_ads_approval_billing.sql`):
+
+1. **Lojista Premium** envia anúncio em **Painel → Anúncios** → registro `pending` com **UUID** (toast exibe o ID).
+2. **Slots inclusos:** até **2/mês calendário** (`is_extra = false`). Contagem só de inclusos, não extras.
+3. **Acima do limite:** anúncio **extra** — taxa **R$ 5** (`STORE_AD_EXTRA_FEE`), checkbox de confirmação e link WhatsApp para comprovante; `fee_acknowledged` obrigatório na API.
+4. **Admin e moderador** analisam na aba **Aprovações** (`#/admin/aprovacoes` ou `#/moderador/aprovacoes`): cards com ID, loja, mensagem, badge de taxa extra quando aplicável.
+5. **Aprovação** define `approved_at` e `expires_at` = **+24 h** (`STORE_AD_DURATION_HOURS`). Só então o anúncio entra na aba **Anúncios** da home.
+6. **Rejeição** marca `rejected` — não aparece no feed.
+
+| Papel | Onde age |
+|-------|----------|
+| Lojista | `js/pages/merchant.js` — `merchantAdsCreatePanel`, `bindAdForm` |
+| Admin / moderador | `js/pages/admin.js` — `renderStoreAdApprovalCards`, `bindStoreAdApprovalActions` |
+| API | `js/api.js` — `createStoreAd`, `fetchPendingStoreAds`, `approveStoreAd`, `rejectStoreAd` |
+| Limites / taxa | `js/plans.js` — `STORE_AD_EXTRA_FEE`, `canCreateIncludedStoreAd`, `isExtraStoreAdSlot` |
+| Banco | `store_ads` + RLS; função `store_ads_included_this_month()` |
+
+Testes: `tests/api-premium-ads.test.js`, `tests/api-store-ad-approval.test.js`, `tests/plans.test.js`.
+
+### Implementação (planos)
 
 | Função | O que valida |
 |--------|----------------|
@@ -403,9 +425,11 @@ Detalhes de preços, destaques no feed e lista completa de benefícios: `#/regra
 | `canCreateProduct(planId, count)` | Teto de itens no catálogo |
 | `canAddProductImage(planId, …)` | Teto de imagens (Gratuito sempre `false`) |
 | `planAllowsStoreAds(planId)` | Anúncios no feed só no Premium |
-| `canCreateStoreAd(planId, adsThisMonth)` | Teto de 2 anúncios/mês no Premium |
+| `canCreateIncludedStoreAd(planId, includedThisMonth)` | Slot incluso (< 2/mês) |
+| `canCreateExtraStoreAd(planId)` | Permite extra pago no Premium |
+| `isExtraStoreAdSlot(planId, includedThisMonth)` | `true` quando inclusos do mês esgotados |
 
-Testes: `tests/plans.test.js`, `tests/api-premium-ads.test.js`.
+Testes: `tests/plans.test.js`, `tests/api-premium-ads.test.js`, `tests/api-store-ad-approval.test.js`.
 
 ---
 
@@ -443,8 +467,19 @@ Testes: `tests/plans.test.js`, `tests/api-premium-ads.test.js`.
 
 **Últimas migrations:**
 
+- `044_store_ads_approval_billing.sql` — anúncios: `is_extra`, `fee_amount`, `fee_acknowledged`, RLS staff, slots inclusos vs. extras
+- `043_product_is_used.sql` — tag **Usado** em produtos
+- `042_content_reports.sql` — denúncias de loja/produto
 - `033_neighborhoods.sql` — bairros, escopo regional de moderadores e RLS
-- `032_customer_orders.sql` — `user_id` em pedidos e histórico do cliente
+
+**Scripts locais de DB** (`.env.local` com `DATABASE_URL`):
+
+```bash
+npm run db:push:url              # supabase db push
+npm run db:push:url -- --include-all   # inclui migrations fora de ordem no remoto
+node tools/apply-sql.mjs supabase/migrations/044_store_ads_approval_billing.sql
+node tools/register-migration.mjs 044 store_ads_approval_billing
+```
 
 ---
 
