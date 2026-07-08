@@ -71,7 +71,7 @@ describe('login page rules and plans', () => {
     expect(main.innerHTML).not.toContain('Enviar comprovante')
     expect(main.innerHTML).not.toContain('sec=regras')
     expect(main.innerHTML).not.toContain('sec=planos')
-    expect(main.innerHTML).toContain('Acesso admin')
+    expect(main.innerHTML).not.toContain('Acesso admin')
     expect(main.innerHTML).toContain('Conduta')
   })
 
