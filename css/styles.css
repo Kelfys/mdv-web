@@ -109,6 +109,12 @@ img { max-width: 100%; display: block; }
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 80%, transparent);
   backdrop-filter: blur(12px);
+  transition: top 0.25s ease;
+}
+
+.header.header--hidden:not(.header--admin):not(.header--menu-open) {
+  top: calc(-1 * var(--header-h));
+  pointer-events: none;
 }
 
 .header--admin {
@@ -489,6 +495,18 @@ img { max-width: 100%; display: block; }
   top: var(--header-h);
   z-index: 20;
   box-shadow: 0 1px 0 var(--border);
+  transition: top 0.25s ease;
+}
+
+html.header-is-hidden .toolbar--sticky {
+  top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header,
+  .toolbar--sticky {
+    transition: none;
+  }
 }
 
 .search-input {

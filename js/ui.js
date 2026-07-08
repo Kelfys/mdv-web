@@ -27,6 +27,7 @@ import { navigate, render as rerenderRoute, getCurrentPath, routeHref } from './
 import { showToast } from './utils.js'
 import { STAFF_PANELS, getStaffMenu, isStaffPath, getStaffPanel, getStaffTab } from './staff-nav.js'
 import { MERCHANT_PANEL, MERCHANT_MENU, isMerchantPath, getMerchantTab, merchantMenuHref } from './merchant-nav.js'
+import { initHeaderScroll, showHeader } from './header-scroll.js'
 
 let menuOpen = false
 let staffMenuOpen = false
@@ -191,6 +192,7 @@ export function renderHeader() {
   `
 
   header.classList.toggle('header--admin', onStaff || onMerchant)
+  if (menuOpen || onStaff || onMerchant) showHeader()
 
   ;['admin', 'moderator', 'merchant'].forEach((panel) => {
     document.getElementById(`staff-menu-toggle-${panel}`)?.addEventListener('click', (e) => {
@@ -254,6 +256,7 @@ export function renderHeader() {
 }
 
 export function initHeader() {
+  initHeaderScroll()
   renderHeader()
   onAuthChange(() => renderHeader())
 }
