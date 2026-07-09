@@ -2333,6 +2333,123 @@ export async function createStoreAd(storeId, { title, message, image, feeAcknowl
   return data
 }
 
+/** Lista todos os anúncios para painel staff (escopo regional filtrado no cliente). */
+export async function fetchAllStoreAdsAdmin(neighborhoodId = null) {
+  const client = await requireClient()
+  const { data, error } = await client
+    .from('store_ads')
+    .select('*, store:stores(id, name, slug, plan_id, city, state, neighborhood_id, neighborhood:neighborhoods(id, name, slug), owner:users(id, name, email))')
+    .order('created_at', { ascending: false })
+  if (error) {
+    if (error.code === '42P01') return []
+    throw error
+  }
+  let ads = data ?? []
+  if (neighborhoodId) {
+    ads = ads.filter((ad) => ad.store?.neighborhood_id === neighborhoodId)
+  }
+  return ads
+}
+
+/**
+ * Cria anúncio como staff — sem validação de plano Premium nem limite mensal.
+ * publishNow=true → approved com vigência de 24h; senão fica pending.
+ */
+export async function createStoreAdAsStaff(storeId, { title, message, image, publishNow = true }) {
+  const client = await requireClient()
+  let image_url = null
+  if (image instanceof File) {
+    image_url = await uploadImage(STORAGE_BUCKETS.products, `ads/${storeId}/${Date.now()}`, image)
+  }
+
+  const payload = {
+    store_id: storeId,
+    title: title.trim(),
+    message: message.trim(),
+    image_url,
+    is_extra: false,
+    fee_amount: 0,
+    fee_acknowledged: false,
+  }
+
+  if (publishNow) {
+    const approvedAt = new Date().toISOString()
+    payload.status = 'approved'
+    payload.approved_at = approvedAt
+    payload.expires_at = storeAdExpiryFromNow()
+  }
+
+  const { data, error } = await client
+    .from('store_ads')
+    .insert(payload)
+    .select('*, store:stores(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+/** Atualiza anúncio como staff (conteúdo, imagem e status). */
+export async function updateStoreAdAsStaff(adId, { title, message, image, status, removeImage = false }) {
+  const client = await requireClient()
+  const updates = {}
+
+  if (title !== undefined) updates.title = title.trim()
+  if (message !== undefined) updates.message = message.trim()
+
+  if (status !== undefined) {
+    updates.status = status
+    if (status === 'approved') {
+      updates.approved_at = new Date().toISOString()
+      updates.expires_at = storeAdExpiryFromNow()
+      updates.rejected_at = null
+    } else if (status === 'rejected') {
+      updates.rejected_at = new Date().toISOString()
+    } else if (status === 'pending') {
+      updates.approved_at = null
+      updates.expires_at = null
+      updates.rejected_at = null
+    }
+  }
+
+  if (removeImage) {
+    updates.image_url = null
+  } else if (image instanceof File) {
+    const { data: existing, error: fetchError } = await client
+      .from('store_ads')
+      .select('store_id')
+      .eq('id', adId)
+      .single()
+    if (fetchError) throw fetchError
+    updates.image_url = await uploadImage(
+      STORAGE_BUCKETS.products,
+      `ads/${existing.store_id}/${Date.now()}`,
+      image,
+    )
+  }
+
+  if (Object.keys(updates).length === 0) {
+    throw new Error(t('errors.noChanges'))
+  }
+
+  const { data, error } = await client
+    .from('store_ads')
+    .update(updates)
+    .eq('id', adId)
+    .select('*, store:stores(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteStoreAdAsStaff(adId) {
+  const client = await requireClient()
+  const { error } = await client
+    .from('store_ads')
+    .delete()
+    .eq('id', adId)
+  if (error) throw error
+}
+
 export async function countUnreadMerchantOrders(storeId) {
   const client = await requireClient()
   const { count, error } = await client

@@ -26,6 +26,7 @@ export const ADMIN_MENU = [
   { id: 'overview', label: t('nav.staffOverview'), icon: '📊', href: '#/admin' },
   { id: 'stores', label: t('nav.staffStores'), icon: '🏪', href: '#/admin/lojas' },
   { id: 'products', label: t('nav.staffProducts'), icon: '📦', href: '#/admin/produtos' },
+  { id: 'ads', label: t('nav.staffAds'), icon: '📣', href: '#/admin/anuncios' },
   { id: 'pedidos', label: t('nav.staffOrders'), icon: '🛒', href: '#/admin/pedidos' },
   { id: 'approvals', label: t('nav.staffApprovals'), icon: '✅', href: '#/admin/aprovacoes' },
   { id: 'reports', label: t('nav.staffReports'), icon: '🚩', href: '#/admin/denuncias' },
@@ -43,6 +44,7 @@ export const MODERATOR_MENU = [
   { id: 'stores', label: t('nav.staffStores'), icon: '🏪', href: '#/moderador/lojas', readOnly: true },
   { id: 'products', label: t('nav.staffProducts'), icon: '📦', href: '#/moderador/produtos', readOnly: true },
   { id: 'pedidos', label: t('nav.staffOrders'), icon: '🛒', href: '#/moderador/pedidos' },
+  { id: 'ads', label: t('nav.staffAds'), icon: '📣', href: '#/moderador/anuncios' },
   { id: 'account', label: t('nav.staffAccount'), icon: '🔑', href: '#/moderador/conta' },
 ]
 
@@ -72,7 +74,13 @@ export function getStaffTab(path = getCurrentPath(), panel = getStaffPanel(path)
   if (path === base) return 'overview'
   const segment = path.replace(`${base}/`, '').split('/')[0]
   const menu = getStaffMenu(panel)
-  return menu.find((item) => item.id === segment)?.id ?? 'overview'
+  const match = menu.find((item) => {
+    if (item.id === segment) return true
+    const hrefPath = (item.href ?? '').replace(/^#/, '')
+    const hrefSegment = hrefPath === base ? '' : hrefPath.replace(`${base}/`, '').split('/')[0]
+    return hrefSegment === segment
+  })
+  return match?.id ?? 'overview'
 }
 
 export function getStaffMenuItem(tab, panel = 'admin') {

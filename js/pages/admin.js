@@ -15,6 +15,7 @@ import {
   adjustProductLikes, fetchProductComments, addProductComment, deleteProductComment,
   fetchPendingContentReports, reviewContentReport,
   fetchPendingStoreAds, approveStoreAd, rejectStoreAd,
+  fetchAllStoreAdsAdmin, createStoreAdAsStaff, updateStoreAdAsStaff, deleteStoreAdAsStaff,
   fetchStoresNeedingPlanRenewal,
   fetchNeighborhoods, createNeighborhood, updateNeighborhood, deleteNeighborhood,
 } from '../api.js'
@@ -37,7 +38,7 @@ import {
   countProductsWithImages, canAddProductImage, canCreateProduct,
   planProductImageLimitMessage, planProductLimitMessage,
   formatProductLimitHint, formatProductImageLimitHint,
-  getPlanById, SUBSCRIPTION_PLANS, STORE_AD_DURATION_HOURS,
+  getPlanById, SUBSCRIPTION_PLANS, STORE_AD_DURATION_HOURS, STORE_AD_EXTRA_FEE,
 } from '../plans.js'
 import { formatRenewalRemaining } from '../plan-renewal.js'
 import {
@@ -204,6 +205,143 @@ function renderStoreAdApprovalCards(ads) {
         `).join('')}
       </div>
     </section>`
+}
+
+function staffAdStatusBadge(status) {
+  const map = {
+    pending: `<span class="badge badge-pending">${t('adStatus.pending')}</span>`,
+    approved: `<span class="badge badge-approved">${t('adStatus.approved')}</span>`,
+    rejected: `<span class="badge badge-blocked">${t('adStatus.rejected')}</span>`,
+    expired: `<span class="badge badge-order-pending">${t('adStatus.expired')}</span>`,
+  }
+  return map[status] ?? escapeHtml(status)
+}
+
+function renderStaffAdsCreatePanel(stores) {
+  const approvedStores = stores
+    .filter((s) => s.status === 'approved')
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+
+  if (approvedStores.length === 0) {
+    return `<div class="alert alert-info" style="margin-bottom:1rem">${t('admin.storeNotApprovedHint')}</div>`
+  }
+
+  const storeOptions = approvedStores.map((s) => {
+    const neighborhood = s.neighborhood?.name ? ` · ${s.neighborhood.name}` : ''
+    return `<option value="${s.id}">${escapeHtml(s.name)}${escapeHtml(neighborhood)}</option>`
+  }).join('')
+
+  return `
+    <details class="admin-form-panel" open>
+      <summary>${t('admin.newAd')}</summary>
+      <form id="staff-ad-form" class="admin-form-grid" style="margin-top:1rem">
+        <div class="form-group admin-form-grid__full">
+          <label class="form-label">${t('admin.selectStoreForAd')}</label>
+          <select class="form-input" name="store_id" required>
+            <option value="">${t('app.selectPlaceholder')}</option>
+            ${storeOptions}
+          </select>
+        </div>
+        <div class="form-group admin-form-grid__full">
+          <label class="form-label">${t('common.title')}</label>
+          <input class="form-input" name="title" placeholder="${t('admin.adTitlePlaceholder')}" minlength="3" maxlength="80" required />
+        </div>
+        <div class="form-group admin-form-grid__full">
+          <label class="form-label">${t('common.message')}</label>
+          <textarea class="form-input" name="message" placeholder="${t('admin.adMessagePlaceholder')}" minlength="10" maxlength="280" rows="3" required></textarea>
+        </div>
+        <div class="form-group admin-form-grid__full">
+          <label class="form-label">${t('admin.adImageOptional')}</label>
+          <div class="admin-image-field">
+            <div data-preview-staff-ad-create>${imagePreviewBlock(null, t('admin.newAd'), 'banner')}</div>
+            <input class="form-input" type="file" name="image" accept="image/*" />
+            <small class="form-hint">${PRODUCT_IMAGE_UPLOAD_HINT}</small>
+          </div>
+        </div>
+        <label class="admin-check admin-form-grid__full">
+          <input type="checkbox" name="publish_now" checked />
+          <span>${t('admin.publishAdImmediately')}</span>
+        </label>
+        <div class="admin-form-grid__full">
+          <button type="submit" class="btn btn-primary btn-sm">${t('admin.createAd')}</button>
+        </div>
+      </form>
+      <p class="form-hint" style="margin-top:0.75rem">${t('admin.staffAdsHint')}</p>
+    </details>`
+}
+
+function renderStaffAdCards(ads, panel) {
+  if (ads.length === 0) return ''
+
+  return ads.map((ad) => {
+    const searchKey = `${ad.title} ${ad.message} ${ad.store?.name ?? ''} ${ad.store?.neighborhood?.name ?? ''}`.toLowerCase()
+    return `
+      <div
+        class="admin-staff-ad-group"
+        data-staff-ad-row
+        data-ad-status="${escapeHtml(ad.status)}"
+        data-ad-search="${escapeHtml(searchKey)}"
+      >
+      <article class="admin-list-card">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.375rem">
+            <strong>${escapeHtml(ad.title)}</strong>
+            ${staffAdStatusBadge(ad.status)}
+            ${ad.is_extra ? `<span class="admin-stat-chip admin-stat-chip--pending">${escapeHtml(t('merchant.adExtraBadge', { fee: formatCurrency(ad.fee_amount || STORE_AD_EXTRA_FEE) }))}</span>` : ''}
+          </div>
+          <p>${escapeHtml(ad.message)}</p>
+          <p class="admin-list-card__meta">
+            ${escapeHtml(ad.store?.name ?? t('common.store'))}
+            ${ad.store?.neighborhood?.name ? ` · ${escapeHtml(ad.store.neighborhood.name)}` : ''}
+            · ${formatDate(ad.created_at)}
+            ${ad.expires_at ? ` · ${t('merchant.adExpiresAt', { date: formatDate(ad.expires_at) })}` : ''}
+          </p>
+          <p class="admin-list-card__meta"><code style="font-size:0.75rem">${escapeHtml(ad.id)}</code></p>
+        </div>
+        ${ad.image_url ? `<div class="admin-table-thumb" style="width:4rem;height:3rem;flex-shrink:0"><img src="${escapeHtml(ad.image_url)}" alt="" /></div>` : ''}
+        <div class="admin-list-card__actions" style="flex-direction:column;align-items:stretch">
+          ${ad.store?.slug ? `<a href="#/loja/${escapeHtml(ad.store.slug)}" class="btn btn-outline btn-sm">${t('admin.viewReportedStore')}</a>` : ''}
+          <button type="button" class="btn btn-outline btn-sm" data-edit-staff-ad="${ad.id}">${t('labels.edit')}</button>
+          <button type="button" class="btn btn-outline btn-sm" data-del-staff-ad="${ad.id}">${t('labels.delete')}</button>
+          ${ad.status === 'pending' ? `
+            <button type="button" class="btn btn-primary btn-sm" data-approve-ad="${ad.id}">${t('admin.approveAd')}</button>
+            <button type="button" class="btn btn-outline btn-sm" data-reject-ad="${ad.id}">${t('labels.reject')}</button>` : ''}
+        </div>
+      </article>
+      <div class="admin-edit-panel-wrap" id="edit-staff-ad-${ad.id}" hidden>
+        <form class="admin-edit-panel admin-form-grid" data-staff-ad-edit="${ad.id}">
+          <div class="form-group admin-form-grid__full">
+            <label class="form-label">${t('common.title')}</label>
+            <input class="form-input" name="title" value="${escapeHtml(ad.title)}" minlength="3" maxlength="80" required />
+          </div>
+          <div class="form-group admin-form-grid__full">
+            <label class="form-label">${t('common.message')}</label>
+            <textarea class="form-input" name="message" minlength="10" maxlength="280" rows="3" required>${escapeHtml(ad.message)}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t('labels.status')}</label>
+            <select class="form-input" name="status">
+              <option value="pending" ${ad.status === 'pending' ? 'selected' : ''}>${t('adStatus.pending')}</option>
+              <option value="approved" ${ad.status === 'approved' ? 'selected' : ''}>${t('adStatus.approved')}</option>
+              <option value="rejected" ${ad.status === 'rejected' ? 'selected' : ''}>${t('adStatus.rejected')}</option>
+            </select>
+          </div>
+          <div class="form-group admin-form-grid__full">
+            <label class="form-label">${t('common.image')}</label>
+            <div class="admin-image-field">
+              <div data-preview-staff-ad="${ad.id}">${imagePreviewBlock(ad.image_url, ad.title, 'banner')}</div>
+              <input class="form-input" type="file" name="image" accept="image/*" />
+              ${ad.image_url ? `<label class="admin-check"><input type="checkbox" name="remove_image" /> ${t('admin.removeCurrentBanner')}</label>` : ''}
+            </div>
+          </div>
+          <div class="admin-edit-panel__actions admin-form-grid__full">
+            <button type="submit" class="btn btn-primary btn-sm">${t('labels.save')}</button>
+            <button type="button" class="btn btn-outline btn-sm" data-cancel-staff-ad="${ad.id}">${t('labels.cancel')}</button>
+          </div>
+        </form>
+      </div>
+      </div>`
+  }).join('')
 }
 
 function renderPlanRenewalAlertCards(rows, panel = 'admin') {
@@ -1859,6 +1997,52 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
     return
   }
 
+  if (tab === 'ads') {
+    const scopeId = getStaffNeighborhoodScope(user, panel)
+    const [ads, stores, queue] = await Promise.all([
+      fetchAllStoreAdsAdmin(scopeId),
+      fetchAllStoresAdmin(scopeId),
+      loadStaffApprovalQueue(user, panel),
+    ])
+
+    setAdminPendingCount(queue.pendingTotal)
+    import('../ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
+
+    main.innerHTML = adminPage(
+      menuItem.label,
+      panel === 'moderator'
+        ? staffScopeSubtitle(user, panel)
+        : t('admin.adsSubtitle'),
+      `
+        <div id="admin-ads-msg"></div>
+        ${renderStaffAdsCreatePanel(stores)}
+        <section class="admin-section" style="margin-top:1.5rem">
+          <div class="admin-section__head">
+            <h2>${t('merchant.adsTitle')}</h2>
+            <span class="admin-stat-chip admin-stat-chip--sent">${t('admin.adsTotal', { count: ads.length })}</span>
+          </div>
+          ${ads.length > 0 ? `
+            <div class="admin-orders-toolbar" style="margin-bottom:1rem">
+              <input class="form-input" id="admin-ads-search" placeholder="${t('admin.searchAdsPlaceholder')}" style="max-width:20rem" />
+              <div class="admin-filter-chips" id="admin-ads-filters">
+                <button type="button" class="admin-filter-chip active" data-ad-filter="">${t('common.all')}</button>
+                <button type="button" class="admin-filter-chip" data-ad-filter="pending">${t('adStatus.pending')}</button>
+                <button type="button" class="admin-filter-chip" data-ad-filter="approved">${t('adStatus.approved')}</button>
+                <button type="button" class="admin-filter-chip" data-ad-filter="rejected">${t('adStatus.rejected')}</button>
+              </div>
+            </div>
+            <div class="admin-cards-list" id="admin-ads-list">${renderStaffAdCards(ads, panel)}</div>
+            <p id="admin-ads-empty" class="form-hint" hidden>${t('common.noResults')}</p>` : adminEmptyState('📣', t('admin.noAdsTitle'), t('admin.noAdsBody'))}
+        </section>
+      `,
+      '',
+      panel,
+    )
+
+    bindStaffAdsActions(main, 'ads', panel)
+    return
+  }
+
   if (tab === 'pedidos') {
     const [orders, orderAnalytics, queue] = await Promise.all([
       fetchAdminOrders(),
@@ -3091,6 +3275,129 @@ function bindApprovalActions(main, tab) {
       rerenderStaff(main, tab)
     })
   })
+}
+
+function bindStaffAdsActions(main, tab, panel) {
+  const msgEl = main.querySelector('#admin-ads-msg')
+  const createForm = main.querySelector('#staff-ad-form')
+  bindImagePreview(
+    createForm?.querySelector('input[name="image"]'),
+    main.querySelector('[data-preview-staff-ad-create]'),
+  )
+
+  createForm?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const f = e.target
+    const submitBtn = f.querySelector('button[type="submit"]')
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('common.sending') }
+    try {
+      const imageFile = f.image?.files?.[0]
+      if (imageFile) {
+        const err = validateImageFile(imageFile, STORAGE_BUCKETS.products)
+        if (err) throw new Error(err)
+      }
+      await createStoreAdAsStaff(f.store_id.value, {
+        title: f.title.value,
+        message: f.message.value,
+        image: imageFile,
+        publishNow: Boolean(f.publish_now?.checked),
+      })
+      showToast(t('admin.adCreated'))
+      rerenderStaff(main, tab)
+    } catch (err) {
+      if (msgEl) msgEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
+    } finally {
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = t('admin.createAd') }
+    }
+  })
+
+  main.querySelectorAll('[data-edit-staff-ad]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.editStaffAd
+      const panelEl = main.querySelector(`#edit-staff-ad-${id}`)
+      if (panelEl) panelEl.hidden = !panelEl.hidden
+    })
+  })
+
+  main.querySelectorAll('[data-cancel-staff-ad]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const panelEl = main.querySelector(`#edit-staff-ad-${btn.dataset.cancelStaffAd}`)
+      if (panelEl) panelEl.hidden = true
+    })
+  })
+
+  main.querySelectorAll('[data-staff-ad-edit]').forEach((form) => {
+    const id = form.dataset.staffAdEdit
+    bindImagePreview(form.querySelector('input[name="image"]'), form.querySelector(`[data-preview-staff-ad="${id}"]`))
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const submitBtn = form.querySelector('button[type="submit"]')
+      if (submitBtn) submitBtn.disabled = true
+      try {
+        const imageFile = form.image?.files?.[0]
+        if (imageFile) {
+          const err = validateImageFile(imageFile, STORAGE_BUCKETS.products)
+          if (err) throw new Error(err)
+        }
+        await updateStoreAdAsStaff(id, {
+          title: form.title.value,
+          message: form.message.value,
+          status: form.status.value,
+          image: imageFile,
+          removeImage: Boolean(form.remove_image?.checked),
+        })
+        showToast(t('admin.adUpdated'))
+        rerenderStaff(main, tab)
+      } catch (err) {
+        if (msgEl) msgEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
+        if (submitBtn) submitBtn.disabled = false
+      }
+    })
+  })
+
+  main.querySelectorAll('[data-del-staff-ad]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm(t('admin.confirmDeleteAd'))) return
+      try {
+        await deleteStoreAdAsStaff(btn.dataset.delStaffAd)
+        showToast(t('admin.adDeleted'))
+        rerenderStaff(main, tab)
+      } catch (err) {
+        showToast(err.message)
+      }
+    })
+  })
+
+  const search = main.querySelector('#admin-ads-search')
+  const filterBtns = main.querySelectorAll('[data-ad-filter]')
+  let activeFilter = ''
+
+  function applyAdFilters() {
+    const term = search?.value.trim().toLowerCase() ?? ''
+    let visible = 0
+    main.querySelectorAll('[data-staff-ad-row]').forEach((row) => {
+      const matchesSearch = !term || (row.dataset.adSearch ?? '').includes(term)
+      const matchesStatus = !activeFilter || row.dataset.adStatus === activeFilter
+      const show = matchesSearch && matchesStatus
+      row.hidden = !show
+      if (show) visible += 1
+    })
+    const emptyEl = main.querySelector('#admin-ads-empty')
+    if (emptyEl) emptyEl.hidden = visible > 0
+  }
+
+  search?.addEventListener('input', applyAdFilters)
+  filterBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach((b) => b.classList.remove('active'))
+      btn.classList.add('active')
+      activeFilter = btn.dataset.adFilter ?? ''
+      applyAdFilters()
+    })
+  })
+
+  bindStoreAdApprovalActions(main, tab)
 }
 
 /** Aprovar/rejeitar anúncios; rerenderStaff atualiza fila e contador do header. */
