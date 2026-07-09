@@ -1,5 +1,5 @@
 /**
- * Página inicial — abas "Para você" (lojas e produtos) e "Anúncios".
+ * Página inicial — feed "Para você" (lojas, produtos e anúncios patrocinados no mix).
  *
  * Feed filtrado por bairro/região selecionado (localStorage).
  */
@@ -57,7 +57,6 @@ export async function renderHome(main) {
   let search = ''
   let categoryId = null
   let neighborhoodId = getSelectedNeighborhoodId()
-  let activeTab = 'feed'
   let categories = []
   let neighborhoods = []
   let stores = []
@@ -102,15 +101,6 @@ export async function renderHome(main) {
     return `<div class="feed__item feed__item--${kind}">${renderFeedItem(item)}</div>`
   }
 
-  function filterAds(ads) {
-    const term = search.trim().toLowerCase()
-    if (!term) return ads
-    return ads.filter((ad) => {
-      const haystack = `${ad.title} ${ad.message} ${ad.store?.name ?? ''}`.toLowerCase()
-      return haystack.includes(term)
-    })
-  }
-
   function clearFiltersAction() {
     const hasFilters = Boolean(search || categoryId)
     if (!hasFilters) return ''
@@ -126,19 +116,6 @@ export async function renderHome(main) {
         title: t('home.noNeighborhoodsTitle'),
         body: t('home.noNeighborhoodsBody'),
       })
-    }
-
-    if (activeTab === 'ads') {
-      const ads = filterAds(feedAds)
-      if (ads.length === 0) {
-        return renderHomeEmptyState({
-          icon: '📣',
-          title: search ? t('home.noAdsFoundTitle') : t('home.noAdsTitle'),
-          body: search ? t('home.noAdsFoundBody') : t('home.noAdsBody'),
-          actionHtml: clearFiltersAction(),
-        })
-      }
-      return ads.map((ad) => `<div class="feed__item feed__item--ad">${renderFeedAdCard(ad)}</div>`).join('')
     }
 
     const hasFilters = Boolean(search || categoryId)
@@ -179,9 +156,9 @@ export async function renderHome(main) {
   }
 
   function renderToolbar() {
-    const searchPlaceholder = activeTab === 'ads' ? t('home.searchAds') : t('home.searchStoresProducts')
+    const searchPlaceholder = t('home.searchStoresProducts')
     const showNeighborhoods = neighborhoods.length > 0
-    const showCategories = activeTab === 'feed' && categories.length > 0
+    const showCategories = categories.length > 0
     const showFilters = showNeighborhoods || showCategories
 
     return `
@@ -230,35 +207,14 @@ export async function renderHome(main) {
       </div>`
   }
 
-  function renderTabs() {
-    return `
-      <div class="home-tabs home-tabs--pill" role="tablist" aria-label="${t('home.tabFeed')}">
-        <button
-          type="button"
-          role="tab"
-          class="home-tab ${activeTab === 'feed' ? 'active' : ''}"
-          data-home-tab="feed"
-          aria-selected="${activeTab === 'feed'}"
-        >${t('home.tabFeed')}</button>
-        <button
-          type="button"
-          role="tab"
-          class="home-tab ${activeTab === 'ads' ? 'active' : ''}"
-          data-home-tab="ads"
-          aria-selected="${activeTab === 'ads'}"
-        >${t('home.tabAds')}${feedAds.length ? ` <span class="home-tab__count">${feedAds.length}</span>` : ''}</button>
-      </div>`
-  }
-
   function renderFeedLabel() {
     const selectedNeighborhood = neighborhoods.find((n) => n.id === neighborhoodId)
     const neighborhoodLabel = selectedNeighborhood ? formatNeighborhoodLabel(selectedNeighborhood) : ''
 
-    if (activeTab === 'feed' && search) return t('home.resultsFor', { term: search })
-    if (activeTab === 'feed' && categoryId) {
+    if (search) return t('home.resultsFor', { term: search })
+    if (categoryId) {
       return categories.find((c) => c.id === categoryId)?.name ?? t('labels.category')
     }
-    if (activeTab === 'ads' && search) return t('home.adsFor', { term: search })
     if (neighborhoodLabel) return t('home.neighborhoodLabel', { name: neighborhoodLabel })
     if (neighborhoods.length) return t('home.allNeighborhoodsLabel')
     return ''
@@ -273,7 +229,6 @@ export async function renderHome(main) {
         ${renderHero(selectedNeighborhood)}
         ${renderToolbar()}
         <div class="container home-content">
-          ${renderTabs()}
           ${label ? `<p class="feed-label">${escapeHtml(label)}</p>` : ''}
           <div class="feed feed--grid" id="feed" ${loading ? 'aria-busy="true"' : ''}>
             ${renderFeedContent()}
@@ -287,8 +242,7 @@ export async function renderHome(main) {
       clearTimeout(debounce)
       debounce = setTimeout(() => {
         search = e.target.value
-        if (activeTab === 'feed') load()
-        else paint()
+        load()
       }, 300)
     })
 
@@ -310,16 +264,6 @@ export async function renderHome(main) {
       btn.addEventListener('click', () => {
         categoryId = btn.dataset.cat || null
         load()
-      })
-    })
-
-    main.querySelectorAll('[data-home-tab]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const tab = btn.dataset.homeTab
-        if (tab === activeTab) return
-        activeTab = tab
-        paint()
-        if (tab === 'feed') load()
       })
     })
 
