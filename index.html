@@ -21,31 +21,34 @@
   </script>
   <script>
     (function () {
-      var host = location.hostname
-      if ((host === 'maredevendas.com.br' || host === 'www.maredevendas.com.br')
-        && !(location.search && /[?&]code=/.test(location.search))) {
-        location.replace('https://kelfys.github.io/MaredeVendas-vanilla/' + location.search + location.hash)
-        return
-      }
-
-      var match = location.pathname.match(/^(\/[^/]+)/)
-      window.__MV_BASE__ = (match && !match[1].includes('.')) ? match[1] + '/' : './'
+      // Base só no GitHub Pages (projeto em /MaredeVendas-vanilla/). Domínio .br fica na raiz.
+      var GITHUB_BASE = '/MaredeVendas-vanilla'
+      var path = location.pathname || '/'
+      var onGithubProject = path === GITHUB_BASE || path.indexOf(GITHUB_BASE + '/') === 0
+      window.__MV_BASE__ = onGithubProject ? GITHUB_BASE + '/' : './'
 
       function normalizeRoutePath(raw) {
         if (!raw || raw === '/') return ''
-        var path = raw.charAt(0) === '/' ? raw : '/' + raw
-        return path.split('?')[0].replace(/\/$/, '') || '/'
+        var p = raw.charAt(0) === '/' ? raw : '/' + raw
+        return p.split('?')[0].replace(/\/$/, '') || '/'
       }
 
       var deepSub = ''
       var hash = location.hash.replace(/^#/, '')
       if (!hash || hash === '/') {
-        var deep = location.pathname.match(/^(\/[^/]+)(\/.*)?$/)
-        deepSub = deep && deep[2] ? deep[2].replace(/\/$/, '') : ''
-        if (deepSub && deepSub !== '/') {
-          var target = deep[1] + '/#' + deepSub + location.search
-          history.replaceState(null, '', target)
-          hash = location.hash.replace(/^#/, '') || deepSub
+        if (onGithubProject) {
+          var rest = path.slice(GITHUB_BASE.length) || '/'
+          deepSub = rest === '/' ? '' : rest.replace(/\/$/, '')
+          if (deepSub && deepSub !== '/') {
+            history.replaceState(null, '', GITHUB_BASE + '/#' + deepSub + location.search)
+            hash = location.hash.replace(/^#/, '') || deepSub
+          }
+        } else if (path !== '/') {
+          deepSub = path.replace(/\/$/, '') || ''
+          if (deepSub && deepSub !== '/') {
+            history.replaceState(null, '', '/#' + deepSub + location.search)
+            hash = location.hash.replace(/^#/, '') || deepSub
+          }
         }
       }
 

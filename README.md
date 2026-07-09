@@ -2,7 +2,8 @@
 
 Marketplace local de lojas — **HTML, CSS e JavaScript vanilla** com backend [Supabase](https://supabase.com). Clientes exploram lojas, montam o carrinho e finalizam o pedido pelo **WhatsApp**. Não há pagamento in-app.
 
-**Site em produção:** https://kelfys.github.io/MaredeVendas-vanilla/
+**Site em produção:** https://maredevendas.com.br/  
+**Espelho (GitHub Pages):** https://kelfys.github.io/MaredeVendas-vanilla/
 
 ---
 
@@ -145,8 +146,11 @@ Ou execute cada arquivo em `supabase/migrations/` no **SQL Editor** (ordem numé
 
 | Campo | Valor |
 |-------|--------|
-| Site URL (prod) | `https://kelfys.github.io/MaredeVendas-vanilla/` |
-| Redirect URLs | `https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback` |
+| Site URL (prod) | `https://maredevendas.com.br` |
+| Redirect URLs | `https://maredevendas.com.br/#/auth/callback` |
+| | `https://maredevendas.com.br/` |
+| | `https://www.maredevendas.com.br/#/auth/callback` |
+| | `https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback` |
 | | `https://kelfys.github.io/MaredeVendas-vanilla/` |
 | Local | `http://localhost:8080` |
 
@@ -202,6 +206,8 @@ Botões na UI em `/conta/entrar`, `/conta/criar` e `/lojista/cadastro`. **Requer
 
 1. **APIs & Services → Credentials → OAuth client ID** (Web application)
 2. **Authorized JavaScript origins:**
+   - `https://maredevendas.com.br`
+   - `https://www.maredevendas.com.br`
    - `https://kelfys.github.io`
    - `https://ulpjsxmilumqedkkfuqw.supabase.co`
 3. **Authorized redirect URIs** (apenas Supabase, não o GitHub Pages):
@@ -287,7 +293,7 @@ gh workflow run deploy.yml
 | `/regras` | Regras e planos |
 | `/auth/callback` | Retorno OAuth Google / recovery de senha |
 
-> Rotas sempre em hash: `https://kelfys.github.io/MaredeVendas-vanilla/#/conta/entrar`. O `404.html` redireciona rotas diretas para `/#/rota`.
+> Rotas sempre em hash: `https://maredevendas.com.br/#/conta/entrar` (ou `…github.io/MaredeVendas-vanilla/#/conta/entrar`). O `404.html` redireciona rotas diretas para `/#/rota`.
 
 ---
 

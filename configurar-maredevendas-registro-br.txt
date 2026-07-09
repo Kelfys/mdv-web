@@ -1,0 +1,139 @@
+================================================================================
+  CONFIGURAR maredevendas.com.br → GitHub Pages
+  Registro.br + GitHub (kelfys / MaredeVendas-vanilla)
+================================================================================
+
+Valores fixos
+-------------
+Domínio:          maredevendas.com.br
+GitHub user:      kelfys
+CNAME destino:    kelfys.github.io
+Site atual:       https://kelfys.github.io/MaredeVendas-vanilla/
+
+
+================================================================================
+1) DNS NO REGISTRO.BR
+================================================================================
+
+Login: https://registro.br
+→ Domínio maredevendas.com.br
+→ DNS / Editar zona
+
+--- Registros A (domínio raiz, sem www) ---
+Nome/Host: (deixe VAZIO ou use @)
+Tipo: A
+
+Crie QUATRO registros A com estes IPs:
+
+  185.199.108.153
+  185.199.109.153
+  185.199.110.153
+  185.199.111.153
+
+--- Registro CNAME (www) ---
+Nome/Host: www
+Tipo:      CNAME
+Dados:     kelfys.github.io
+
+IMPORTANTE: use kelfys.github.io (sem barra e sem o nome do repositório).
+
+Remova registros A/CNAME antigos que apontem para outro lugar, se existirem.
+
+
+================================================================================
+2) GITHUB PAGES
+================================================================================
+
+Repositório: MaredeVendas-vanilla
+→ Settings → Pages
+
+Custom domain:  maredevendas.com.br
+→ Save
+
+Aguarde a verificação DNS (pode demorar minutos ou até 24–48h).
+Quando aparecer, marque: Enforce HTTPS
+
+
+================================================================================
+3) URLS PARA TESTAR DEPOIS
+================================================================================
+
+  https://maredevendas.com.br
+  https://www.maredevendas.com.br
+  https://maredevendas.com.br/#/conta/entrar
+
+
+================================================================================
+4) SUPABASE (Authentication → URL configuration)
+================================================================================
+
+Site URL:
+  https://maredevendas.com.br
+
+Redirect URLs (adicione todas):
+  https://maredevendas.com.br/
+  https://maredevendas.com.br/#/auth/callback
+  https://www.maredevendas.com.br/
+  https://www.maredevendas.com.br/#/auth/callback
+
+(Opcional por um tempo — manter o GitHub Pages também)
+  https://kelfys.github.io/MaredeVendas-vanilla/
+  https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback
+
+
+================================================================================
+5) GOOGLE OAUTH (se usar login Google)
+================================================================================
+
+Authorized JavaScript origins:
+  https://maredevendas.com.br
+  https://www.maredevendas.com.br
+
+Authorized redirect URIs:
+  (use as redirect URLs do Supabase / Auth callback)
+
+
+================================================================================
+6) CHECAR DNS NO POWERSHELL
+================================================================================
+
+  nslookup maredevendas.com.br
+  nslookup www.maredevendas.com.br
+
+Esperado:
+  - maredevendas.com.br → IPs 185.199.x.x
+  - www.maredevendas.com.br → kelfys.github.io
+
+
+================================================================================
+7) CÓDIGO DO PROJETO
+================================================================================
+
+O redirect maredevendas.com.br → github.io foi REMOVIDO.
+Produção canônica: https://maredevendas.com.br/
+GitHub Pages continua como espelho em /MaredeVendas-vanilla/.
+
+Após deploy, configure o Custom domain no GitHub Pages e as URLs no Supabase
+(seção 4).
+
+
+================================================================================
+RESUMO RÁPIDO PARA COPIAR
+================================================================================
+
+Registro.br — A (4x, host vazio):
+  185.199.108.153
+  185.199.109.153
+  185.199.110.153
+  185.199.111.153
+
+Registro.br — CNAME:
+  www → kelfys.github.io
+
+GitHub Pages — Custom domain:
+  maredevendas.com.br
+
+HTTPS:
+  Enforce HTTPS = ligado
+
+Fim.

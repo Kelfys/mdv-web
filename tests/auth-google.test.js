@@ -36,7 +36,7 @@ describe('google auth', () => {
     expect(getAuthRedirectUrl()).toBe('https://example.github.io/MaredeVendas-vanilla/#/auth/callback')
   })
 
-  it('getAuthRedirectUrl uses GitHub Pages even on legacy custom domain host', async () => {
+  it('getAuthRedirectUrl stays on custom domain host', async () => {
     vi.stubGlobal('window', {
       location: {
         hostname: 'maredevendas.com.br',
@@ -51,7 +51,7 @@ describe('google auth', () => {
       getSupabase: vi.fn(),
     }))
     const { getAuthRedirectUrl } = await import('../js/api.js')
-    expect(getAuthRedirectUrl()).toBe('https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback')
+    expect(getAuthRedirectUrl()).toBe('https://maredevendas.com.br/#/auth/callback')
   })
 
   it('renderCustomerRegister includes Google signup button', async () => {

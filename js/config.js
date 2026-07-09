@@ -18,29 +18,49 @@ export const SUPABASE_ANON_KEY = 'sb_publishable_2hCOD3j1j7FRjLMsPF3sdw_4dG7A_HW
 
 export const APP_NAME = 'MaredeVendas'
 
-/** Produção no GitHub Pages (domínio .br redireciona para aqui). */
-export const PRODUCTION_SITE_ORIGIN = 'https://kelfys.github.io'
-export const PRODUCTION_SITE_PATH = '/MaredeVendas-vanilla/'
+/** Produção canônica no domínio próprio (Registro.br → GitHub Pages). */
+export const PRODUCTION_SITE_ORIGIN = 'https://maredevendas.com.br'
+export const PRODUCTION_SITE_PATH = '/'
+
+/** Fallback / espelho no GitHub Pages (project site). */
+export const GITHUB_PAGES_ORIGIN = 'https://kelfys.github.io'
+export const GITHUB_PAGES_PATH = '/MaredeVendas-vanilla/'
+export const GITHUB_PROJECT_BASE = '/MaredeVendas-vanilla'
 
 export function getProductionSiteUrl() {
   return `${PRODUCTION_SITE_ORIGIN}${PRODUCTION_SITE_PATH}`
 }
 
-export function isLegacyCustomDomainHost(hostname = window.location.hostname) {
+export function getGitHubPagesSiteUrl() {
+  return `${GITHUB_PAGES_ORIGIN}${GITHUB_PAGES_PATH}`
+}
+
+export function isCustomDomainHost(hostname = window.location.hostname) {
   return hostname === 'maredevendas.com.br' || hostname === 'www.maredevendas.com.br'
 }
 
+/** @deprecated Use isCustomDomainHost — mantido para imports antigos. */
+export function isLegacyCustomDomainHost(hostname = window.location.hostname) {
+  return isCustomDomainHost(hostname)
+}
+
+export function isGitHubPagesHost(hostname = window.location.hostname) {
+  return hostname === 'kelfys.github.io'
+}
+
 export function isProductionSiteHost(hostname = window.location.hostname) {
-  return hostname === 'kelfys.github.io' || isLegacyCustomDomainHost(hostname)
+  return isGitHubPagesHost(hostname) || isCustomDomainHost(hostname)
 }
 
 /**
  * Prefixo de path quando o app não está na raiz do host.
- * Vazio em maredevendas.com.br, localhost e /; preenchido em github.io/Repo/.
+ * Vazio em maredevendas.com.br, localhost e /; preenchido só em github.io/MaredeVendas-vanilla/.
  */
 export function detectAppBasePath() {
-  const match = window.location.pathname.match(/^(\/[^/]+)/)
-  if (match && !match[1].includes('.')) return match[1]
+  const path = window.location.pathname || '/'
+  if (path === GITHUB_PROJECT_BASE || path.startsWith(`${GITHUB_PROJECT_BASE}/`)) {
+    return GITHUB_PROJECT_BASE
+  }
   return ''
 }
 

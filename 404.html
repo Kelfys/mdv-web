@@ -9,11 +9,22 @@
   </style>
   <script>
     (function () {
+      var GITHUB_BASE = 'MaredeVendas-vanilla'
       var parts = location.pathname.split('/').filter(Boolean)
-      var home = parts.length ? '/' + parts[0] + '/' : '/'
-      var subpath = '/' + parts.slice(1).join('/')
+      var home = '/'
+      var subpath = '/'
+      if (parts[0] === GITHUB_BASE) {
+        home = '/' + GITHUB_BASE + '/'
+        subpath = '/' + parts.slice(1).join('/')
+      } else if (parts.length) {
+        subpath = '/' + parts.join('/')
+      }
       if (subpath === '/') subpath = '/'
-      var target = home + '#' + subpath + location.search + location.hash
+      var target = home + '#' + subpath + location.search
+      // Evita hash duplicado se já houver um
+      if (location.hash && location.hash !== '#' && location.hash !== '#/') {
+        target = home + location.hash + location.search
+      }
       location.replace(target)
     })()
   </script>
@@ -23,9 +34,16 @@
   <p><a id="spa-fallback" href="/">Clique aqui se não for redirecionado</a></p>
   <script>
     (function () {
+      var GITHUB_BASE = 'MaredeVendas-vanilla'
       var parts = location.pathname.split('/').filter(Boolean)
-      var home = parts.length ? '/' + parts[0] + '/' : '/'
-      var subpath = '/' + parts.slice(1).join('/')
+      var home = '/'
+      var subpath = '/'
+      if (parts[0] === GITHUB_BASE) {
+        home = '/' + GITHUB_BASE + '/'
+        subpath = '/' + parts.slice(1).join('/')
+      } else if (parts.length) {
+        subpath = '/' + parts.join('/')
+      }
       if (subpath === '/') subpath = '/'
       var link = document.getElementById('spa-fallback')
       if (link) link.href = home + '#' + subpath

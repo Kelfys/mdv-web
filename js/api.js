@@ -23,7 +23,7 @@ import { requireClient, isSupabaseConfigured, getSupabase } from './db.js'
 import { generateSlug, sanitizeSearch, getProductEngagementWeight, computeProductLikesCount } from './utils.js'
 import { REPORT_REASON_IDS } from './report-reasons.js'
 import { t } from './strings.js'
-import { DEFAULT_THEME_COLOR, getProductionSiteUrl, isProductionSiteHost } from './config.js'
+import { DEFAULT_THEME_COLOR } from './config.js'
 import { STORAGE_BUCKETS, uploadImage } from './uploads.js'
 import { normalizeItemType } from './catalog.js'
 import {
@@ -219,12 +219,9 @@ export async function updatePassword(newPassword) {
 
 /**
  * URL de retorno OAuth/recuperação de senha (hash #/auth/callback).
- * Produção sempre usa GitHub Pages, mesmo se o visitante cair em maredevendas.com.br.
+ * Usa o host atual (maredevendas.com.br, www ou GitHub Pages).
  */
 export function getAuthRedirectUrl() {
-  if (isProductionSiteHost()) {
-    return `${getProductionSiteUrl()}#/auth/callback`
-  }
   return `${window.location.origin}${window.location.pathname}#/auth/callback`
 }
 
@@ -234,7 +231,10 @@ export function getAuthRedirectUrl() {
  * Pré-requisito no dashboard Supabase (não é configurável só no código):
  * 1. Authentication → Providers → Google: Enable + Client ID/Secret (Google Cloud)
  * 2. Google Cloud redirect URI: https://<ref>.supabase.co/auth/v1/callback
- * 3. Redirect URLs: https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback
+ * 3. Redirect URLs (adicione todas as usadas):
+ *    - https://maredevendas.com.br/#/auth/callback
+ *    - https://www.maredevendas.com.br/#/auth/callback
+ *    - https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback
  *
  * Sem o provider ativo, a API retorna "provider is not enabled".
  * @param {string} [nextPath] — rota após callback (sessionStorage oauth-next)
