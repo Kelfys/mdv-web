@@ -298,8 +298,15 @@ function planRank(planId) {
   return PLAN_RANK[planId] ?? 0
 }
 
-function renderPlanCardAction(plan, currentPlanId, { requestMode = false, infoOnly = false, storeId = null, storeName = null } = {}) {
-  const storeContext = { storeId, storeName }
+function resolvePlanStoreContext({ store = null, storeId = null, storeName = null } = {}) {
+  const id = store?.id ?? storeId ?? null
+  const name = (store?.name ?? storeName ?? '').trim() || null
+  return { storeId: id, storeName: name }
+}
+
+function renderPlanCardAction(plan, currentPlanId, options = {}) {
+  const { requestMode = false, infoOnly = false } = options
+  const storeContext = resolvePlanStoreContext(options)
   const isDashboard = Boolean(currentPlanId)
   const isCurrent = currentPlanId === plan.id
 
@@ -361,7 +368,15 @@ function renderPlanCardAction(plan, currentPlanId, { requestMode = false, infoOn
 }
 
 /** Cards de planos para login informativo e painel do lojista. */
-export function renderSubscriptionPlanCards({ currentPlanId = null, requestMode = false, infoOnly = false, storeId = null, storeName = null } = {}) {
+export function renderSubscriptionPlanCards({
+  currentPlanId = null,
+  requestMode = false,
+  infoOnly = false,
+  store = null,
+  storeId = null,
+  storeName = null,
+} = {}) {
+  const storeOptions = { store, storeId, storeName }
   return SUBSCRIPTION_PLANS.map((plan) => {
     const isCurrent = currentPlanId === plan.id
     const highlight = plan.id === 'premium' || isCurrent
@@ -376,7 +391,7 @@ export function renderSubscriptionPlanCards({ currentPlanId = null, requestMode 
       <ul class="plan-card__features">
         ${plan.features.map((f) => `<li>${escapeHtml(f)}</li>`).join('')}
       </ul>
-      ${renderPlanCardAction(plan, currentPlanId, { requestMode, infoOnly, storeId, storeName })}
+      ${renderPlanCardAction(plan, currentPlanId, { requestMode, infoOnly, ...storeOptions })}
     </article>`
   }).join('')
 }
@@ -421,13 +436,17 @@ export function formatPriceCooldownRemaining(remainingMs) {
 
 function buildPaymentMessage(planName, planPrice, { storeId = null, storeName = null } = {}) {
   const priceSuffix = planPrice ? ` (${planPrice})` : ''
-  const storeNameLine = storeName
-    ? t('plans.paymentWhatsappStoreName', { name: storeName })
+  const normalizedName = storeName?.trim() || null
+  const intro = normalizedName
+    ? t('plans.paymentWhatsappBodyWithStore', { storeName: normalizedName, plan: planName, price: priceSuffix })
+    : t('plans.paymentWhatsappBody', { plan: planName, price: priceSuffix })
+  const storeNameLine = normalizedName
+    ? t('plans.paymentWhatsappStoreName', { name: normalizedName })
     : t('plans.paymentWhatsappStoreNameBlank')
   return [
     t('plans.paymentWhatsappGreeting'),
     '',
-    t('plans.paymentWhatsappBody', { plan: planName, price: priceSuffix }),
+    intro,
     '',
     t('plans.paymentWhatsappReceipt'),
     '',
@@ -465,7 +484,7 @@ function buildExtraAdPaymentMessage({ title = '', id = '' } = {}) {
     '',
     t('plans.paymentWhatsappReceipt'),
     '',
-    t('plans.paymentWhatsappStoreName'),
+    t('plans.paymentWhatsappStoreNameBlank'),
     t('plans.paymentWhatsappEmail'),
   ].filter(Boolean).join('\n')
 }

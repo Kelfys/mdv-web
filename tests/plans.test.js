@@ -260,13 +260,16 @@ describe('renderSubscriptionPlanCards', () => {
   it('includes store id and name in dashboard whatsapp payment link', () => {
     const plan = getPlanById('plus')
     const url = buildPlanPaymentUrl(plan, { storeId: 'store-abc-123', storeName: 'Loja Teste' })
+    const text = decodeURIComponent(url.split('text=')[1])
+    expect(text).toContain('Loja Teste')
+    expect(text).toContain('store-abc-123')
+    expect(text).toContain('da loja *Loja Teste*')
     expect(url).toContain(encodeURIComponent('store-abc-123'))
     expect(url).toContain(encodeURIComponent('Loja Teste'))
     const html = renderSubscriptionPlanCards({
       currentPlanId: 'free',
       requestMode: true,
-      storeId: 'store-abc-123',
-      storeName: 'Loja Teste',
+      store: { id: 'store-abc-123', name: 'Loja Teste' },
     })
     expect(html).toContain(encodeURIComponent('store-abc-123'))
     expect(html).toContain(encodeURIComponent('Loja Teste'))

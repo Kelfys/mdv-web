@@ -822,7 +822,7 @@ async function renderMerchantPlansPanel(store) {
       </div>
       ${store.status === 'approved' ? `<span class="badge badge-approved">${t('merchant.storeApprovedBadge')}</span>` : storeStatusBadge(store.status)}
     </div>
-    <div class="plan-grid">${renderSubscriptionPlanCards({ currentPlanId: store.plan_id, requestMode: true, storeId: store.id, storeName: store.name })}</div>
+    <div class="plan-grid">${renderSubscriptionPlanCards({ currentPlanId: store.plan_id, requestMode: true, store })}</div>
     <div class="plan-payment-info">
       <p><strong>${t('merchant.howToSubscribe')}</strong></p>
       <ol>
