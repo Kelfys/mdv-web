@@ -943,6 +943,43 @@ export async function deleteProduct(productId) {
   if (error) throw error
 }
 
+export async function deleteStoreAsAdmin(storeId) {
+  const client = await requireClient()
+  const { error } = await client.from('stores').delete().eq('id', storeId)
+  if (error) throw error
+}
+
+/** Exclui produto; se houver pedidos, desativa em vez de apagar. Retorna true se excluído, false se desativado. */
+export async function deleteProductAsAdmin(productId) {
+  const client = await requireClient()
+  const { data, error } = await client.rpc('admin_delete_product', { p_product_id: productId })
+  if (error) throw error
+  return Boolean(data)
+}
+
+export async function fetchAdminProfiles({ search = '', role = '', limit = 100 } = {}) {
+  const client = await requireClient()
+  let query = client
+    .from('users')
+    .select('id, name, email, role, created_at, phone, neighborhood:neighborhoods(name)')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (role) query = query.eq('role', role)
+  const term = sanitizeSearch(search)
+  if (term) query = query.or(`name.ilike.%${term}%,email.ilike.%${term}%`)
+
+  const { data, error } = await query
+  if (error) throw error
+  return data ?? []
+}
+
+export async function deleteUserProfileAsAdmin(userId) {
+  const client = await requireClient()
+  const { error } = await client.rpc('admin_delete_user_profile', { p_user_id: userId })
+  if (error) throw error
+}
+
 export async function toggleProductLike(userId, productId) {
   const client = await requireClient()
 

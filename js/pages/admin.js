@@ -11,7 +11,8 @@ import {
   updatePassword, updateEmail, fetchMerchants, fetchModerators, promoteUserToModerator, demoteModerator,
   fetchAllStoresAdmin,
   fetchAdminProducts, createStoreAsAdmin, createProduct, updateProduct,
-  updateStoreAsAdmin, deleteProduct, fetchCategories,
+  updateStoreAsAdmin, deleteStoreAsAdmin, deleteProductAsAdmin, fetchCategories,
+  fetchAdminProfiles, deleteUserProfileAsAdmin,
   adjustProductLikes, fetchProductComments, addProductComment, deleteProductComment,
   fetchPendingContentReports, reviewContentReport,
   fetchPendingStoreAds, approveStoreAd, rejectStoreAd,
@@ -1845,6 +1846,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                   <td style="white-space:nowrap">
                     <a href="#${staffProductsPath(panel, s.id)}" class="btn btn-outline btn-sm">${t('nav.staffProducts')}</a>
                     ${storesReadOnly ? '' : `<button type="button" class="btn btn-outline btn-sm" data-edit-store="${s.id}">${t('labels.edit')}</button>`}
+                    ${panel === 'admin' && !storesReadOnly ? `<button type="button" class="btn btn-outline btn-sm" data-del-store="${s.id}" data-store-name="${escapeHtml(s.name)}">${t('labels.delete')}</button>` : ''}
                     ${s.status === 'approved' ? `<a href="#/loja/${escapeHtml(s.slug)}" class="btn btn-outline btn-sm">${t('common.view')}</a>` : ''}
                   </td>
                 </tr>
@@ -1937,6 +1939,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
     if (!storesReadOnly) {
       bindStoreForm(main)
       bindStoreEdits(main)
+      bindStoreDeletes(main)
       bindPlanBrandingToggle(main)
     }
     if (panel === 'admin') bindStoreListFilters(main)
@@ -2805,9 +2808,13 @@ function bindProductEdits(main, selectedStoreId = null) {
   main.querySelectorAll('[data-del-product]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       if (!confirm(t('admin.confirmDeleteProduct'))) return
-      await deleteProduct(btn.dataset.delProduct)
-      showToast(t('admin.productDeleted'))
-      rerenderStaff(main, 'products', selectedStoreId)
+      try {
+        const hardDeleted = await deleteProductAsAdmin(btn.dataset.delProduct)
+        showToast(hardDeleted ? t('admin.productDeleted') : t('admin.productDeactivated'))
+        rerenderStaff(main, 'products', selectedStoreId)
+      } catch (err) {
+        showToast(err.message ?? t('admin.productDeleteError'))
+      }
     })
   })
 }
