@@ -691,7 +691,7 @@ export const STRINGS = {
     "saveNeighborhood": "Salvar bairro",
     "moderatorsSubtitle": "Promova usuários, defina o bairro e configure as permissões de cada moderador",
     "promoteUser": "Promover usuário",
-    "promoteUserHint": "O usuário precisa já ter conta como cliente ou lojista. Após a promoção, ele acessa em <a href=\"#/moderador/entrar\">#/moderador/entrar</a> e vê apenas lojas do bairro atribuído.",
+    "promoteUserHint": "O usuário precisa já ter conta como cliente ou lojista. Escolha <strong>Todos os bairros</strong> para moderar a plataforma inteira, ou um bairro específico. Após a promoção, ele acessa em <a href=\"#/moderador/entrar\">#/moderador/entrar</a>.",
     "userEmail": "Email do usuário",
     "activeModerators": "Moderadores ativos",
     "moderatorsRegistered": "{count} cadastrado(s)",

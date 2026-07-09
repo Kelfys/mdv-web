@@ -1567,10 +1567,14 @@ export async function fetchUserByEmail(email) {
   return data
 }
 
+export function normalizeModeratorNeighborhoodId(neighborhoodId) {
+  if (neighborhoodId === 'all' || neighborhoodId === '' || neighborhoodId == null) return null
+  return neighborhoodId
+}
+
 export async function promoteUserToModerator(email, neighborhoodId, permissions = {}) {
   const trimmed = email.trim()
   if (!trimmed) throw new Error(t('errors.informUserEmail'))
-  if (!neighborhoodId) throw new Error(t('errors.selectModeratorNeighborhood'))
 
   const user = await fetchUserByEmail(trimmed)
   if (!user) throw new Error(t('errors.userNotFound'))
@@ -1582,7 +1586,7 @@ export async function promoteUserToModerator(email, neighborhoodId, permissions 
     .from('users')
     .update({
       role: 'moderator',
-      neighborhood_id: neighborhoodId,
+      neighborhood_id: normalizeModeratorNeighborhoodId(neighborhoodId),
       can_approve_plan_changes: Boolean(permissions.canApprovePlanChanges),
     })
     .eq('id', user.id)
@@ -1604,8 +1608,7 @@ export async function updateModeratorPermissions(moderatorId, { neighborhoodId, 
 
   const payload = {}
   if (neighborhoodId !== undefined) {
-    if (!neighborhoodId) throw new Error(t('errors.selectModeratorNeighborhood'))
-    payload.neighborhood_id = neighborhoodId
+    payload.neighborhood_id = normalizeModeratorNeighborhoodId(neighborhoodId)
   }
   if (canApprovePlanChanges !== undefined) {
     payload.can_approve_plan_changes = Boolean(canApprovePlanChanges)

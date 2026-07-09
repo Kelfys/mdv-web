@@ -67,13 +67,21 @@ async function guardStaff(main, panel = 'admin') {
 function staffScopeSubtitle(user, panel) {
   if (panel !== 'moderator') return ''
   const name = user.neighborhood?.name
-  return name ? t('admin.regionScope', { name: formatNeighborhoodLabel(user.neighborhood) }) : t('moderator.regionNotAssigned')
+  return name ? t('admin.regionScope', { name: formatNeighborhoodLabel(user.neighborhood) }) : t('admin.allNeighborhoods')
 }
 
 function renderNeighborhoodOptions(neighborhoods, selectedId = '') {
   return neighborhoods.map((n) => `
     <option value="${n.id}" ${selectedId === n.id ? 'selected' : ''}>${escapeHtml(formatNeighborhoodLabel(n))}</option>
   `).join('')
+}
+
+function renderModeratorScopeOptions(neighborhoods, selectedId = null) {
+  const allSelected = selectedId == null || selectedId === '' || selectedId === 'all'
+  return `
+    <option value="all" ${allSelected ? 'selected' : ''}>${escapeHtml(t('admin.allNeighborhoods'))}</option>
+    ${renderNeighborhoodOptions(neighborhoods, allSelected ? '' : selectedId)}
+  `
 }
 
 function renderModeratorPermissionBadges(moderator) {
@@ -2254,8 +2262,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
             <div class="form-group">
               <label class="form-label" for="promote-moderator-neighborhood">${t('labels.neighborhoodRegion')}</label>
               <select class="form-input" id="promote-moderator-neighborhood" name="neighborhood_id" required>
-                <option value="">${t('app.selectPlaceholder')}</option>
-                ${renderNeighborhoodOptions(neighborhoods.filter((n) => n.active))}
+                ${renderModeratorScopeOptions(neighborhoods.filter((n) => n.active))}
               </select>
             </div>
             <div class="form-group admin-form-grid__full">
@@ -2876,7 +2883,7 @@ function renderModeratorTableRows(moderators, neighborhoods = []) {
     >
       <td><strong>${escapeHtml(m.name)}</strong></td>
       <td>${escapeHtml(m.email)}</td>
-      <td>${m.neighborhood ? escapeHtml(formatNeighborhoodLabel(m.neighborhood)) : `<span class="admin-permission-badge admin-permission-badge--muted">${t('admin.noNeighborhoodAssigned')}</span>`}</td>
+      <td>${m.neighborhood ? escapeHtml(formatNeighborhoodLabel(m.neighborhood)) : `<span class="admin-permission-badge admin-permission-badge--sent">${t('admin.allNeighborhoods')}</span>`}</td>
       <td><div class="admin-permission-badges">${renderModeratorPermissionBadges(m)}</div></td>
       <td>${formatDate(m.created_at)}</td>
       <td style="white-space:nowrap">
@@ -2894,8 +2901,7 @@ function renderModeratorTableRows(moderators, neighborhoods = []) {
             <div class="form-group">
               <label class="form-label">${t('labels.neighborhoodRegion')}</label>
               <select class="form-input" name="neighborhood_id" required>
-                <option value="">${t('app.selectPlaceholder')}</option>
-                ${renderNeighborhoodOptions(neighborhoods.filter((n) => n.active), m.neighborhood_id)}
+                ${renderModeratorScopeOptions(neighborhoods.filter((n) => n.active), m.neighborhood_id)}
               </select>
             </div>
             <div class="form-group admin-form-grid__full">
