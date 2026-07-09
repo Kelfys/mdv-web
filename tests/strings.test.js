@@ -11,6 +11,8 @@ describe('strings', () => {
   it('t resolves dotted keys', () => {
     expect(t('nav.home')).toBe('Início')
     expect(t('app.name')).toBe('MaredeVendas')
+    expect(t('engagement.storeFavorites')).toBe('favoritos')
+    expect(t('store.engagementTitle')).toBe('Popularidade')
   })
 
   it('t returns key when missing', () => {

@@ -7,6 +7,7 @@ import {
   updatePassword, fetchMerchantOrdersAnalytics, fetchStoreViewStats,
   fetchReviewsByStore, fetchStoreAds, createStoreAd, updateOrderStatus,
   fetchProductPriceHistory, countUnreadMerchantOrders, subscribeToStoreOrders,
+  fetchStoreEngagementStats,
   createPlanChangeRequest, fetchStorePendingPlanChangeRequest,
 } from '../api.js'
 import { getUser, loadUser, setMerchantNewOrdersCount } from '../state.js'
@@ -35,6 +36,7 @@ import {
 } from '../uploads.js'
 import { MERCHANT_PANEL, getMerchantMenuItem, merchantHref } from '../merchant-nav.js'
 import { renderOrdersChart, bindOrdersChart } from '../order-charts.js'
+import { renderEngagementStats } from '../ui.js'
 import { bindPaginatedSortableList } from '../list-utils.js'
 import { routeHref, render } from '../router.js'
 import {
@@ -165,10 +167,12 @@ function storeStatusBanner(store) {
     </div>`
 }
 
-function merchantMetrics({ products, orders, store, viewStats }) {
+function merchantMetrics({ products, orders, store, viewStats, engagementStats }) {
   const activeProducts = products.filter((p) => p.active).length
   const revenue = orders.reduce((sum, o) => sum + Number(o.total || 0), 0)
   const plan = getPlanById(store.plan_id)
+  const favoritesCount = engagementStats?.favoritesCount ?? 0
+  const likesCount = engagementStats?.likesCount ?? 0
 
   return `
     <div class="metrics admin-metrics merchant-metrics">
@@ -188,11 +192,31 @@ function merchantMetrics({ products, orders, store, viewStats }) {
         <div class="metric-card__value">${viewStats?.total ?? 0}</div>
         <div class="metric-card__label">${t('merchant.views')}${viewStats?.week ? t('merchant.viewsThisWeek', { count: viewStats.week }) : ''}</div>
       </div>
+      <div class="metric-card">
+        <div class="metric-card__value">${favoritesCount}</div>
+        <div class="metric-card__label">${t('merchant.storeFavorites')}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card__value">${likesCount}</div>
+        <div class="metric-card__label">${t('merchant.storeLikes')}</div>
+      </div>
       <a href="${merchantHref('planos')}" class="metric-card metric-card--link">
         <div class="metric-card__value">${escapeHtml(plan.name)}</div>
         <div class="metric-card__label">${t('merchant.planPriceLabel', { price: formatPlanPrice(plan.priceMonthly) })}</div>
       </a>
     </div>`
+}
+
+function renderMerchantEngagementPreview(store, engagementStats) {
+  return `
+    <section class="admin-section merchant-engagement-preview">
+      <div class="admin-section__head">
+        <h2>${t('store.engagementTitle')}</h2>
+        <a href="${routeHref(`/loja/${store.slug}`)}" class="btn btn-ghost btn-sm">${t('merchant.viewPublicStore')}</a>
+      </div>
+      <p class="form-hint">${t('store.engagementHint')}</p>
+      ${renderEngagementStats({ ...engagementStats, mode: 'store' })}
+    </section>`
 }
 
 function merchantQuickActions(store) {
@@ -1232,7 +1256,7 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
 
   if (tab === 'overview') {
     const [
-      products, orders, orderAnalytics, viewStats, reviews, ads,
+      products, orders, orderAnalytics, viewStats, reviews, ads, engagementStats,
     ] = await Promise.all([
       fetchMerchantProducts(store.id),
       fetchOrdersByStore(store.id),
@@ -1240,6 +1264,7 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
       fetchStoreViewStats(store.id),
       fetchReviewsByStore(store.id),
       fetchStoreAds(store.id),
+      fetchStoreEngagementStats(store.id),
     ])
 
     const chartSeries = orderAnalytics.timeline
@@ -1248,7 +1273,8 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
       store.name,
       `
         ${storeStatusBanner(store)}
-        ${merchantMetrics({ products, orders, store, viewStats })}
+        ${merchantMetrics({ products, orders, store, viewStats, engagementStats })}
+        ${renderMerchantEngagementPreview(store, engagementStats)}
         ${merchantQuickActions(store)}
         ${merchantOnboardingChecklist(store, products)}
         ${renderOrdersChart(chartSeries, { period: '7d', metric: 'orders', compact: true, chartId: 'merchant-overview-chart' })}

@@ -401,23 +401,57 @@ export function initHeader() {
   }
 }
 
+function formatEngagementCount(count) {
+  const safe = Math.max(0, Number(count) || 0)
+  return new Intl.NumberFormat('pt-BR').format(safe)
+}
+
+function engagementStatLabel(mode, type, count) {
+  const isOne = count === 1
+  if (mode === 'store') {
+    if (type === 'favorites') {
+      return isOne ? t('engagement.storeFavoriteOne') : t('engagement.storeFavorites')
+    }
+    return isOne ? t('engagement.storeLikeOne') : t('engagement.storeLikes')
+  }
+  if (type === 'favorites') {
+    return isOne ? t('engagement.customerFavoriteOne') : t('engagement.customerFavorites')
+  }
+  return isOne ? t('engagement.customerLikeOne') : t('engagement.customerLikes')
+}
+
+function renderEngagementStatItem({ icon, count, label, type }) {
+  const isEmpty = count <= 0
+  return `
+    <div class="profile-stats__item ${isEmpty ? 'profile-stats__item--empty' : ''}" data-stat="${type}">
+      <span class="profile-stats__icon" aria-hidden="true">${icon}</span>
+      <div class="profile-stats__copy">
+        <span class="profile-stats__value">${formatEngagementCount(count)}</span>
+        <span class="profile-stats__label">${escapeHtml(label)}</span>
+      </div>
+    </div>`
+}
+
 /** Favoritos + curtidas em produtos (perfil da loja ou do cliente). */
 export function renderEngagementStats({ favoritesCount = 0, likesCount = 0, mode = 'store' } = {}) {
-  const favLabel = mode === 'store' ? t('engagement.storeFavorites') : t('engagement.customerFavorites')
-  const likesLabel = mode === 'store' ? t('engagement.storeLikes') : t('engagement.customerLikes')
+  const favorites = Math.max(0, Number(favoritesCount) || 0)
+  const likes = Math.max(0, Number(likesCount) || 0)
+  const modifier = mode === 'store' ? 'profile-stats--store' : 'profile-stats--customer'
 
   return `
-    <div class="profile-stats" aria-label="${escapeHtml(t('engagement.statsAria'))}">
-      <div class="profile-stats__item">
-        <span class="profile-stats__icon" aria-hidden="true">❤️</span>
-        <span class="profile-stats__value">${favoritesCount}</span>
-        <span class="profile-stats__label">${escapeHtml(favLabel)}</span>
-      </div>
-      <div class="profile-stats__item">
-        <span class="profile-stats__icon" aria-hidden="true">👍</span>
-        <span class="profile-stats__value">${likesCount}</span>
-        <span class="profile-stats__label">${escapeHtml(likesLabel)}</span>
-      </div>
+    <div class="profile-stats ${modifier}" aria-label="${escapeHtml(t('engagement.statsAria'))}">
+      ${renderEngagementStatItem({
+        icon: '❤️',
+        count: favorites,
+        label: engagementStatLabel(mode, 'favorites', favorites),
+        type: 'favorites',
+      })}
+      ${renderEngagementStatItem({
+        icon: '👍',
+        count: likes,
+        label: engagementStatLabel(mode, 'likes', likes),
+        type: 'likes',
+      })}
     </div>`
 }
 

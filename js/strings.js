@@ -186,7 +186,21 @@ export const STRINGS = {
     "customersOnlyFavorite": "Apenas clientes podem favoritar lojas.",
     "commentsLoadError": "Erro ao carregar comentários.",
     "likeError": "Não foi possível curtir este produto.",
-    "commentError": "Não foi possível publicar o comentário."
+    "commentError": "Não foi possível publicar o comentário.",
+    "engagementTitle": "Popularidade",
+    "engagementHint": "Clientes que favoritaram a loja e curtidas nos produtos do catálogo."
+  },
+  "engagement": {
+    "statsAria": "Estatísticas de engajamento",
+    "profileActivity": "Sua atividade",
+    "storeFavoriteOne": "favorito",
+    "storeFavorites": "favoritos",
+    "storeLikeOne": "curtida nos produtos",
+    "storeLikes": "curtidas nos produtos",
+    "customerFavoriteOne": "loja favorita",
+    "customerFavorites": "lojas favoritas",
+    "customerLikeOne": "produto curtido",
+    "customerLikes": "produtos curtidos"
   },
   "cart": {
     "title": "Carrinho",
@@ -380,6 +394,8 @@ export const STRINGS = {
     "orderVolume": "Volume de pedidos",
     "views": "Visualizações",
     "viewsThisWeek": " · {count} na semana",
+    "storeFavorites": "Favoritos da loja",
+    "storeLikes": "Curtidas nos produtos",
     "viewPlansCta": "Ver planos",
     "productsTitle": "Produtos",
     "manageCatalog": "Gerenciar catálogo",

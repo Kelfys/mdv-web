@@ -105,11 +105,17 @@ export async function renderStorePage(main, { slug }) {
             ${store.logo
               ? `<img class="store-profile__logo" src="${escapeHtml(store.logo)}" alt="${escapeHtml(store.name)}" />`
               : `<div class="store-profile__logo-ph" style="background:${theme.hex}">🏪</div>`}
-            <div>
-              <h1 style="font-size:1.75rem;font-weight:700">${escapeHtml(store.name)}</h1>
-              ${store.category ? `<span class="store-card__category" style="background:${theme.hex}">${escapeHtml(store.category.name)}</span>` : ''}
-              ${avgRating > 0 ? `<div class="stars" style="margin-top:0.25rem">★ ${avgRating.toFixed(1)} (${reviews.length})</div>` : ''}
-              ${renderEngagementStats({ ...engagementStats, mode: 'store' })}
+            <div class="store-profile__details">
+              <h1 class="store-profile__name">${escapeHtml(store.name)}</h1>
+              <div class="store-profile__meta">
+                ${store.category ? `<span class="store-card__category" style="background:${theme.hex}">${escapeHtml(store.category.name)}</span>` : ''}
+                ${avgRating > 0 ? `<span class="store-profile__rating stars">★ ${avgRating.toFixed(1)} (${reviews.length})</span>` : ''}
+              </div>
+              <section class="store-profile__engagement" aria-labelledby="store-engagement-title">
+                <p class="store-profile__engagement-title" id="store-engagement-title">${t('store.engagementTitle')}</p>
+                ${renderEngagementStats({ ...engagementStats, mode: 'store' })}
+                <p class="store-profile__engagement-hint">${t('store.engagementHint')}</p>
+              </section>
             </div>
           </div>
           <div class="store-profile__actions">
