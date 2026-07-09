@@ -452,7 +452,7 @@ export function renderStoreCard(store, options = {}) {
           <a href="#/loja/${escapeHtml(store.slug)}" class="btn btn-block" style="background:${theme.hex};color:white">
             ${t('home.viewStoreCta')}
           </a>
-          ${renderReportButton({ type: 'store', id: store.id, name: store.name, user, store })}
+          ${renderReportButton({ type: 'store', id: store.id, name: store.name, user, store, variant: 'link' })}
         </div>
       </div>
     </article>
@@ -514,13 +514,24 @@ export function renderFeedProductCard(product, options = {}) {
     <article class="feed-product-card ${oos ? 'out-of-stock' : ''}">
       <div class="feed-product-card__badge ${badgeClass}">${badgeLabel}</div>
       <div class="feed-product-card__inner">
-        <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="feed-product-card__media">
-          ${product.image
-            ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" />`
-            : `<div class="feed-product-card__placeholder">${getCatalogItemIcon(product)}</div>`}
-          ${renderUsedProductTag(product, 'feed-product-card__used-tag')}
-          ${oos ? `<span class="product-card__oos">${t('store.unavailable')}</span>` : ''}
-        </a>
+        <div class="feed-product-card__media">
+          <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="feed-product-card__media-link">
+            ${product.image
+              ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" />`
+              : `<div class="feed-product-card__placeholder">${getCatalogItemIcon(product)}</div>`}
+            ${renderUsedProductTag(product, 'feed-product-card__used-tag')}
+            ${oos ? `<span class="product-card__oos">${t('store.unavailable')}</span>` : ''}
+          </a>
+          ${renderReportButton({
+            type: 'product',
+            id: product.id,
+            name: product.name,
+            user,
+            storeOwnerId,
+            product,
+            variant: 'overlay',
+          })}
+        </div>
         <div class="feed-product-card__body">
           <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="feed-product-card__name">${escapeHtml(product.name)}</a>
           ${store ? `<p class="feed-product-card__store">🏪 ${escapeHtml(store.name)}</p>` : ''}
@@ -534,14 +545,6 @@ export function renderFeedProductCard(product, options = {}) {
               <button type="button" class="btn btn-primary btn-sm" data-feed-add-product="${product.id}" ${oos ? 'disabled' : ''}>
                 ${t('home.addToCartShort')}
               </button>
-              ${renderReportButton({
-                type: 'product',
-                id: product.id,
-                name: product.name,
-                user,
-                storeOwnerId,
-                product,
-              })}
             </div>
           </div>
         </div>
@@ -576,6 +579,15 @@ export function renderProductCard(product, options = {}) {
         ${oos ? `<span class="product-card__oos">${t('store.unavailable')}</span>` : ''}
         <span class="product-card__type">${escapeHtml(typeLabel)}</span>
         ${renderUsedProductTag(product)}
+        ${renderReportButton({
+          type: 'product',
+          id: product.id,
+          name: product.name,
+          user,
+          storeOwnerId,
+          product,
+          variant: 'overlay',
+        })}
       </div>
       <div class="product-card__body">
         <h3 class="product-card__name">${escapeHtml(product.name)}</h3>
@@ -642,14 +654,6 @@ export function renderProductCard(product, options = {}) {
           <span class="product-card__price">${formatCurrency(product.price)}</span>
           <div class="product-card__footer-actions">
             <button type="button" class="btn btn-primary btn-sm" data-add-product="${product.id}" ${oos ? 'disabled' : ''}>${t('store.addProduct')}</button>
-            ${renderReportButton({
-              type: 'product',
-              id: product.id,
-              name: product.name,
-              user,
-              storeOwnerId,
-              product,
-            })}
           </div>
         </div>
       </div>

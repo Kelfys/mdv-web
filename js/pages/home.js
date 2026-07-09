@@ -12,6 +12,9 @@ import { normalizeStorePaymentMethods } from '../payment.js'
 import { getSelectedNeighborhoodId, setSelectedNeighborhoodId, formatNeighborhoodLabel } from '../neighborhood.js'
 import { t } from '../strings.js'
 import { bindHomeFiltersScroll } from '../home-filters-scroll.js'
+import { bindReportTriggers, getReportLoginPath } from '../reporting.js'
+import { navigate } from '../router.js'
+import { showToast } from '../utils.js'
 
 const FEED_PRODUCT_LIMIT = 12
 const FEED_ADS_LIMIT = 12
@@ -84,9 +87,14 @@ export async function renderHome(main) {
   }
 
   function renderFeedItem(item) {
-    if (item.kind === 'store') return renderStoreCard(item.store, { showPlanBadge: true })
+    const user = getUser()
+    if (item.kind === 'store') return renderStoreCard(item.store, { showPlanBadge: true, user })
     if (item.kind === 'ad') return renderFeedAdCard(item.ad)
-    return renderFeedProductCard(item.product, { badge: item.badge })
+    return renderFeedProductCard(item.product, {
+      badge: item.badge,
+      user,
+      storeOwnerId: item.product?.store?.owner_id,
+    })
   }
 
   function wrapFeedItem(item) {
@@ -317,6 +325,16 @@ export async function renderHome(main) {
 
     bindFeedEvents()
     bindHomeFiltersScroll() // auto-hide bairros/categorias ao rolar — ver home-filters-scroll.js
+
+    const currentUser = getUser()
+    bindReportTriggers(main, {
+      user: currentUser,
+      redirectPath: '/',
+      onRequireAuth: () => {
+        navigate(getReportLoginPath(currentUser, '/'))
+        showToast(t('report.loginRequired'))
+      },
+    })
   }
 
   async function load() {

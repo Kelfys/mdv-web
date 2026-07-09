@@ -17,7 +17,7 @@ import {
   fetchPendingStoreAds, approveStoreAd, rejectStoreAd,
   fetchNeighborhoods, createNeighborhood, updateNeighborhood, deleteNeighborhood,
 } from '../api.js'
-import { REPORT_REASONS } from '../reporting.js'
+import { getReportReasonLabel } from '../report-reasons.js'
 import { getStaffNeighborhoodScope, formatNeighborhoodLabel } from '../neighborhood.js'
 import { getUser, loadUser, setAdminPendingCount } from '../state.js'
 import { navigate } from '../router.js'
@@ -119,11 +119,6 @@ async function loadStaffApprovalQueue(user, panel = 'admin') {
     pendingAds,
     pendingTotal: pendingStores.length + planRequests.length + pendingReports.length + pendingAds.length,
   }
-}
-
-function getReportReasonLabel(reason) {
-  const match = REPORT_REASONS.find((item) => item.id === reason)
-  return match ? match.label() : reason
 }
 
 function renderContentReportCards(reports) {

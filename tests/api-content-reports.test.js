@@ -94,12 +94,17 @@ describe('content reports', () => {
 
   it('rejects reporting own store', async () => {
     const { submitStoreReport } = await loadApi(createMockSupabase({ storeOwnerId: 'user-1' }))
-    await expect(submitStoreReport('user-1', 'store-1', 'spam')).rejects.toThrow(/própria loja/i)
+    await expect(submitStoreReport('user-1', 'store-1', 'spam', 'comentário')).rejects.toThrow(/própria loja/i)
   })
 
   it('rejects reporting own product', async () => {
     const { submitProductReport } = await loadApi(createMockSupabase({ productOwnerId: 'user-1' }))
-    await expect(submitProductReport('user-1', 'product-1', 'spam')).rejects.toThrow(/própria loja/i)
+    await expect(submitProductReport('user-1', 'product-1', 'spam', 'comentário')).rejects.toThrow(/própria loja/i)
+  })
+
+  it('requires a report comment', async () => {
+    const { submitProductReport } = await loadApi(createMockSupabase())
+    await expect(submitProductReport('user-1', 'product-1', 'spam', '   ')).rejects.toThrow(/comentário/i)
   })
 
   it('requires a valid report reason', async () => {
@@ -109,7 +114,7 @@ describe('content reports', () => {
 
   it('allows merchants to report another store', async () => {
     const { submitStoreReport } = await loadApi(createMockSupabase({ storeOwnerId: 'other-owner' }))
-    await expect(submitStoreReport('merchant-1', 'store-1', 'spam')).resolves.toMatchObject({
+    await expect(submitStoreReport('merchant-1', 'store-1', 'spam', 'loja suspeita')).resolves.toMatchObject({
       id: 'report-1',
       target_type: 'store',
     })
@@ -140,7 +145,7 @@ describe('content reports', () => {
   it('submits a store report with target_type store and no product_id', async () => {
     const mock = createMockSupabase()
     const { submitStoreReport } = await loadApi(mock)
-    await expect(submitStoreReport('user-1', 'store-1', 'spam')).resolves.toMatchObject({
+    await expect(submitStoreReport('user-1', 'store-1', 'spam', 'conteúdo inadequado')).resolves.toMatchObject({
       target_type: 'store',
       product_id: null,
     })
@@ -150,6 +155,7 @@ describe('content reports', () => {
       target_type: 'store',
       store_id: 'store-1',
       reason: 'spam',
+      details: 'conteúdo inadequado',
     }))
     expect(mock.reportInsert.mock.calls[0][0]).not.toHaveProperty('product_id')
   })

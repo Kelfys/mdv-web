@@ -17,6 +17,7 @@ import { getCustomerTab } from '../customer-nav.js'
 import { normalizeStorePaymentMethods, getPaymentMethodLabel } from '../payment.js'
 import { t, deliveryPeriodLabel, orderStatusLabel } from '../strings.js'
 import { bindPasswordToggles } from '../password-field.js'
+import { bindReportTriggers, getReportLoginPath } from '../reporting.js'
 
 const DELIVERY_LABELS = {
   manha: deliveryPeriodLabel('manha'),
@@ -170,7 +171,7 @@ function renderOverview({ user, favorites, likedProducts, orders, cart, engageme
           <h2>${t('customer.recentFavorites')}</h2>
           ${favorites.length > 2 ? `<button type="button" class="btn btn-ghost btn-sm" data-customer-tab="favorites">${t('customer.viewAllFeminine')}</button>` : ''}
         </div>
-        <div class="feed customer-feed-preview">${previewStores.map((store) => renderStoreCard(store)).join('')}</div>
+        <div class="feed customer-feed-preview">${previewStores.map((store) => renderStoreCard(store, { user })).join('')}</div>
       </section>
     ` : ''}
     ${previewLiked.length ? `
@@ -179,7 +180,11 @@ function renderOverview({ user, favorites, likedProducts, orders, cart, engageme
           <h2>${t('customer.likedProductsSection')}</h2>
           ${likedProducts.length > 2 ? `<button type="button" class="btn btn-ghost btn-sm" data-customer-tab="liked">${t('customer.viewAllMasculine')}</button>` : ''}
         </div>
-        <div class="feed customer-feed-preview">${previewLiked.map((product) => renderFeedProductCard(product, { badge: 'liked' })).join('')}</div>
+        <div class="feed customer-feed-preview">${previewLiked.map((product) => renderFeedProductCard(product, {
+          badge: 'liked',
+          user,
+          storeOwnerId: product?.store?.owner_id,
+        })).join('')}</div>
       </section>
     ` : ''}
     ${!previewStores.length && !previewLiked.length ? customerEmpty(
@@ -191,7 +196,7 @@ function renderOverview({ user, favorites, likedProducts, orders, cart, engageme
   `
 }
 
-function renderFavoritesTab(stores) {
+function renderFavoritesTab(stores, user) {
   if (!stores.length) {
     return customerEmpty(
       '❤️',
@@ -200,10 +205,10 @@ function renderFavoritesTab(stores) {
       `<a href="${routeHref('/')}" class="btn btn-primary">${t('customer.exploreStores')}</a>`,
     )
   }
-  return `<div class="feed">${stores.map((store) => renderStoreCard(store)).join('')}</div>`
+  return `<div class="feed">${stores.map((store) => renderStoreCard(store, { user })).join('')}</div>`
 }
 
-function renderLikedTab(products) {
+function renderLikedTab(products, user) {
   if (!products.length) {
     return customerEmpty(
       '👍',
@@ -212,7 +217,11 @@ function renderLikedTab(products) {
       `<a href="${routeHref('/')}" class="btn btn-primary">${t('customer.viewProducts')}</a>`,
     )
   }
-  return `<div class="feed">${products.map((product) => renderFeedProductCard(product, { badge: 'liked' })).join('')}</div>`
+  return `<div class="feed">${products.map((product) => renderFeedProductCard(product, {
+    badge: 'liked',
+    user,
+    storeOwnerId: product?.store?.owner_id,
+  })).join('')}</div>`
 }
 
 function renderOrdersTab(orders) {
@@ -364,9 +373,9 @@ export async function renderFavorites(main) {
 
     switch (activeTab) {
       case 'favorites':
-        return renderFavoritesTab(favorites)
+        return renderFavoritesTab(favorites, user)
       case 'liked':
-        return renderLikedTab(likedProducts)
+        return renderLikedTab(likedProducts, user)
       case 'orders':
         return renderOrdersTab(orders)
       case 'profile':
@@ -426,6 +435,14 @@ export async function renderFavorites(main) {
 
     main.querySelector('[data-open-cart]')?.addEventListener('click', openCart)
     bindProductCartEvents()
+    bindReportTriggers(main, {
+      user,
+      redirectPath: '/favoritos',
+      onRequireAuth: () => {
+        navigate(getReportLoginPath(user, '/favoritos'))
+        showToast(t('report.loginRequired'))
+      },
+    })
     bindPasswordToggles(main)
 
     const profileForm = main.querySelector('#customer-profile-form')

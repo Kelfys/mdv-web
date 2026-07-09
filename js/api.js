@@ -21,6 +21,7 @@
  */
 import { requireClient, isSupabaseConfigured, getSupabase } from './db.js'
 import { generateSlug, sanitizeSearch, getProductEngagementWeight, computeProductLikesCount } from './utils.js'
+import { REPORT_REASON_IDS } from './report-reasons.js'
 import { t } from './strings.js'
 import { DEFAULT_THEME_COLOR, getProductionSiteUrl, isProductionSiteHost } from './config.js'
 import { STORAGE_BUCKETS, uploadImage } from './uploads.js'
@@ -1026,8 +1027,6 @@ export async function adjustProductLikes(productId, delta) {
 
 // --- Content reports ---
 
-const REPORT_REASON_IDS = new Set(['inappropriate', 'misleading', 'spam', 'offensive', 'other'])
-
 function isMissingReportTableError(error) {
   const msg = error?.message ?? ''
   const code = error?.code ?? ''
@@ -1046,8 +1045,9 @@ function normalizeReportReason(reason) {
 
 function normalizeReportDetails(details) {
   const trimmed = String(details ?? '').trim()
+  if (!trimmed) throw new Error(t('errors.reportDetailsRequired'))
   if (trimmed.length > 500) throw new Error(t('errors.reportDetailsTooLong'))
-  return trimmed || null
+  return trimmed
 }
 
 function mapReportError(error) {
