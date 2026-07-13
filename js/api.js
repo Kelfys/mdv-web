@@ -2037,6 +2037,108 @@ export async function demoteModerator(userId) {
   return data
 }
 
+/** Tamanho padrão de página nos painéis admin (listas pesadas). */
+export const ADMIN_LIST_PAGE_SIZE = 20
+
+/**
+ * Lista paginada de lojas para o painel admin/moderador.
+ * Evita carregar centenas de lojas de uma vez no DOM.
+ */
+export async function fetchStoresAdminPage({
+  neighborhoodId = null,
+  search = '',
+  status = '',
+  page = 1,
+  pageSize = ADMIN_LIST_PAGE_SIZE,
+} = {}) {
+  const client = await requireClient()
+  const safePage = Math.max(1, Number(page) || 1)
+  const safeSize = Math.min(100, Math.max(1, Number(pageSize) || ADMIN_LIST_PAGE_SIZE))
+  const from = (safePage - 1) * safeSize
+  const to = from + safeSize - 1
+
+  let query = client
+    .from('stores')
+    .select(
+      '*, category:categories(*), neighborhood:neighborhoods(id, name, slug, city, state), owner:users(id, name, email)',
+      { count: 'exact' },
+    )
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (neighborhoodId) query = query.eq('neighborhood_id', neighborhoodId)
+  if (status && status !== 'all') query = query.eq('status', status)
+
+  const term = sanitizeSearch(search)
+  if (term) {
+    query = query.or(`name.ilike.%${term}%,slug.ilike.%${term}%,city.ilike.%${term}%,whatsapp.ilike.%${term}%`)
+  }
+
+  const { data, error, count } = await query
+  if (error) throw error
+  const total = count ?? 0
+  return {
+    data: data ?? [],
+    total,
+    page: safePage,
+    pageSize: safeSize,
+    totalPages: Math.max(1, Math.ceil(total / safeSize) || 1),
+  }
+}
+
+/** Contagens por status (chips do topo da lista de lojas). */
+export async function fetchStoreStatusCounts(neighborhoodId = null) {
+  const client = await requireClient()
+  async function countFor(status = null) {
+    let q = client.from('stores').select('id', { count: 'exact', head: true })
+    if (neighborhoodId) q = q.eq('neighborhood_id', neighborhoodId)
+    if (status) q = q.eq('status', status)
+    const { count, error } = await q
+    if (error) throw error
+    return count ?? 0
+  }
+  const [total, approved, pending, blocked] = await Promise.all([
+    countFor(),
+    countFor('approved'),
+    countFor('pending'),
+    countFor('blocked'),
+  ])
+  return { total, approved, pending, blocked }
+}
+
+/**
+ * Lista leve de lojas (sidebar de produtos, selects).
+ * Inclui contagem de produtos via embed products(count).
+ */
+export async function fetchStoresAdminLite(neighborhoodId = null) {
+  const client = await requireClient()
+  let query = client
+    .from('stores')
+    .select('id, name, slug, status, plan_id, city, state, neighborhood_id, category_id, neighborhood:neighborhoods(id, name), products(count)')
+    .order('name', { ascending: true })
+  if (neighborhoodId) query = query.eq('neighborhood_id', neighborhoodId)
+  const { data, error } = await query
+  if (error) throw error
+  return (data ?? []).map((store) => ({
+    ...store,
+    product_count: Number(store.products?.[0]?.count ?? 0),
+  }))
+}
+
+/** Uma loja completa para o painel (edição / produtos). */
+export async function fetchStoreByIdAdmin(storeId) {
+  const client = await requireClient()
+  if (!storeId) return null
+  const { data, error } = await client
+    .from('stores')
+    .select('*, category:categories(*), neighborhood:neighborhoods(id, name, slug, city, state), owner:users(id, name, email)')
+    .eq('id', storeId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/** @deprecated Prefer fetchStoresAdminPage / fetchStoresAdminLite para listas grandes. */
 export async function fetchAllStoresAdmin(neighborhoodId = null) {
   const client = await requireClient()
   let query = client
@@ -2049,17 +2151,43 @@ export async function fetchAllStoresAdmin(neighborhoodId = null) {
   return data ?? []
 }
 
-export async function fetchAdminProducts(storeId = null) {
+/**
+ * Produtos do painel admin.
+ * Com storeId: todos da loja (planos limitam o catálogo).
+ * Sem storeId: página global limitada (evita baixar o marketplace inteiro).
+ */
+export async function fetchAdminProducts(storeId = null, { page = 1, pageSize = ADMIN_LIST_PAGE_SIZE } = {}) {
   const client = await requireClient()
-  let query = client
+  const safePage = Math.max(1, Number(page) || 1)
+  const safeSize = Math.min(100, Math.max(1, Number(pageSize) || ADMIN_LIST_PAGE_SIZE))
+
+  if (storeId) {
+    const { data, error } = await client
+      .from('products')
+      .select('*, category:categories(*), store:stores(id, name, slug, plan_id, status)')
+      .eq('store_id', storeId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return attachProductEngagement(data ?? [])
+  }
+
+  const from = (safePage - 1) * safeSize
+  const to = from + safeSize - 1
+  const { data, error, count } = await client
     .from('products')
-    .select('*, category:categories(*), store:stores(id, name, slug)')
+    .select('*, category:categories(*), store:stores(id, name, slug, plan_id, status)', { count: 'exact' })
     .order('created_at', { ascending: false })
-    .limit(100)
-  if (storeId) query = query.eq('store_id', storeId)
-  const { data, error } = await query
+    .range(from, to)
   if (error) throw error
-  return attachProductEngagement(data ?? [])
+  const items = await attachProductEngagement(data ?? [])
+  const total = count ?? items.length
+  return {
+    data: items,
+    total,
+    page: safePage,
+    pageSize: safeSize,
+    totalPages: Math.max(1, Math.ceil(total / safeSize) || 1),
+  }
 }
 
 export async function createStoreAsAdmin(form) {

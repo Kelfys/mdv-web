@@ -971,6 +971,8 @@ export const STRINGS = {
     "moderatorPlural": "moderadores",
     "itemSingular": "item",
     "itemPlural": "itens",
+    "storeSingular": "loja",
+    "storePlural": "lojas",
     "orderSingular": "pedido",
     "orderPlural": "pedidos",
     "rangeOf": "{start}–{end} de {count} {label}"

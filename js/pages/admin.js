@@ -9,7 +9,7 @@ import {
   fetchPendingPlanChangeRequests, approvePlanChangeRequest, rejectPlanChangeRequest,
   updateModeratorPermissions,
   updatePassword, updateEmail, fetchMerchants, fetchModerators, promoteUserToModerator, demoteModerator,
-  fetchAllStoresAdmin,
+  fetchAllStoresAdmin, fetchStoresAdminPage, fetchStoreStatusCounts, fetchStoresAdminLite, fetchStoreByIdAdmin,
   fetchAdminProducts, createStoreAsAdmin, createProduct, updateProduct,
   updateStoreAsAdmin, deleteStoreAsAdmin, deleteProductAsAdmin, fetchCategories,
   createCategory, updateCategory, deleteCategory,
@@ -29,6 +29,10 @@ import {
   escapeHtml, formatDate, formatCurrency, showToast, buildStoreSearchKey, matchesStoreSearch,
   formatDateTimeCsv, buildCsv, downloadTextFile, validateInstagramHandle,
 } from '../utils.js'
+import { renderPaginationHtml, bindPaginatedSortableList } from '../list-utils.js'
+
+const ADMIN_STORES_PAGE_SIZE = 20
+const ADMIN_PRODUCTS_PAGE_SIZE = 15
 import { STORE_THEME_COLORS, stringsEditorHref } from '../config.js'
 import { STAFF_PANELS, staffHref, getStaffMenuItem } from '../staff-nav.js'
 import {
@@ -466,9 +470,17 @@ function adminEmptyState(icon, title, text, actionHtml = '') {
     </div>`
 }
 
-function storeStatusSummary(stores) {
-  const counts = { approved: 0, pending: 0, blocked: 0 }
-  for (const store of stores) counts[store.status] = (counts[store.status] ?? 0) + 1
+function storeStatusSummary(storesOrCounts) {
+  const counts = Array.isArray(storesOrCounts)
+    ? storesOrCounts.reduce((acc, store) => {
+      acc[store.status] = (acc[store.status] ?? 0) + 1
+      return acc
+    }, { approved: 0, pending: 0, blocked: 0 })
+    : {
+      approved: storesOrCounts?.approved ?? 0,
+      pending: storesOrCounts?.pending ?? 0,
+      blocked: storesOrCounts?.blocked ?? 0,
+    }
 
   return `
     <div class="admin-stat-chips">
@@ -476,6 +488,15 @@ function storeStatusSummary(stores) {
       <span class="admin-stat-chip admin-stat-chip--pending">${t('storeStatus.pendingCount', { count: counts.pending })}</span>
       <span class="admin-stat-chip admin-stat-chip--blocked">${t('storeStatus.blockedCount', { count: counts.blocked })}</span>
     </div>`
+}
+
+/** Estado da lista paginada de lojas (servidor). */
+const storesListState = {
+  page: 1,
+  pageSize: ADMIN_STORES_PAGE_SIZE,
+  search: '',
+  status: 'all',
+  neighborhoodId: 'all',
 }
 
 function summarizeRegionalOverview(neighborhoods, stores, moderators) {
@@ -830,41 +851,64 @@ function bindListFilters(main, {
   })
 }
 
-function bindStoreListFilters(main) {
+/**
+ * Filtros + paginação server-side da lista de lojas.
+ * Recarrega a aba em vez de esconder linhas no DOM (escala com dezenas/centenas de lojas).
+ */
+function bindStoreListFilters(main, panel = 'admin') {
   const search = main.querySelector('#admin-stores-search')
   const neighborhoodSelect = main.querySelector('#admin-stores-neighborhood')
-  const chips = main.querySelectorAll('[data-filter]')
-  const rows = main.querySelectorAll('[data-store-row]')
-  let activeFilter = 'all'
-  let activeNeighborhood = 'all'
+  const chips = main.querySelectorAll('.admin-orders-filters [data-filter], .admin-filter-bar [data-filter]')
+  const paginationWrap = main.querySelector('#admin-stores-pagination-wrap')
+  let searchTimer = null
 
-  const apply = () => {
-    const term = search?.value ?? ''
-    rows.forEach((row) => {
-      const matchesSearch = matchesStoreSearch(row.dataset.storeSearch ?? '', term)
-      const matchesStatus = activeFilter === 'all' || row.dataset.storeStatus === activeFilter
-      const matchesNeighborhood = activeNeighborhood === 'all' || row.dataset.storeNeighborhood === activeNeighborhood
-      const visible = matchesSearch && matchesStatus && matchesNeighborhood
-      row.hidden = !visible
-      if (row.dataset.storeId) {
-        const editRow = main.querySelector(`#edit-store-row-${row.dataset.storeId}`)
-        if (editRow && !visible) editRow.hidden = true
-      }
-    })
-  }
-
-  search?.addEventListener('input', apply)
-  neighborhoodSelect?.addEventListener('change', () => {
-    activeNeighborhood = neighborhoodSelect.value
-    apply()
+  if (search) search.value = storesListState.search
+  if (neighborhoodSelect) neighborhoodSelect.value = storesListState.neighborhoodId
+  chips.forEach((chip) => {
+    chip.classList.toggle('active', (chip.dataset.filter || 'all') === storesListState.status)
   })
+
+  const reload = () => rerenderStaff(main, 'stores')
+
+  search?.addEventListener('input', () => {
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => {
+      storesListState.search = search.value.trim()
+      storesListState.page = 1
+      reload()
+    }, 320)
+  })
+
+  neighborhoodSelect?.addEventListener('change', () => {
+    storesListState.neighborhoodId = neighborhoodSelect.value || 'all'
+    storesListState.page = 1
+    reload()
+  })
+
   chips.forEach((chip) => {
     chip.addEventListener('click', () => {
-      activeFilter = chip.dataset.filter
+      storesListState.status = chip.dataset.filter || 'all'
+      storesListState.page = 1
       chips.forEach((c) => c.classList.toggle('active', c === chip))
-      apply()
+      reload()
     })
   })
+
+  paginationWrap?.addEventListener('click', (event) => {
+    if (event.target.closest('[data-stores-page-prev]') && storesListState.page > 1) {
+      storesListState.page -= 1
+      reload()
+      main.querySelector('.admin-stores-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    if (event.target.closest('[data-stores-page-next]')) {
+      storesListState.page += 1
+      reload()
+      main.querySelector('.admin-stores-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  })
+
+  // preserva panel no main para re-render
+  main.dataset.staffPanel = panel
 }
 
 function statusBadge(status) {
@@ -1435,6 +1479,7 @@ function renderStoreProductsPanel({ store, products, categories, readOnly = fals
           </tbody>
         </table>
       </div>
+      <div id="admin-products-pagination-wrap"></div>
     </div>`
 }
 
@@ -1709,24 +1754,47 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
   }
 
   if (tab === 'stores') {
-    const [stores, categories, queue, neighborhoods] = await Promise.all([
-      fetchAllStoresAdmin(getStaffNeighborhoodScope(user, panel)),
+    const scopeId = getStaffNeighborhoodScope(user, panel)
+    // Moderador: sempre o bairro atribuído. Admin: filtro do select (all = sem filtro).
+    const neighborhoodFilter = panel === 'moderator'
+      ? scopeId
+      : (storesListState.neighborhoodId !== 'all' ? storesListState.neighborhoodId : null)
+
+    const statusScopeId = neighborhoodFilter || null
+    const [pageResult, statusCounts, categories, queue, neighborhoods] = await Promise.all([
+      fetchStoresAdminPage({
+        neighborhoodId: statusScopeId,
+        search: storesListState.search,
+        status: storesListState.status,
+        page: storesListState.page,
+        pageSize: storesListState.pageSize,
+      }),
+      fetchStoreStatusCounts(statusScopeId),
       fetchCategories(),
       loadStaffApprovalQueue(user, panel),
       fetchNeighborhoods({ activeOnly: false }),
     ])
+
+    // Corrige página se o filtro reduziu o total
+    if (pageResult.page > pageResult.totalPages && pageResult.totalPages >= 1) {
+      storesListState.page = pageResult.totalPages
+      return renderStaffDashboard(main, 'stores', selectedStoreId, panel)
+    }
+
+    const stores = pageResult.data
     const merchants = storesReadOnly ? [] : await fetchMerchants()
 
     setAdminPendingCount(queue.pendingTotal)
     import('../ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
 
+    const listedTotal = pageResult.total
     main.innerHTML = adminPage(
       menuItem.label,
       panel === 'moderator'
-        ? `${staffScopeSubtitle(user, panel)} · ${t('admin.storesInRegion', { count: stores.length })}`
+        ? `${staffScopeSubtitle(user, panel)} · ${t('admin.storesInRegion', { count: listedTotal })}`
         : storesReadOnly
-          ? t('admin.storesReadOnly', { count: stores.length })
-          : t('admin.storesRegistered', { count: stores.length }),
+          ? t('admin.storesReadOnly', { count: listedTotal })
+          : t('admin.storesRegistered', { count: listedTotal }),
       `
         <div id="admin-store-msg"></div>
         ${storesReadOnly ? `<p class="admin-readonly-hint">${t('moderator.readonlyStoresHint')}</p>` : ''}
@@ -1811,34 +1879,36 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
             </div>
           </form>
         </details>`}
-        ${stores.length > 0 ? (panel === 'admin'
-          ? adminStoresFilterBar({
-            searchId: 'admin-stores-search',
-            searchPlaceholder: t('admin.searchStoresNeighborhood'),
-            neighborhoods,
-            chips: [
-              { id: 'all', label: t('common.allFeminine'), active: true },
-              { id: 'approved', label: t('storeStatus.approvedPlural'), active: false },
-              { id: 'pending', label: t('storeStatus.pendingPlural'), active: false },
-              { id: 'blocked', label: t('storeStatus.blockedPlural'), active: false },
-            ],
-          })
-          : adminFilterBar({
-            searchId: 'admin-stores-search',
-            searchPlaceholder: t('admin.searchStoresCity'),
-            chips: [
-              { id: 'all', label: t('common.allFeminine'), active: true },
-              { id: 'approved', label: t('storeStatus.approvedPlural'), active: false },
-              { id: 'pending', label: t('storeStatus.pendingPlural'), active: false },
-              { id: 'blocked', label: t('storeStatus.blockedPlural'), active: false },
-            ],
-          })) : ''}
-        ${storeStatusSummary(stores)}
+        ${statusCounts.total > 0 || storesListState.search || storesListState.status !== 'all' || storesListState.neighborhoodId !== 'all'
+          ? (panel === 'admin'
+            ? adminStoresFilterBar({
+              searchId: 'admin-stores-search',
+              searchPlaceholder: t('admin.searchStoresNeighborhood'),
+              neighborhoods,
+              chips: [
+                { id: 'all', label: t('common.allFeminine'), active: storesListState.status === 'all' },
+                { id: 'approved', label: t('storeStatus.approvedPlural'), active: storesListState.status === 'approved' },
+                { id: 'pending', label: t('storeStatus.pendingPlural'), active: storesListState.status === 'pending' },
+                { id: 'blocked', label: t('storeStatus.blockedPlural'), active: storesListState.status === 'blocked' },
+              ],
+            })
+            : adminFilterBar({
+              searchId: 'admin-stores-search',
+              searchPlaceholder: t('admin.searchStoresCity'),
+              chips: [
+                { id: 'all', label: t('common.allFeminine'), active: storesListState.status === 'all' },
+                { id: 'approved', label: t('storeStatus.approvedPlural'), active: storesListState.status === 'approved' },
+                { id: 'pending', label: t('storeStatus.pendingPlural'), active: storesListState.status === 'pending' },
+                { id: 'blocked', label: t('storeStatus.blockedPlural'), active: storesListState.status === 'blocked' },
+              ],
+            }))
+          : ''}
+        ${storeStatusSummary(statusCounts)}
         <div class="table-wrap admin-stores-table" style="margin-top:1rem">
           <table>
             <thead><tr><th>${t('common.store')}</th><th>${t('common.neighborhood')}</th><th>${t('admin.merchant')}</th><th>${t('labels.city')}</th><th>${t('labels.status')}</th><th>${t('labels.plan')}</th><th></th></tr></thead>
             <tbody>
-              ${stores.length === 0 ? `<tr><td colspan="7">${adminEmptyState('🏪', t('admin.noStoresTitle'), t('admin.noStoresBody'))}</td></tr>` : stores.map((s) => `
+              ${stores.length === 0 ? `<tr><td colspan="7">${adminEmptyState('🏪', t('admin.noStoresTitle'), storesListState.search || storesListState.status !== 'all' ? t('admin.noStoresSearchMatch') : t('admin.noStoresBody'))}</td></tr>` : stores.map((s) => `
                 <tr data-store-row data-store-id="${s.id}" data-store-status="${s.status}" data-store-neighborhood="${s.neighborhood_id ?? ''}" data-store-search="${escapeHtml(buildStoreSearchKey(s))}">
                   <td>
                     <div class="admin-table-thumb">
@@ -1940,6 +2010,18 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
             </tbody>
           </table>
         </div>
+        <div id="admin-stores-pagination-wrap" style="margin-top:0.75rem">
+          ${renderPaginationHtml({
+            currentPage: pageResult.page,
+            totalPages: pageResult.totalPages,
+            matchedCount: pageResult.total,
+            pageSize: pageResult.pageSize,
+            labelSingular: t('pagination.storeSingular'),
+            labelPlural: t('pagination.storePlural'),
+            prevAttr: 'data-stores-page-prev',
+            nextAttr: 'data-stores-page-next',
+          })}
+        </div>
       `,
       '',
       panel
@@ -1951,23 +2033,15 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
       bindStoreDeletes(main)
       bindPlanBrandingToggle(main)
     }
-    if (panel === 'admin') bindStoreListFilters(main)
-    else {
-      bindListFilters(main, {
-        searchId: 'admin-stores-search',
-        rowSelector: '[data-store-row]',
-        getSearchText: (row) => row.dataset.storeSearch ?? '',
-        getFilterValue: (row) => row.dataset.storeStatus ?? '',
-        linkedEditPrefix: 'edit-store-row-',
-      })
-    }
+    bindStoreListFilters(main, panel)
     return
   }
 
   if (tab === 'products') {
-    const [allProducts, stores, categories, queue] = await Promise.all([
-      fetchAdminProducts(),
-      fetchAllStoresAdmin(getStaffNeighborhoodScope(user, panel)),
+    const scopeId = getStaffNeighborhoodScope(user, panel)
+    // Sidebar leve com contagens; produtos só da loja selecionada (não carrega o catálogo global).
+    const [storesLite, categories, queue] = await Promise.all([
+      fetchStoresAdminLite(scopeId),
       fetchCategories(),
       loadStaffApprovalQueue(user, panel),
     ])
@@ -1975,28 +2049,41 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
     setAdminPendingCount(queue.pendingTotal)
     import('../ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
 
-    if (!selectedStoreId && stores.length > 0) {
-      const first = [...stores].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))[0]
+    if (!selectedStoreId && storesLite.length > 0) {
+      const first = [...storesLite].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))[0]
       navigate(staffProductsPath(panel, first.id))
       return
     }
 
-    const counts = productCountMap(allProducts)
-    const selectedStore = selectedStoreId ? stores.find((s) => s.id === selectedStoreId) : null
-    const storeProducts = selectedStoreId
-      ? allProducts.filter((p) => p.store_id === selectedStoreId)
-      : []
+    const selectedStoreLite = selectedStoreId
+      ? storesLite.find((s) => s.id === selectedStoreId)
+      : null
+
+    // Detalhe da loja (plan_id etc.) + produtos só dessa loja
+    let selectedStore = selectedStoreLite
+    let storeProducts = []
+    if (selectedStoreId) {
+      const [fullStore, products] = await Promise.all([
+        fetchStoreByIdAdmin(selectedStoreId),
+        fetchAdminProducts(selectedStoreId),
+      ])
+      selectedStore = fullStore ?? selectedStoreLite
+      storeProducts = Array.isArray(products) ? products : (products?.data ?? [])
+    }
+
+    const counts = Object.fromEntries(storesLite.map((s) => [s.id, s.product_count ?? 0]))
+    const totalProducts = storesLite.reduce((sum, s) => sum + (s.product_count ?? 0), 0)
 
     main.innerHTML = adminPage(
       menuItem.label,
       selectedStore
         ? (productsReadOnly ? t('admin.productsReadOnly', { name: selectedStore.name }) : t('admin.managingProducts', { name: selectedStore.name }))
-        : t('admin.productsAcrossStores', { products: allProducts.length, stores: stores.length }),
+        : t('admin.productsAcrossStores', { products: totalProducts, stores: storesLite.length }),
       `
         ${productsReadOnly ? `<p class="admin-readonly-hint">${t('admin.readonlyProductsHint')}</p>` : ''}
         <div id="admin-product-msg"></div>
         <div class="admin-store-products-layout">
-          ${renderStoreProductsSidebar(stores, counts, selectedStoreId, panel)}
+          ${renderStoreProductsSidebar(storesLite, counts, selectedStoreId, panel)}
           ${renderStoreProductsPanel({
             store: selectedStore,
             products: storeProducts,
@@ -2011,7 +2098,22 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
     )
 
     bindStoreProductsNav(main)
-    bindProductSearch(main)
+    if (storeProducts.length > 0) {
+      bindPaginatedSortableList(main, {
+        searchId: 'admin-products-search',
+        rowSelector: '[data-product-row]',
+        tbodyId: 'admin-products-tbody',
+        paginationWrapId: 'admin-products-pagination-wrap',
+        pageSize: ADMIN_PRODUCTS_PAGE_SIZE,
+        defaultSortField: 'name',
+        defaultSortDirection: 'asc',
+        sortDefaults: { name: 'asc' },
+        getSearchText: (row) => row.dataset.productName ?? '',
+        scrollTarget: main.querySelector('.admin-store-products-table'),
+        prevAttr: 'data-admin-products-page-prev',
+        nextAttr: 'data-admin-products-page-next',
+      })
+    }
     if (!productsReadOnly) bindProductForm(main, selectedStoreId)
     if (panel === 'admin') bindProductEngagement(main, selectedStoreId)
     return
