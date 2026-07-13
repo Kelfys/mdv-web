@@ -6,6 +6,8 @@ import {
   rankStoresForFeed,
   rankProductsForFeed,
   buildHomeFeed,
+  paginateFeedItems,
+  FEED_PAGE_SIZE,
 } from '../js/feed.js'
 
 const stores = [
@@ -108,5 +110,24 @@ describe('feed algorithm', () => {
     if (productItems.length >= 2) {
       expect(productItems[0].product.store_id).not.toBe(productItems[1].product.store_id)
     }
+  })
+
+  it('paginates feed into pages of 44 cards', () => {
+    expect(FEED_PAGE_SIZE).toBe(44)
+    const items = Array.from({ length: 90 }, (_, i) => ({ kind: 'product', id: `p${i}` }))
+    const page1 = paginateFeedItems(items, 1, FEED_PAGE_SIZE)
+    expect(page1.items).toHaveLength(44)
+    expect(page1.totalPages).toBe(3)
+    expect(page1.total).toBe(90)
+
+    const page2 = paginateFeedItems(items, 2, FEED_PAGE_SIZE)
+    expect(page2.items).toHaveLength(44)
+    expect(page2.items[0].id).toBe('p44')
+
+    const page3 = paginateFeedItems(items, 3, FEED_PAGE_SIZE)
+    expect(page3.items).toHaveLength(2)
+
+    const overflow = paginateFeedItems(items, 99, FEED_PAGE_SIZE)
+    expect(overflow.page).toBe(3)
   })
 })

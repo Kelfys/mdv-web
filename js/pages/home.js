@@ -9,7 +9,7 @@
 import { fetchCategories, fetchStores, fetchNewProducts, fetchTopLikedProducts, fetchActiveFeedAds, fetchNeighborhoods } from '../api.js'
 import { renderStoreCard, renderFeedProductCard, renderFeedAdCard, openCart } from '../ui.js'
 import { escapeHtml } from '../utils.js'
-import { buildHomeFeed } from '../feed.js'
+import { buildHomeFeed, paginateFeedItems, FEED_PAGE_SIZE } from '../feed.js'
 import { setStore, addItem, getUser } from '../state.js'
 import { normalizeStorePaymentMethods } from '../payment.js'
 import { getSelectedNeighborhoodId, setSelectedNeighborhoodId, formatNeighborhoodLabel } from '../neighborhood.js'
@@ -18,9 +18,11 @@ import { bindHomeFiltersScroll } from '../home-filters-scroll.js'
 import { bindReportTriggers, getReportLoginPath } from '../reporting.js'
 import { navigate } from '../router.js'
 import { showToast } from '../utils.js'
+import { renderPaginationHtml } from '../list-utils.js'
 
-const FEED_PRODUCT_LIMIT = 12
-const FEED_ADS_LIMIT = 12
+/** Mais produtos no pool para preencher várias páginas de 44 cards. */
+const FEED_PRODUCT_LIMIT = 100
+const FEED_ADS_LIMIT = 24
 const FEED_SKELETON_COUNT = 6
 
 function countUniqueProducts(...lists) {
@@ -65,10 +67,12 @@ export async function renderHome(main) {
   let stores = []
   let newProducts = []
   let likedProducts = []
-  let feedItems = []
+  /** Feed completo montado pelo algoritmo (todas as páginas). */
+  let allFeedItems = []
   let productMap = new Map()
   let feedAds = []
   let loading = false
+  let feedPage = 1
 
   function bindFeedEvents() {
     main.querySelectorAll('[data-feed-add-product]').forEach((btn) => {
@@ -110,6 +114,27 @@ export async function renderHome(main) {
     return `<button type="button" class="btn btn-outline btn-sm" data-clear-home-filters>${t('home.clearFilters')}</button>`
   }
 
+  function getFeedPage() {
+    return paginateFeedItems(allFeedItems, feedPage, FEED_PAGE_SIZE)
+  }
+
+  function renderFeedPagination(pageInfo) {
+    if (pageInfo.total === 0) return ''
+    return `
+      <div class="feed-pagination" id="feed-pagination">
+        ${renderPaginationHtml({
+          currentPage: pageInfo.page,
+          totalPages: pageInfo.totalPages,
+          matchedCount: pageInfo.total,
+          pageSize: pageInfo.pageSize,
+          labelSingular: t('pagination.cardSingular'),
+          labelPlural: t('pagination.cardPlural'),
+          prevAttr: 'data-feed-page-prev',
+          nextAttr: 'data-feed-page-next',
+        })}
+      </div>`
+  }
+
   function renderFeedContent() {
     if (loading) return renderFeedSkeleton()
 
@@ -122,7 +147,7 @@ export async function renderHome(main) {
     }
 
     const hasFilters = Boolean(search || categoryId)
-    if (feedItems.length === 0) {
+    if (allFeedItems.length === 0) {
       return renderHomeEmptyState({
         icon: hasFilters ? '🔍' : '🏪',
         title: hasFilters ? t('home.nothingFoundTitle') : t('home.emptyFeedTitle'),
@@ -131,7 +156,9 @@ export async function renderHome(main) {
       })
     }
 
-    return feedItems.map(wrapFeedItem).join('')
+    const pageInfo = getFeedPage()
+    feedPage = pageInfo.page
+    return pageInfo.items.map(wrapFeedItem).join('')
   }
 
   function renderHero(selectedNeighborhood) {
@@ -226,6 +253,7 @@ export async function renderHome(main) {
   function paint() {
     const selectedNeighborhood = neighborhoods.find((n) => n.id === neighborhoodId)
     const label = renderFeedLabel()
+    const pageInfo = !loading && allFeedItems.length > 0 ? getFeedPage() : null
 
     main.innerHTML = `
       <div class="home-page">
@@ -236,6 +264,7 @@ export async function renderHome(main) {
           <div class="feed feed--grid" id="feed" ${loading ? 'aria-busy="true"' : ''}>
             ${renderFeedContent()}
           </div>
+          ${pageInfo ? renderFeedPagination(pageInfo) : ''}
         </div>
       </div>
     `
@@ -245,6 +274,7 @@ export async function renderHome(main) {
       clearTimeout(debounce)
       debounce = setTimeout(() => {
         search = e.target.value
+        feedPage = 1
         load()
       }, 300)
     })
@@ -252,6 +282,7 @@ export async function renderHome(main) {
     main.querySelector('[data-clear-home-filters]')?.addEventListener('click', () => {
       search = ''
       categoryId = null
+      feedPage = 1
       load()
     })
 
@@ -259,6 +290,7 @@ export async function renderHome(main) {
       btn.addEventListener('click', () => {
         neighborhoodId = btn.dataset.neighborhood || null
         setSelectedNeighborhoodId(neighborhoodId)
+        feedPage = 1
         load()
       })
     })
@@ -266,8 +298,23 @@ export async function renderHome(main) {
     main.querySelectorAll('[data-cat]').forEach((btn) => {
       btn.addEventListener('click', () => {
         categoryId = btn.dataset.cat || null
+        feedPage = 1
         load()
       })
+    })
+
+    main.querySelector('#feed-pagination')?.addEventListener('click', (event) => {
+      const pageInfo = getFeedPage()
+      if (event.target.closest('[data-feed-page-prev]') && feedPage > 1) {
+        feedPage -= 1
+        paint()
+        main.querySelector('#feed')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+      if (event.target.closest('[data-feed-page-next]') && feedPage < pageInfo.totalPages) {
+        feedPage += 1
+        paint()
+        main.querySelector('#feed')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
     })
 
     bindFeedEvents()
@@ -317,10 +364,12 @@ export async function renderHome(main) {
         fetchActiveFeedAds(FEED_ADS_LIMIT, neighborhoodId ?? undefined),
       ])
 
-      feedItems = buildHomeFeed(stores, newProducts, likedProducts, feedAds, {
+      allFeedItems = buildHomeFeed(stores, newProducts, likedProducts, feedAds, {
         search,
         categoryId,
       })
+      // Garante página válida após filtro que reduz o total de cards
+      feedPage = paginateFeedItems(allFeedItems, feedPage, FEED_PAGE_SIZE).page
       productMap = new Map(
         [...newProducts, ...likedProducts].map((product) => [product.id, product]),
       )

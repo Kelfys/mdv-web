@@ -16,6 +16,28 @@ const PLAN_PRODUCT_BOOST = 0.15
 const STORE_PRODUCT_ENGAGEMENT_BOOST = 0.12
 const AD_INTERVAL = 5
 
+/** Cards por página no feed da home. */
+export const FEED_PAGE_SIZE = 44
+
+/**
+ * Fatia o feed montado em páginas de cards (lojas + produtos + anúncios).
+ */
+export function paginateFeedItems(items, page = 1, pageSize = FEED_PAGE_SIZE) {
+  const list = items ?? []
+  const total = list.length
+  const size = Math.max(1, Number(pageSize) || FEED_PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(total / size) || 1)
+  const safePage = Math.min(Math.max(1, Number(page) || 1), totalPages)
+  const start = (safePage - 1) * size
+  return {
+    items: list.slice(start, start + size),
+    total,
+    page: safePage,
+    pageSize: size,
+    totalPages,
+  }
+}
+
 export function getProductStoreId(product) {
   return product.store_id ?? product.store?.id ?? null
 }

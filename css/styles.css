@@ -1263,6 +1263,15 @@ img { max-width: 100%; display: block; }
   padding: 0.25rem 0 1.5rem;
 }
 
+.feed-pagination {
+  margin: 0.25rem 0 1.75rem;
+}
+
+.feed-pagination .admin-pagination {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+}
+
 .feed__item {
   min-width: 0;
   animation: feed-item-in 0.35s ease both;

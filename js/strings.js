@@ -973,6 +973,8 @@ export const STRINGS = {
     "itemPlural": "itens",
     "storeSingular": "loja",
     "storePlural": "lojas",
+    "cardSingular": "card",
+    "cardPlural": "cards",
     "orderSingular": "pedido",
     "orderPlural": "pedidos",
     "rangeOf": "{start}–{end} de {count} {label}"
