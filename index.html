@@ -77,8 +77,8 @@
       }
     })()
   </script>
-  <link rel="icon" href="favicon.svg?v=20260713" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="favicon.svg?v=20260713" />
+  <link rel="icon" href="assets/icone_perfil.jpg?v=20260713b" type="image/jpeg" />
+  <link rel="apple-touch-icon" href="assets/icone_perfil.jpg?v=20260713b" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -90,7 +90,7 @@
       if (css) css.href = window.__MV_BASE__ + 'css/styles.css'
       document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]').forEach(function (el) {
         var href = el.getAttribute('href') || ''
-        if (href.indexOf('favicon') !== -1) {
+        if (href.indexOf('assets/') === 0 || href.indexOf('favicon') !== -1) {
           el.href = window.__MV_BASE__ + href.replace(/^\.\//, '')
         }
       })

@@ -148,8 +148,9 @@ img { max-width: 100%; display: block; }
 }
 
 .logo__icon--image {
-  background: transparent;
+  background: #fff;
   padding: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
 .logo__icon--image img {
@@ -157,6 +158,9 @@ img { max-width: 100%; display: block; }
   height: 100%;
   object-fit: cover;
   display: block;
+  /* Mantém cores da arte — sem filtros que escurecem */
+  filter: none;
+  opacity: 1;
 }
 
 .profile-avatar {
@@ -165,6 +169,9 @@ img { max-width: 100%; display: block; }
   border-radius: 999px;
   object-fit: cover;
   display: block;
+  background: #fff;
+  filter: none;
+  opacity: 1;
 }
 
 .profile-avatar--lg {
