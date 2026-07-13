@@ -16,7 +16,7 @@ import {
   toggleProductLike, fetchProductComments, addProductComment, deleteProductComment, adjustProductLikes,
 } from '../api.js'
 import { isStaff, isAdmin } from '../roles.js'
-import { getStoreThemeColor } from '../config.js'
+import { getStoreThemeColor, storeThemeButtonStyle, storeThemeOnColor } from '../config.js'
 import {
   renderProductCard, renderEngagementStats, openCart, formatPhone,
 } from '../ui.js'
@@ -89,6 +89,8 @@ export async function renderStorePage(main, { slug }) {
     const cartCount = getCartItemCount()
     const currentUser = getUser()
     const bannerStyle = `background:linear-gradient(135deg,${theme.gradientFrom},${theme.gradientTo})`
+    const btnStyle = storeThemeButtonStyle(theme)
+    const onColor = storeThemeOnColor(theme.hex)
 
     main.innerHTML = `
       <div class="store-hero">
@@ -104,11 +106,11 @@ export async function renderStorePage(main, { slug }) {
           <div class="store-profile__info">
             ${store.logo
               ? `<img class="store-profile__logo" src="${escapeHtml(store.logo)}" alt="${escapeHtml(store.name)}" />`
-              : `<div class="store-profile__logo-ph" style="background:${theme.hex}">🏪</div>`}
+              : `<div class="store-profile__logo-ph" style="background:${theme.hex};color:${onColor}">🏪</div>`}
             <div class="store-profile__details">
               <h1 class="store-profile__name">${escapeHtml(store.name)}</h1>
               <div class="store-profile__meta">
-                ${store.category ? `<span class="store-card__category" style="background:${theme.hex}">${escapeHtml(store.category.name)}</span>` : ''}
+                ${store.category ? `<span class="store-card__category" style="${btnStyle}">${escapeHtml(store.category.name)}</span>` : ''}
                 ${avgRating > 0 ? `<span class="store-profile__rating stars">★ ${avgRating.toFixed(1)} (${reviews.length})</span>` : ''}
               </div>
               <section class="store-profile__engagement" aria-labelledby="store-engagement-title">
@@ -119,7 +121,7 @@ export async function renderStorePage(main, { slug }) {
             </div>
           </div>
           <div class="store-profile__actions">
-            <button type="button" class="btn btn-primary" id="open-cart">
+            <button type="button" class="btn" id="open-cart" style="${btnStyle}">
               ${t('store.cart')} ${cartCount > 0 ? `<span class="badge-count">${cartCount > 9 ? '9+' : cartCount}</span>` : ''}
             </button>
             ${store.owner_id !== currentUser?.id
@@ -152,6 +154,7 @@ export async function renderStorePage(main, { slug }) {
               canDeleteComments: isStaff(currentUser),
               canAdjustLikes: isAdmin(currentUser),
               storeOwnerId: store.owner_id,
+              themeColor: store.theme_color,
             })).join('')}</div>`}
 
         ${reviews.length > 0 ? `

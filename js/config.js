@@ -84,25 +84,24 @@ export function assetHref(relativePath = '') {
 }
 
 /** Query de cache-bust para ícones trocados com frequência. */
-export const ASSET_CACHE_BUST = '20260713c'
+export const ASSET_CACHE_BUST = '20260713e'
 
 /**
  * Foto de marca completa (assets/icone_perfil.jpg) — avatares / perfil.
- * Não usar como favicon: em 16×16 o fundo da cena fica escuro.
  */
 export function brandPhotoHref() {
   return `${assetHref('icone_perfil.jpg')}?v=${ASSET_CACHE_BUST}`
 }
 
 /**
- * Monograma claro (favicon.svg) — amarelo + M azul.
- * Substitui o export antigo em silhueta preta (fill #000).
+ * Favicon vetorial (badge M amarelo/azul).
+ * Raster original: favicon.jpg / Downloads/favicon.jfif.
  */
 export function brandIconHref() {
   return `${APP_BASE_PATH}/favicon.svg?v=${ASSET_CACHE_BUST}`
 }
 
-/** Favicon / logo do header — monograma colorido legível. */
+/** Favicon / logo do header. */
 export function faviconHref() {
   return brandIconHref()
 }
@@ -132,4 +131,32 @@ export const DEFAULT_THEME_COLOR = 'pixel-blue'
 
 export function getStoreThemeColor(id) {
   return STORE_THEME_COLORS.find((c) => c.id === id) ?? STORE_THEME_COLORS.find((c) => c.id === DEFAULT_THEME_COLOR)
+}
+
+/**
+ * Cor de texto legível sobre o hex do tema da loja.
+ * Amarelo/claro (#FBD000) → texto escuro; cores saturadas → branco.
+ */
+export function storeThemeOnColor(hex) {
+  const raw = String(hex || '').replace('#', '').trim()
+  if (raw.length !== 6) return '#ffffff'
+  const r = parseInt(raw.slice(0, 2), 16) / 255
+  const g = parseInt(raw.slice(2, 4), 16) / 255
+  const b = parseInt(raw.slice(4, 6), 16) / 255
+  const lin = (v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
+  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+  return L > 0.55 ? '#1a1a1a' : '#ffffff'
+}
+
+/**
+ * Inline style para botões/badges na cor do tema da loja.
+ * @param {string|{id?: string, hex?: string}|null|undefined} themeOrId
+ */
+export function storeThemeButtonStyle(themeOrId) {
+  const theme = themeOrId && typeof themeOrId === 'object' && themeOrId.hex
+    ? themeOrId
+    : getStoreThemeColor(themeOrId?.id ?? themeOrId)
+  const hex = theme.hex
+  const on = storeThemeOnColor(hex)
+  return `background:${hex};border-color:${hex};color:${on}`
 }

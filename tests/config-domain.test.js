@@ -40,4 +40,17 @@ describe('custom domain base path', () => {
     expect(isCustomDomainHost('maredevendas.com.br')).toBe(true)
     expect(isCustomDomainHost('www.maredevendas.com.br')).toBe(true)
   })
+
+  it('storeThemeOnColor picks dark text on yellow and white on blue', async () => {
+    vi.stubGlobal('window', { location: { pathname: '/' } })
+    const { storeThemeOnColor, storeThemeButtonStyle, getStoreThemeColor } = await import('../js/config.js')
+    expect(storeThemeOnColor('#FBD000')).toBe('#1a1a1a')
+    expect(storeThemeOnColor('#448AFF')).toBe('#ffffff')
+    const yellow = storeThemeButtonStyle(getStoreThemeColor('pixel-yellow'))
+    expect(yellow).toContain('background:#FBD000')
+    expect(yellow).toContain('color:#1a1a1a')
+    const blue = storeThemeButtonStyle('pixel-blue')
+    expect(blue).toContain('background:#448AFF')
+    expect(blue).toContain('color:#ffffff')
+  })
 })

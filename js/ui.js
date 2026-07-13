@@ -6,9 +6,8 @@
  *
  * Também: store-card, feed-product-card, cart-drawer e checkout com pagamentos por loja.
  */
-import { APP_NAME, faviconHref, profileIconHref } from './config.js'
+import { APP_NAME, faviconHref, profileIconHref, getStoreThemeColor, storeThemeButtonStyle, storeThemeOnColor } from './config.js'
 import { t, deliveryPeriodLabel } from './strings.js'
-import { getStoreThemeColor } from './config.js'
 import { escapeHtml, formatCurrency, formatPhone } from './utils.js'
 import { isCatalogItemAvailable, getCatalogItemIcon, getCatalogItemLabel, isUsedProduct } from './catalog.js'
 import { getPlanById } from './plans.js'
@@ -464,6 +463,8 @@ export function renderEngagementStats({ favoritesCount = 0, likesCount = 0, mode
 export function renderStoreCard(store, options = {}) {
   const { showPlanBadge = false, user = null } = options
   const theme = getStoreThemeColor(store.theme_color)
+  const btnStyle = storeThemeButtonStyle(theme)
+  const onColor = storeThemeOnColor(theme.hex)
   const bannerStyle = `background: linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo})`
   const plan = getPlanById(store.plan_id)
   const planBadge = showPlanBadge && store.plan_id && store.plan_id !== 'free'
@@ -479,17 +480,17 @@ export function renderStoreCard(store, options = {}) {
           : `<div style="${bannerStyle};width:100%;height:100%"></div>`}
         ${store.logo
           ? `<img class="store-card__logo" src="${escapeHtml(store.logo)}" alt="${escapeHtml(store.name)}" />`
-          : `<div class="store-card__logo-placeholder" style="background:${theme.hex}">🏪</div>`}
+          : `<div class="store-card__logo-placeholder" style="background:${theme.hex};color:${onColor}">🏪</div>`}
       </div>
       <div class="store-card__body">
         <h3 class="store-card__title">${escapeHtml(store.name)}</h3>
-        ${store.category ? `<span class="store-card__category" style="background:${theme.hex}">${escapeHtml(store.category.name)}</span>` : ''}
+        ${store.category ? `<span class="store-card__category" style="${btnStyle}">${escapeHtml(store.category.name)}</span>` : ''}
         <div class="store-card__meta">
           <span>📍 ${escapeHtml(store.city)}, ${escapeHtml(store.state)}</span>
           ${store.opening_hours ? `<span>🕐 ${escapeHtml(store.opening_hours)}</span>` : ''}
         </div>
         <div class="store-card__actions">
-          <a href="#/loja/${escapeHtml(store.slug)}" class="btn btn-block" style="background:${theme.hex};color:white">
+          <a href="#/loja/${escapeHtml(store.slug)}" class="btn btn-block" style="${btnStyle}">
             ${t('home.viewStoreCta')}
           </a>
           ${renderReportButton({ type: 'store', id: store.id, name: store.name, user, store, variant: 'link' })}
@@ -503,6 +504,7 @@ export function renderStoreCard(store, options = {}) {
 export function renderFeedAdCard(ad) {
   const store = ad.store
   const theme = getStoreThemeColor(store?.theme_color)
+  const btnStyle = storeThemeButtonStyle(theme)
   const bannerStyle = `background: linear-gradient(135deg, ${theme?.gradientFrom ?? '#448AFF'}, ${theme?.gradientTo ?? '#1565C0'})`
 
   return `
@@ -520,7 +522,7 @@ export function renderFeedAdCard(ad) {
           <p class="feed-ad-card__store">🏪 ${escapeHtml(store?.name ?? t('common.defaultStore'))}</p>
           <h3 class="feed-ad-card__title">${escapeHtml(ad.title)}</h3>
           <p class="feed-ad-card__message">${escapeHtml(ad.message)}</p>
-          <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="btn btn-primary btn-sm">${t('home.viewStore')}</a>
+          <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="btn btn-sm" style="${btnStyle}">${t('home.viewStore')}</a>
         </div>
       </div>
     </article>
@@ -549,6 +551,7 @@ export function renderFeedProductCard(product, options = {}) {
       ? 'feed-product-card__badge--pick'
       : 'feed-product-card__badge--new'
   const store = product.store
+  const btnStyle = storeThemeButtonStyle(store?.theme_color)
 
   return `
     <article class="feed-product-card ${oos ? 'out-of-stock' : ''}">
@@ -582,7 +585,7 @@ export function renderFeedProductCard(product, options = {}) {
               ${likesCount > 0 ? `<span class="feed-product-card__likes">❤️ ${likesCount}</span>` : ''}
             </div>
             <div class="feed-product-card__actions">
-              <button type="button" class="btn btn-primary btn-sm" data-feed-add-product="${product.id}" ${oos ? 'disabled' : ''}>
+              <button type="button" class="btn btn-sm" style="${btnStyle}" data-feed-add-product="${product.id}" ${oos ? 'disabled' : ''}>
                 ${t('home.addToCartShort')}
               </button>
             </div>
@@ -602,6 +605,7 @@ export function renderProductCard(product, options = {}) {
     canDeleteComments = false,
     canAdjustLikes = false,
     storeOwnerId = null,
+    themeColor = null,
   } = options
   const oos = !isCatalogItemAvailable(product)
   const likesCount = product.likes_count ?? 0
@@ -609,6 +613,7 @@ export function renderProductCard(product, options = {}) {
   const typeLabel = getCatalogItemLabel(product)
   const liked = Boolean(product.liked_by_user)
   const canEngage = Boolean(user)
+  const btnStyle = storeThemeButtonStyle(themeColor ?? product.store?.theme_color)
 
   return `
     <article class="product-card ${oos ? 'out-of-stock' : ''}" data-product-id="${product.id}">
@@ -681,7 +686,7 @@ export function renderProductCard(product, options = {}) {
             ${canEngage ? `
               <form class="product-comment-form" data-comment-form="${product.id}">
                 <textarea class="form-input" name="content" rows="2" maxlength="500" placeholder="${t('store.commentPlaceholder')}" required></textarea>
-                <button type="submit" class="btn btn-primary btn-sm">${t('store.submitComment')}</button>
+                <button type="submit" class="btn btn-sm" style="${btnStyle}">${t('store.submitComment')}</button>
               </form>
             ` : `
               <p class="product-comments__login-hint">
@@ -693,7 +698,7 @@ export function renderProductCard(product, options = {}) {
         <div class="product-card__footer">
           <span class="product-card__price">${formatCurrency(product.price)}</span>
           <div class="product-card__footer-actions">
-            <button type="button" class="btn btn-primary btn-sm" data-add-product="${product.id}" ${oos ? 'disabled' : ''}>${t('store.addProduct')}</button>
+            <button type="button" class="btn btn-sm" style="${btnStyle}" data-add-product="${product.id}" ${oos ? 'disabled' : ''}>${t('store.addProduct')}</button>
           </div>
         </div>
       </div>
