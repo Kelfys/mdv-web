@@ -923,7 +923,11 @@ function showCheckoutForm() {
 async function handleCheckout(e, allowedPayments) {
   e.preventDefault()
   const cart = getCart()
-  if (!cart.storeId || !cart.storeWhatsapp) return
+  if (!cart.storeId) return
+  if (!String(cart.storeWhatsapp || '').trim()) {
+    showToast(t('checkout.storeNoWhatsapp'))
+    return
+  }
 
   const form = e.target
   const name = form.name.value.trim()

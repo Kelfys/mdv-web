@@ -215,7 +215,8 @@ export const STRINGS = {
     "paymentTransferHint": "Dados bancários no WhatsApp",
     "namePlaceholder": "Seu nome completo",
     "addressPlaceholder": "Rua, número, bairro, complemento",
-    "submitting": "Enviando..."
+    "submitting": "Enviando...",
+    "storeNoWhatsapp": "Esta loja ainda não recebe pedidos por WhatsApp."
   },
   "customer": {
     "loginRequiredTitle": "Faça login",
