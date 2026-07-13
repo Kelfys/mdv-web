@@ -870,6 +870,8 @@ export const STRINGS = {
     "userNotModerator": "Usuário não é moderador.",
     "selectStoreNeighborhood": "Selecione o bairro da loja.",
     "selectStoreCategory": "Selecione a categoria da loja.",
+    "informStoreName": "Informe o nome da loja.",
+    "storeNameTaken": "Já existe uma loja com este nome (ou slug). Escolha outro nome.",
     "informCategoryName": "Informe o nome da categoria.",
     "invalidCategory": "Categoria inválida.",
     "cannotDeleteCategoryStores": "Não é possível excluir: {count} loja(s) vinculada(s). Reatribua as lojas antes.",

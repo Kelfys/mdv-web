@@ -1767,11 +1767,11 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
             </div>
             <div class="form-group">
               <label class="form-label">${t('labels.city')}</label>
-              <input class="form-input" name="city" required readonly placeholder="${escapeHtml(t('auth.cityFromNeighborhood'))}" />
+              <input class="form-input" name="city" readonly tabindex="-1" placeholder="${escapeHtml(t('auth.cityFromNeighborhood'))}" />
             </div>
             <div class="form-group">
               <label class="form-label">${t('labels.state')}</label>
-              <input class="form-input" name="state" required maxlength="2" readonly placeholder="UF" />
+              <input class="form-input" name="state" maxlength="2" readonly tabindex="-1" placeholder="UF" />
             </div>
             <div class="form-group admin-form-grid__full">
               <label class="form-label">${t('labels.description')}</label>
@@ -1877,11 +1877,11 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                       </div>
                       <div class="form-group">
                         <label class="form-label">${t('labels.city')}</label>
-                        <input class="form-input" name="city" value="${escapeHtml(s.city)}" required readonly />
+                        <input class="form-input" name="city" value="${escapeHtml(s.city)}" readonly tabindex="-1" />
                       </div>
                       <div class="form-group">
                         <label class="form-label">${t('labels.state')}</label>
-                        <input class="form-input" name="state" value="${escapeHtml(s.state)}" maxlength="2" required readonly />
+                        <input class="form-input" name="state" value="${escapeHtml(s.state)}" maxlength="2" readonly tabindex="-1" />
                       </div>
                       <div class="form-group">
                         <label class="form-label">${t('labels.category')}</label>

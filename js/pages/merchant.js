@@ -1714,11 +1714,11 @@ export async function renderMerchantDashboard(main, tab = 'overview') {
                 </div>
                 <div class="form-group">
                   <label class="form-label">${t('labels.city')}</label>
-                  <input class="form-input" name="city" value="${escapeHtml(store.city ?? '')}" required readonly />
+                  <input class="form-input" name="city" value="${escapeHtml(store.city ?? '')}" readonly tabindex="-1" />
                 </div>
                 <div class="form-group">
                   <label class="form-label">${t('labels.state')}</label>
-                  <input class="form-input" name="state" value="${escapeHtml(store.state ?? '')}" required maxlength="2" readonly />
+                  <input class="form-input" name="state" value="${escapeHtml(store.state ?? '')}" maxlength="2" readonly tabindex="-1" />
                 </div>
                 <div class="form-group">
                   <label class="form-label">${t('merchant.themeColor')}</label>

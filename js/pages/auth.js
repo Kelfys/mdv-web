@@ -482,8 +482,8 @@ export async function renderMerchantRegister(main) {
         <div class="form-group"><label class="form-label">${t('labels.description')}</label><textarea class="form-input" name="description" rows="2"></textarea></div>
         <div class="form-group"><label class="form-label">${t('labels.address')}</label><input class="form-input" name="address" /></div>
         <div style="display:grid;grid-template-columns:1fr 80px;gap:0.5rem">
-          <div class="form-group"><label class="form-label">${t('labels.city')}</label><input class="form-input" name="city" required readonly placeholder="${escapeHtml(t('auth.cityFromNeighborhood'))}" /></div>
-          <div class="form-group"><label class="form-label">${t('labels.state')}</label><input class="form-input" name="state" required maxlength="2" readonly placeholder="UF" /></div>
+          <div class="form-group"><label class="form-label">${t('labels.city')}</label><input class="form-input" name="city" readonly tabindex="-1" placeholder="${escapeHtml(t('auth.cityFromNeighborhood'))}" /></div>
+          <div class="form-group"><label class="form-label">${t('labels.state')}</label><input class="form-input" name="state" maxlength="2" readonly tabindex="-1" placeholder="UF" /></div>
         </div>
         <div class="form-group"><label class="form-label">${t('auth.openingHoursLabel')}</label><input class="form-input" name="opening_hours" placeholder="${escapeHtml(t('auth.openingHoursPlaceholder'))}" /></div>
         <button type="submit" class="btn btn-primary btn-block" ${listsReady ? '' : 'disabled'}>${t('auth.submitStoreRegistration')}</button>
@@ -497,20 +497,31 @@ export async function renderMerchantRegister(main) {
   storeForm.addEventListener('submit', async (e) => {
     e.preventDefault()
     const form = e.target
+    const msgEl = main.querySelector('#auth-error')
+    const submitBtn = form.querySelector('button[type="submit"]')
     try {
+      if (!form.neighborhood_id.value) throw new Error(t('errors.selectStoreNeighborhood'))
+      if (!form.category_id.value) throw new Error(t('errors.selectStoreCategory'))
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('common.saving') }
       await createStore(user.id, {
-        name: form.name.value,
+        name: form.name.value.trim(),
         neighborhood_id: form.neighborhood_id.value,
         category_id: form.category_id.value,
-        whatsapp: form.whatsapp.value,
-        description: form.description.value,
-        address: form.address.value,
-        opening_hours: form.opening_hours.value,
+        whatsapp: form.whatsapp.value.trim(),
+        description: form.description.value.trim(),
+        address: form.address.value.trim(),
+        opening_hours: form.opening_hours.value.trim(),
       })
-      main.querySelector('#auth-error').innerHTML = `<div class="alert alert-success">${escapeHtml(t('auth.storeSubmittedSuccess'))}</div>`
+      msgEl.innerHTML = `<div class="alert alert-success">${escapeHtml(t('auth.storeSubmittedSuccess'))}</div>`
       setTimeout(() => navigate('/dashboard'), 1500)
     } catch (err) {
-      main.querySelector('#auth-error').innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
+      const message = err?.message || t('errors.generic')
+      msgEl.innerHTML = `<div class="alert alert-error">${escapeHtml(message)}</div>`
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false
+        submitBtn.textContent = t('auth.submitStoreRegistration')
+      }
     }
   })
 }

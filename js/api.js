@@ -605,28 +605,40 @@ export async function fetchStoreByOwner(ownerId) {
 
 export async function createStore(ownerId, form) {
   const client = await requireClient()
+  if (!ownerId) throw new Error(t('errors.sessionExpired'))
+  const name = String(form.name ?? '').trim()
+  if (!name) throw new Error(t('errors.informStoreName'))
+  const whatsapp = String(form.whatsapp ?? '').trim()
+  if (!whatsapp) throw new Error(t('errors.informPhone'))
+
   const neighborhood = await resolveActiveNeighborhoodLocation(client, form.neighborhood_id)
   await assertCategoryExists(client, form.category_id)
-  const slug = generateSlug(form.name)
+  const slug = generateSlug(name)
   const { data, error } = await client.from('stores').insert({
     owner_id: ownerId,
-    name: form.name,
+    name,
     slug,
-    description: form.description,
-    whatsapp: form.whatsapp,
-    address: form.address,
+    description: form.description ?? '',
+    whatsapp,
+    address: form.address ?? '',
     city: neighborhood.city,
     state: neighborhood.state,
     neighborhood_id: neighborhood.id,
     category_id: form.category_id,
-    opening_hours: form.opening_hours,
+    opening_hours: form.opening_hours ?? '',
     instagram: form.instagram || null,
     theme_color: form.theme_color ?? DEFAULT_THEME_COLOR,
     status: 'pending',
     plan_id: 'free',
     subscription_status: 'inactive',
   }).select().single()
-  if (error) throw error
+  if (error) {
+    // slug único — nome de loja já usado
+    if (error.code === '23505' || /duplicate|unique/i.test(error.message ?? '')) {
+      throw new Error(t('errors.storeNameTaken'))
+    }
+    throw error
+  }
   return data
 }
 
