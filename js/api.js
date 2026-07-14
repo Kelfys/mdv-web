@@ -27,6 +27,8 @@ import {
   DEFAULT_THEME_COLOR,
   isSeedMultiStoreOwnerEmail,
   isSeedProductsOwnerEmail,
+  isSeedProductsStore,
+  isPublicMarketplaceStore,
   SEED_PRODUCTS_STORE_SLUG,
 } from './config.js'
 import { STORAGE_BUCKETS, uploadImage } from './uploads.js'
@@ -586,7 +588,11 @@ export async function fetchStores(filters = {}) {
 
   const { data, error } = await query
   if (error) throw error
-  const stores = data ?? []
+  let stores = data ?? []
+  // Vitrine seed (produtosfake@): só balde de produtos no feed — não lista como loja
+  if (filters.marketplaceVisible) {
+    stores = stores.filter((s) => isPublicMarketplaceStore(s))
+  }
   if (!filters.marketplaceVisible) return stores
   const marketplaceStores = await Promise.all(
     stores.map((store) => downgradeExpiredStoreToFree(client, store)),
@@ -599,6 +605,8 @@ export async function fetchStores(filters = {}) {
 
 export async function fetchStoreBySlug(slug) {
   const client = await requireClient()
+  // Vitrine seed oculta: não abre página pública (#/loja/seed-produtos-fake)
+  if (isSeedProductsStore(slug)) return null
   const { data, error } = await client
     .from('stores')
     .select('*, category:categories(*)')
@@ -606,6 +614,7 @@ export async function fetchStoreBySlug(slug) {
     .single()
   if (error) return null
   if (!data || data.status !== 'approved') return null
+  if (isSeedProductsStore(data)) return null
   const store = await downgradeExpiredStoreToFree(client, data)
   if (!['active', 'trialing'].includes(store.subscription_status)) return null
   return stripStoreBannerIfPlanDisallows(store)
@@ -2689,6 +2698,8 @@ export async function fetchActiveFeedAds(limit = 6, neighborhoodId = null) {
   if (neighborhoodId) {
     rows = rows.filter((ad) => ad.store?.neighborhood_id === neighborhoodId)
   }
+  // Sem anúncios da vitrine seed (loja oculta no marketplace)
+  rows = rows.filter((ad) => isPublicMarketplaceStore(ad.store))
   return rows.slice(0, limit)
 }
 

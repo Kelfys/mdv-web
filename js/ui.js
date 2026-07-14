@@ -6,7 +6,10 @@
  *
  * Também: store-card, feed-product-card, cart-drawer e checkout com pagamentos por loja.
  */
-import { APP_NAME, faviconHref, profileIconHref, getStoreThemeColor, storeThemeButtonStyle, storeThemeOnColor } from './config.js'
+import {
+  APP_NAME, faviconHref, profileIconHref, getStoreThemeColor, storeThemeButtonStyle, storeThemeOnColor,
+  isSeedProductsStore,
+} from './config.js'
 import { t, deliveryPeriodLabel } from './strings.js'
 import { escapeHtml, formatCurrency, formatPhone } from './utils.js'
 import { isCatalogItemAvailable, getCatalogItemIcon, getCatalogItemLabel, isUsedProduct } from './catalog.js'
@@ -557,20 +560,24 @@ export function renderFeedProductCard(product, options = {}) {
       ? 'feed-product-card__badge--pick'
       : 'feed-product-card__badge--new'
   const store = product.store
+  // Produtos da vitrine seed: enchem o feed sem link/loja pública (vitrine fica oculta)
+  const seedProduct = isSeedProductsStore(store)
   const btnStyle = storeThemeButtonStyle(store?.theme_color)
-
-  return `
-    <article class="feed-product-card ${oos ? 'out-of-stock' : ''}">
-      <div class="feed-product-card__badge ${badgeClass}">${badgeLabel}</div>
-      <div class="feed-product-card__inner">
-        <div class="feed-product-card__media">
-          <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="feed-product-card__media-link">
+  const mediaInner = `
             ${product.image
               ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" />`
               : `<div class="feed-product-card__placeholder">${getCatalogItemIcon(product)}</div>`}
             ${renderUsedProductTag(product, 'feed-product-card__used-tag')}
-            ${oos ? `<span class="product-card__oos">${t('store.unavailable')}</span>` : ''}
-          </a>
+            ${oos ? `<span class="product-card__oos">${t('store.unavailable')}</span>` : ''}`
+
+  return `
+    <article class="feed-product-card ${oos ? 'out-of-stock' : ''}${seedProduct ? ' feed-product-card--seed' : ''}">
+      <div class="feed-product-card__badge ${badgeClass}">${badgeLabel}</div>
+      <div class="feed-product-card__inner">
+        <div class="feed-product-card__media">
+          ${seedProduct
+            ? `<div class="feed-product-card__media-link">${mediaInner}</div>`
+            : `<a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="feed-product-card__media-link">${mediaInner}</a>`}
           ${renderReportButton({
             type: 'product',
             id: product.id,
@@ -582,8 +589,10 @@ export function renderFeedProductCard(product, options = {}) {
           })}
         </div>
         <div class="feed-product-card__body">
-          <a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="feed-product-card__name">${escapeHtml(product.name)}</a>
-          ${store ? `<p class="feed-product-card__store">🏪 ${escapeHtml(store.name)}</p>` : ''}
+          ${seedProduct
+            ? `<span class="feed-product-card__name">${escapeHtml(product.name)}</span>`
+            : `<a href="#/loja/${escapeHtml(store?.slug ?? '')}" class="feed-product-card__name">${escapeHtml(product.name)}</a>`}
+          ${store && !seedProduct ? `<p class="feed-product-card__store">🏪 ${escapeHtml(store.name)}</p>` : ''}
           ${product.description ? `<p class="feed-product-card__desc">${escapeHtml(product.description)}</p>` : ''}
           <div class="feed-product-card__footer">
             <div class="feed-product-card__meta">

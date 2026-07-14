@@ -1450,7 +1450,9 @@ function renderStoreProductsPanel({ store, products, categories, readOnly = fals
           ${seedProductsStore ? `<p class="form-hint">${t('admin.seedProductsPanelHint')}</p>` : ''}
         </div>
         <div class="admin-store-products-main__actions">
-          ${store.status === 'approved' ? `<a href="#/loja/${escapeHtml(store.slug)}" class="btn btn-outline btn-sm">${t('merchant.viewPublicStore')}</a>` : ''}
+          ${store.status === 'approved' && !seedProductsStore
+            ? `<a href="#/loja/${escapeHtml(store.slug)}" class="btn btn-outline btn-sm">${t('merchant.viewPublicStore')}</a>`
+            : ''}
         </div>
       </div>
 

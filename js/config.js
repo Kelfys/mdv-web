@@ -30,10 +30,13 @@ export function isSeedMultiStoreOwnerEmail(email) {
 }
 
 /**
- * Conta seed de produtos demo (“órfãos” de lojista real).
- * Produtos no banco sempre têm store_id — esta conta tem 1 loja vitrine
- * (slug SEED_PRODUCTS_STORE_SLUG) onde o admin despeja itens de teste.
- * Apagar o usuário remove loja + produtos (cascade).
+ * Conta seed de produtos demo — só para encher o feed de itens (sem loja fake visível).
+ *
+ * - Produtos no banco precisam de store_id → 1 loja-balde (SEED_PRODUCTS_STORE_SLUG)
+ * - Essa loja NÃO aparece no marketplace nem em #/loja/… (oculta ao público)
+ * - Os produtos dela ENTRAM no feed (cards de produto) e no carrinho
+ * - Admin gerencia em #/admin/produtos (sidebar pinada)
+ * - Apagar o usuário remove loja + produtos (cascade)
  */
 export const SEED_PRODUCTS_OWNER_EMAIL = 'produtosfake@gmail.com'
 export const SEED_PRODUCTS_STORE_SLUG = 'seed-produtos-fake'
@@ -45,8 +48,14 @@ export function isSeedProductsOwnerEmail(email) {
 
 export function isSeedProductsStore(store) {
   if (!store) return false
+  if (typeof store === 'string') return store === SEED_PRODUCTS_STORE_SLUG
   if (store.slug === SEED_PRODUCTS_STORE_SLUG) return true
   return isSeedProductsOwnerEmail(store.owner?.email ?? store.owner_email)
+}
+
+/** Loja listável no marketplace público (feed de lojas, busca, página /loja/…). */
+export function isPublicMarketplaceStore(store) {
+  return Boolean(store) && !isSeedProductsStore(store)
 }
 
 /** Produção canônica no domínio próprio (Registro.br → GitHub Pages). */

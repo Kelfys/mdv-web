@@ -182,18 +182,18 @@ npm test
 | Admin | `brunopdaraujo@gmail.com` | `MarecAdmin2026!` | global |
 | Moderador | `moderador@maredevendas.com` | `DemoModerador2026!` | bairro ativo (ex.: Baixa do sapateiro) |
 | **Lojas fake (seed)** | `lojasfake@gmail.com` | `LojasFake2026!` | dono de **todas** as lojas ads/seed; **pode ter N lojas** |
-| **Produtos fake (seed)** | `produtosfake@gmail.com` | `ProdutosFake2026!` | dono da **vitrine** `seed-produtos-fake`; **N produtos** demo |
+| **Produtos fake (seed)** | `produtosfake@gmail.com` | `ProdutosFake2026!` | vitrine **oculta**; produtos só no **feed** |
 
 O moderador demo: login em `#/moderador/entrar`.
 
 ### Resumo das contas seed
 
-| Conta | Serve para | Limpeza |
-|-------|------------|---------|
-| `lojasfake@gmail.com` | Várias **lojas** fake no feed (ads/demo) | Apagar o perfil → cascade nas lojas |
-| `produtosfake@gmail.com` | **Produtos** demo na vitrine seed (1 loja-balde) | Apagar o perfil → loja + produtos em cascade |
+| Conta | Serve para | O visitante vê | Limpeza |
+|-------|------------|----------------|---------|
+| `lojasfake@gmail.com` | Várias **lojas** fake (ads/demo) | Lojas + produtos no marketplace | Apagar perfil → cascade lojas |
+| `produtosfake@gmail.com` | **Produtos** só para volume no feed | **Só produtos** (loja-balde oculta) | Apagar perfil → loja + produtos |
 
-Regra de produto no banco: **todo produto tem `store_id`**. Não se cria “órfão” real; o admin coloca itens demo na vitrine de `produtosfake@`.
+Regra: **todo produto tem `store_id`**. A vitrine `seed-produtos-fake` é só o “balde” técnico — não é loja pública.
 
 ### Lojas fake (`lojasfake@gmail.com`)
 
@@ -216,25 +216,32 @@ Para o marketplace parecer cheio sem misturar com usuários reais:
 
 Contas `demo-gratuito@…` / `demo-plus@…` antigas **sem loja** foram removidas na limpeza de órfãos; use admin + e-mail real (1 loja) ou `lojasfake@` (N lojas demo).
 
-### Produtos demo (`produtosfake@gmail.com`)
+### Produtos demo (`produtosfake@gmail.com`) — só encher o feed
 
-No schema **não existe produto sem loja** (`store_id` obrigatório). “Produto sem lojista real” = item na **vitrine seed** desta conta.
+**Objetivo:** mais **cards de produto** no feed, **sem** criar loja fake visível.
+
+No schema todo produto tem `store_id`. Solução: 1 loja-balde **oculta ao público**; os produtos dela **aparecem no feed**.
 
 | Item | Detalhe |
 |------|---------|
 | **E-mail / senha** | `produtosfake@gmail.com` / `ProdutosFake2026!` |
-| **Papel** | merchant |
-| **Loja** | `Vitrine demo (produtos seed)` · slug **`seed-produtos-fake`** |
-| **Plano da loja** | Premium na UI; na API **sem teto** de itens/fotos para esta loja (`isSeedProductsStoreId`) |
-| **Constantes** | `SEED_PRODUCTS_OWNER_EMAIL`, `SEED_PRODUCTS_STORE_SLUG`, `SEED_PRODUCTS_STORE_NAME` em `js/config.js` |
-| **Como usar (admin)** | `#/admin/produtos` → loja seed no **topo** da sidebar (badge **seed**) → **+ novo item** |
-| **Limpeza** | Excluir o perfil `produtosfake@gmail.com` → loja + produtos em cascade |
+| **Loja-balde** | `Vitrine demo (produtos seed)` · slug **`seed-produtos-fake`** |
+| **Público** | Produtos **sim** no feed · loja **não** (sem card de loja, sem `#/loja/seed-produtos-fake`) |
+| **Card no feed** | Nome + preço + **+ Carrinho** (sem link “ver loja”) |
+| **Admin** | `#/admin/produtos` → loja seed no **topo** (badge seed) → criar itens (sem teto de plano) |
+| **Constantes** | `SEED_PRODUCTS_*`, `isSeedProductsStore`, `isPublicMarketplaceStore` em `js/config.js` |
+| **Limpeza** | Excluir `produtosfake@gmail.com` → loja + produtos em cascade |
 
 ```bash
 # Pasta scripts/ é local (gitignored). Requer DATABASE_URL em .env.local
 node scripts/ensure-produtosfake.mjs           # dry-run
 node scripts/ensure-produtosfake.mjs --apply   # cria conta + loja se faltarem
 ```
+
+| Conta seed | O que o visitante vê |
+|------------|----------------------|
+| `lojasfake@` | Lojas (e produtos delas) no marketplace |
+| `produtosfake@` | **Só produtos** no feed; vitrine escondida |
 
 ---
 
