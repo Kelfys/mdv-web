@@ -215,13 +215,24 @@ export async function renderStorePage(main, { slug }) {
     })
 
     main.querySelectorAll('[data-add-product]').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
         const product = productMap.get(btn.dataset.addProduct)
-        if (product) {
-          addItem(product)
-          openCart()
-          paint()
+        if (!product) {
+          showToast(t('errors.productNotFound'))
+          return
         }
+        // Garante loja no carrinho (caso venha de outra loja / estado antigo)
+        setStore(
+          store.id,
+          store.name,
+          store.whatsapp,
+          normalizeStorePaymentMethods(store.payment_methods),
+        )
+        addItem(product)
+        openCart()
+        paint()
       })
     })
 

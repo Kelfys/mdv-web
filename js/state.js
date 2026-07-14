@@ -187,11 +187,13 @@ export function clearCart() {
 
 export function openCart() {
   cart = { ...cart, isOpen: true }
+  saveCart(cart)
   notifyCart()
 }
 
 export function closeCart() {
   cart = { ...cart, isOpen: false }
+  saveCart(cart)
   notifyCart()
 }
 

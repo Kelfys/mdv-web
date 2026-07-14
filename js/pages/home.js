@@ -184,9 +184,19 @@ export async function renderHome(main) {
 
   function bindFeedEvents() {
     main.querySelectorAll('[data-feed-add-product]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const product = productMap.get(btn.dataset.feedAddProduct)
-        if (!product?.store) return
+      btn.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const productId = btn.dataset.feedAddProduct
+        const product = productMap.get(productId)
+        if (!product) {
+          showToast(t('errors.productNotFound'))
+          return
+        }
+        if (!product.store) {
+          showToast(t('checkout.storeNoWhatsapp'))
+          return
+        }
 
         setStore(
           product.store.id,

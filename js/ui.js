@@ -148,6 +148,9 @@ export function renderHeader() {
   const onCustomerAccount = user?.role === 'customer' && isCustomerAccountPath(currentPath)
   const customerTab = onCustomerAccount ? getCustomerTab(currentPath) : null
   const isCustomerPublic = user?.role === 'customer' && !onStaff && !onMerchant
+  // Carrinho no site público: visitante + cliente (e admin/mod fora do painel).
+  // Antes só cliente logado via — visitante não via o botão e achava que “não funciona”.
+  const showCartButton = !onStaff && !onMerchant
   const cartCount = getCartItemCount()
   const themeIcon = getTheme() === 'dark' ? '☀️' : '🌙'
 
@@ -179,7 +182,7 @@ export function renderHeader() {
       </nav>
 
       <div class="header__actions">
-        ${isCustomerPublic ? renderCartHeaderButton(cartCount) : ''}
+        ${showCartButton ? renderCartHeaderButton(cartCount) : ''}
         <button type="button" class="icon-btn header__action--desktop" id="theme-toggle" title="${t('nav.toggleTheme')}" aria-label="${t('nav.toggleTheme')}">${themeIcon}</button>
 
         ${user?.role === 'customer' ? `<a href="${customerMenuHref(CUSTOMER_MENU[0])}" class="icon-btn icon-btn--avatar header__action--desktop" title="${t('nav.myAccount')}" aria-label="${t('nav.myAccount')}">${renderProfileAvatar()}</a>` : ''}
