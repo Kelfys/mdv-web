@@ -36,12 +36,16 @@ describe('strings', () => {
     expect(rebuilt).toEqual(STRINGS)
   })
 
-  it('serializeStringsModule includes export and helpers', () => {
+  it('serializeStringsModule includes export and helpers used by the app', () => {
     const out = serializeStringsModule(STRINGS)
     expect(out).toContain('export const STRINGS =')
     expect(out).toContain('export function t(')
+    expect(out).toContain('export function deliveryPeriodLabel(')
+    expect(out).toContain('export function orderStatusLabel(')
     expect(out).toContain('export function flattenStrings(')
     expect(out).toContain('export function unflattenStrings(')
+    expect(out).toContain('export function serializeStringsModule(')
     expect(out).toContain('"home": "Início"')
+    expect(out).toContain('featureFreeItems1')
   })
 })

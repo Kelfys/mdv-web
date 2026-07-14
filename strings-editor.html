@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <title>Editor de textos — MaredeVendas</title>
   <link rel="icon" href="favicon.svg?v=20260713e" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -13,9 +14,9 @@
   <link rel="stylesheet" href="css/styles.css" />
   <style>
     .strings-editor {
-      max-width: 56rem;
+      max-width: 58rem;
       margin: 0 auto;
-      padding: 1.25rem 1rem 3rem;
+      padding: 1.25rem 1rem 4rem;
     }
 
     .strings-editor__header {
@@ -24,7 +25,7 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 1rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
     }
 
     .strings-editor__title {
@@ -37,14 +38,36 @@
       margin-top: 0.35rem;
       color: var(--text-secondary);
       font-size: 0.9rem;
-      max-width: 36rem;
+      max-width: 38rem;
+      line-height: 1.45;
+    }
+
+    .strings-editor__steps {
+      margin: 0 0 1.25rem;
+      padding: 0.85rem 1rem;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: var(--surface-tertiary);
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .strings-editor__steps strong {
+      color: var(--text);
     }
 
     .strings-editor__toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
       margin-bottom: 1rem;
+      padding: 0.65rem 0;
+      background: color-mix(in srgb, var(--bg, var(--surface)) 92%, transparent);
+      backdrop-filter: blur(6px);
     }
 
     .strings-editor__filters {
@@ -94,6 +117,18 @@
       font-size: 0.9rem;
     }
 
+    .strings-editor__group-label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+
+    .strings-editor__group-label small {
+      font-weight: 500;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+    }
+
     .strings-editor__group-count {
       font-weight: 500;
       color: var(--text-secondary);
@@ -102,7 +137,7 @@
 
     .strings-editor__row {
       display: grid;
-      grid-template-columns: 11rem 1fr auto;
+      grid-template-columns: 12rem 1fr auto;
       gap: 0.75rem;
       align-items: start;
       padding: 0.75rem 1rem;
@@ -115,10 +150,6 @@
 
     .strings-editor__row--changed {
       background: color-mix(in srgb, var(--amber-500) 8%, var(--surface));
-    }
-
-    .strings-editor__row--hidden {
-      display: none;
     }
 
     @media (max-width: 720px) {
@@ -148,6 +179,7 @@
       background: var(--surface-secondary);
       resize: vertical;
       line-height: 1.4;
+      font: inherit;
     }
 
     .strings-editor__input:focus {
@@ -181,6 +213,7 @@
       position: fixed;
       bottom: 1.25rem;
       right: 1.25rem;
+      max-width: min(22rem, calc(100vw - 2rem));
       padding: 0.75rem 1rem;
       background: var(--text);
       color: var(--surface);
@@ -217,12 +250,21 @@
       <div>
         <h1 class="strings-editor__title">Editor de textos</h1>
         <p class="strings-editor__subtitle">
-          Encontre e edite todos os textos estáticos do app. As alterações ficam salvas como rascunho no navegador.
-          Para aplicar no projeto, baixe o arquivo <code>strings.js</code> e substitua <code>js/strings.js</code>.
+          Todos os textos estáticos do app (menus, erros, planos, WhatsApp…).
+          Rascunho fica só neste navegador até você baixar o arquivo e commitar no projeto.
         </p>
       </div>
       <a href="./" class="btn btn-outline">← Voltar ao site</a>
     </header>
+
+    <p class="strings-editor__steps">
+      <strong>Como aplicar no site:</strong>
+      1) edite e salve o rascunho ·
+      2) <strong>Baixar strings.js</strong> ·
+      3) substitua <code>js/strings.js</code> no repositório ·
+      4) commit + deploy.
+      Placeholders como <code>{count}</code> e <code>{name}</code> devem permanecer no texto.
+    </p>
 
     <div class="strings-editor__toolbar">
       <button type="button" class="btn btn-primary" id="btn-download">Baixar strings.js</button>
@@ -237,7 +279,7 @@
         type="search"
         id="search"
         class="form-input"
-        placeholder="Buscar por chave ou texto..."
+        placeholder="Buscar por chave ou texto (ex.: free, WhatsApp, favoritos)…"
         autocomplete="off"
       />
       <select id="group-filter" class="form-input" aria-label="Filtrar por grupo">
@@ -256,19 +298,47 @@
   <div class="strings-editor__toast" id="toast" role="status"></div>
 
   <script type="module">
-    import {
+    // ?v= evita cache velho de strings.js no domínio de produção
+    const STRINGS_URL = './js/strings.js?v=' + Date.now()
+
+    const {
       STRINGS,
       flattenStrings,
       unflattenStrings,
       serializeStringsModule,
       t,
-    } from './js/strings.js'
+    } = await import(STRINGS_URL)
 
-    const STORAGE_KEY = 'maredevendas-strings-draft'
+    const STORAGE_KEY = 'maredevendas-strings-draft-v2'
     const originalRows = flattenStrings(STRINGS)
     const originalMap = new Map(originalRows.map((r) => [r.key, r.value]))
 
-    let draftMap = loadDraft() ?? new Map(originalMap)
+    /** Rótulos amigáveis dos grupos (chave do STRINGS). */
+    const GROUP_LABELS = {
+      app: 'App / meta',
+      nav: 'Menu e navegação',
+      home: 'Home / feed',
+      store: 'Página da loja',
+      cart: 'Carrinho',
+      auth: 'Login e cadastro',
+      merchant: 'Painel lojista',
+      admin: 'Admin / moderador',
+      plans: 'Planos e limites',
+      errors: 'Erros e validação',
+      whatsapp: 'Mensagens WhatsApp',
+      catalog: 'Catálogo',
+      engagement: 'Engajamento',
+      report: 'Denúncias',
+      common: 'Comuns',
+      customer: 'Cliente',
+      uploads: 'Uploads',
+      rules: 'Regras',
+      payment: 'Pagamento',
+      orderStatus: 'Status do pedido',
+      deliveryPeriod: 'Horário de entrega',
+    }
+
+    let draftMap = mergeDraftWithOriginal(loadDraft())
     let showChangedOnly = false
 
     const els = {
@@ -284,13 +354,16 @@
     for (const name of groupNames) {
       const opt = document.createElement('option')
       opt.value = name
-      opt.textContent = name
+      const label = GROUP_LABELS[name]
+      opt.textContent = label ? `${name} — ${label}` : name
       els.groupFilter.appendChild(opt)
     }
 
     function loadDraft() {
       try {
+        // Migra rascunho da chave antiga, se existir
         const raw = localStorage.getItem(STORAGE_KEY)
+          ?? localStorage.getItem('maredevendas-strings-draft')
         if (!raw) return null
         const parsed = JSON.parse(raw)
         if (!Array.isArray(parsed)) return null
@@ -300,13 +373,25 @@
       }
     }
 
+    /** Mantém chaves novas do catálogo; aplica rascunho só em chaves que ainda existem. */
+    function mergeDraftWithOriginal(draft) {
+      const merged = new Map(originalMap)
+      if (!draft) return merged
+      for (const [key, value] of draft) {
+        if (merged.has(key)) merged.set(key, value)
+      }
+      return merged
+    }
+
     function saveDraft() {
       const rows = [...draftMap.entries()].map(([key, value]) => ({ key, value }))
       localStorage.setItem(STORAGE_KEY, JSON.stringify(rows))
+      localStorage.removeItem('maredevendas-strings-draft')
     }
 
     function clearDraft() {
       localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem('maredevendas-strings-draft')
       draftMap = new Map(originalMap)
     }
 
@@ -333,7 +418,7 @@
       clearTimeout(showToast._t)
       showToast._t = setTimeout(() => {
         els.toast.classList.remove('strings-editor__toast--visible')
-      }, 2600)
+      }, 2800)
     }
 
     function matchesFilter(key, value) {
@@ -343,6 +428,14 @@
       if (showChangedOnly && !isChanged(key)) return false
       if (!q) return true
       return key.toLowerCase().includes(q) || value.toLowerCase().includes(q)
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
     }
 
     function render() {
@@ -370,7 +463,13 @@
 
         const header = document.createElement('div')
         header.className = 'strings-editor__group-header'
-        header.innerHTML = `<span>${group}</span><span class="strings-editor__group-count">${items.length} texto(s)</span>`
+        const label = GROUP_LABELS[group]
+        header.innerHTML = `
+          <span class="strings-editor__group-label">
+            <span>${escapeHtml(group)}</span>
+            ${label ? `<small>${escapeHtml(label)}</small>` : ''}
+          </span>
+          <span class="strings-editor__group-count">${items.length} texto(s)</span>`
         section.appendChild(header)
 
         for (const { key, rest, value } of items) {
@@ -380,7 +479,7 @@
 
           const keyEl = document.createElement('div')
           keyEl.className = 'strings-editor__key'
-          keyEl.innerHTML = `<code>${rest}</code>`
+          keyEl.innerHTML = `<code>${escapeHtml(rest)}</code>`
           if (isChanged(key)) {
             const badge = document.createElement('span')
             badge.className = 'strings-editor__badge'
@@ -394,6 +493,7 @@
           input.rows = value.length > 60 || value.includes('\n') ? 3 : 1
           input.value = value
           input.setAttribute('aria-label', key)
+          input.spellcheck = true
           input.addEventListener('input', () => {
             draftMap.set(key, input.value)
             row.classList.toggle('strings-editor__row--changed', isChanged(key))
@@ -431,14 +531,14 @@
       const total = originalRows.length
       const changed = changedCount()
       const visible = visibleCount ?? [...draftMap.keys()].filter((key) =>
-        matchesFilter(key, draftMap.get(key) ?? '')
+        matchesFilter(key, draftMap.get(key) ?? ''),
       ).length
       const preview = t('nav.home')
       els.stats.innerHTML = `
         <span><strong>${total}</strong> textos no catálogo</span>
         <span><strong>${changed}</strong> alterado(s)</span>
-        <span><strong>${visible}</strong> visível(is) com filtro</span>
-        <span>Exemplo: t('nav.home') → <strong>${preview}</strong></span>
+        <span><strong>${visible}</strong> visível(is)</span>
+        <span>Ex.: t('nav.home') → <strong>${escapeHtml(preview)}</strong></span>
       `
       document.getElementById('btn-show-changed').textContent = showChangedOnly
         ? 'Mostrar todos'
@@ -454,13 +554,13 @@
       a.download = 'strings.js'
       a.click()
       URL.revokeObjectURL(url)
-      showToast('strings.js baixado — substitua js/strings.js no projeto')
+      showToast('strings.js baixado — substitua js/strings.js e faça deploy')
     }
 
     async function copyStringsJs() {
       const content = serializeStringsModule(currentStrings())
       await navigator.clipboard.writeText(content)
-      showToast('Conteúdo copiado para a área de transferência')
+      showToast('Conteúdo copiado — cole em js/strings.js')
     }
 
     document.getElementById('btn-download').addEventListener('click', downloadStringsJs)

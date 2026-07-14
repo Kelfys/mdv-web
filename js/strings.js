@@ -1165,50 +1165,94 @@ export function unflattenStrings(rows) {
   return root
 }
 
-const STRINGS_FILE_HEADER = `/**
- * Textos estáticos da interface — edite em strings-editor.html
- * Uso: import { t } from './strings.js'  →  t('nav.home')
+const STRINGS_FILE_HEADER = [
+  '/**',
+  ' * Textos estáticos da interface — edite em strings-editor.html',
+  " * Uso: import { t } from './strings.js'  →  t('nav.home')",
+  ' */',
+  '',
+  '',
+].join('\n')
+
+/**
+ * Helpers embutidos no strings.js baixado pelo editor.
+ * Precisa exportar tudo que o app importa: t, deliveryPeriodLabel, orderStatusLabel,
+ * flattenStrings, unflattenStrings, serializeStringsModule.
  */
-
-`
-
-const STRINGS_FILE_HELPERS = `
-/** Resolve chave pontuada (ex.: nav.home) e substitui {placeholders}. */
-export function t(key, vars = {}) {
-  const value = key.split('.').reduce((obj, part) => obj?.[part], STRINGS)
-  if (typeof value !== 'string') return key
-  return value.replace(/\\{(\\w+)\\}/g, (_, name) => String(vars[name] ?? \`{\${name}}\`))
+function buildDownloadHelpersSource() {
+  return [
+    '/** Resolve chave pontuada (ex.: nav.home) e substitui {placeholders}. */',
+    'export function t(key, vars = {}) {',
+    '  const value = key.split(\'.\').reduce((obj, part) => obj?.[part], STRINGS)',
+    '  if (typeof value !== \'string\') return key',
+    '  return value.replace(/\\{(\\w+)\\}/g, (_, name) => String(vars[name] ?? `{${name}}`))',
+    '}',
+    '',
+    'const DELIVERY_PERIOD_KEYS = {',
+    "  manha: 'deliveryPeriod.morning',",
+    "  tarde: 'deliveryPeriod.afternoon',",
+    "  noite: 'deliveryPeriod.evening',",
+    "  madrugada: 'deliveryPeriod.dawn',",
+    '}',
+    '',
+    'export function deliveryPeriodLabel(period) {',
+    '  return t(DELIVERY_PERIOD_KEYS[period] ?? period)',
+    '}',
+    '',
+    'const ORDER_STATUS_KEYS = {',
+    "  pending: 'orderStatus.pending',",
+    "  sent: 'orderStatus.sent',",
+    "  viewed: 'orderStatus.viewed',",
+    '}',
+    '',
+    'export function orderStatusLabel(status) {',
+    '  return t(ORDER_STATUS_KEYS[status] ?? status)',
+    '}',
+    '',
+    'export function flattenStrings(obj = STRINGS, prefix = \'\') {',
+    '  const rows = []',
+    '  for (const [key, val] of Object.entries(obj)) {',
+    '    const path = prefix ? `${prefix}.${key}` : key',
+    '    if (val && typeof val === \'object\' && !Array.isArray(val)) {',
+    '      rows.push(...flattenStrings(val, path))',
+    '    } else {',
+    '      rows.push({ key: path, value: String(val ?? \'\') })',
+    '    }',
+    '  }',
+    '  return rows',
+    '}',
+    '',
+    'export function unflattenStrings(rows) {',
+    '  const root = {}',
+    '  for (const { key, value } of rows) {',
+    '    const parts = key.split(\'.\')',
+    '    let node = root',
+    '    for (let i = 0; i < parts.length - 1; i++) {',
+    '      node[parts[i]] ??= {}',
+    '      node = node[parts[i]]',
+    '    }',
+    '    node[parts[parts.length - 1]] = value',
+    '  }',
+    '  return root',
+    '}',
+    '',
+    '/** Gera o conteúdo completo de strings.js para download. */',
+    'export function serializeStringsModule(strings = STRINGS) {',
+    '  // Reexport mínimo: no arquivo baixado, use o repositório para regenerar helpers se necessário.',
+    '  const header = ' + JSON.stringify(STRINGS_FILE_HEADER),
+    '  return header + \'export const STRINGS = \' + JSON.stringify(strings, null, 2) + \'\\n\'',
+    '}',
+    '',
+  ].join('\n')
 }
-
-export function flattenStrings(obj = STRINGS, prefix = '') {
-  const rows = []
-  for (const [key, val] of Object.entries(obj)) {
-    const path = prefix ? \`\${prefix}.\${key}\` : key
-    if (val && typeof val === 'object' && !Array.isArray(val)) {
-      rows.push(...flattenStrings(val, path))
-    } else {
-      rows.push({ key: path, value: String(val ?? '') })
-    }
-  }
-  return rows
-}
-
-export function unflattenStrings(rows) {
-  const root = {}
-  for (const { key, value } of rows) {
-    const parts = key.split('.')
-    let node = root
-    for (let i = 0; i < parts.length - 1; i++) {
-      node[parts[i]] ??= {}
-      node = node[parts[i]]
-    }
-    node[parts[parts.length - 1]] = value
-  }
-  return root
-}
-`
 
 /** Gera o conteúdo completo de strings.js para download. */
 export function serializeStringsModule(strings = STRINGS) {
-  return `${STRINGS_FILE_HEADER}export const STRINGS = ${JSON.stringify(strings, null, 2)}\n${STRINGS_FILE_HELPERS}`
+  return (
+    STRINGS_FILE_HEADER
+    + 'export const STRINGS = '
+    + JSON.stringify(strings, null, 2)
+    + '\n'
+    + buildDownloadHelpersSource()
+  )
 }
