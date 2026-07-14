@@ -1000,16 +1000,59 @@ html[data-theme='dark'][data-logo-accent='preto'] .logo__accent { color: #e7e9ea
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  padding-bottom: 0.25rem;
+  padding-bottom: 0.35rem;
   scrollbar-width: none;
   min-width: 0;
   flex: 1;
+  /* Desktop: indica que a faixa é rolável / arrastável */
+  cursor: grab;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .category-scroll::-webkit-scrollbar { display: none; }
 
+.category-scroll--dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.category-scroll--dragging .chip {
+  pointer-events: none;
+}
+
+/* Desktop: barra fina para arrastar com o mouse (além do drag JS) */
+@media (min-width: 768px) {
+  .category-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--text-muted) 55%, transparent) transparent;
+  }
+
+  .category-scroll::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+
+  .category-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .category-scroll::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--text-muted) 45%, transparent);
+    border-radius: 999px;
+  }
+
+  .category-scroll::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--text-muted) 70%, transparent);
+  }
+}
+
 .category-scroll--fade {
+  /* Fade só nas pontas, sem cobrir a barra de scroll embaixo */
   mask-image: linear-gradient(to right, transparent, #000 0.75rem, #000 calc(100% - 0.75rem), transparent);
+  mask-size: 100% calc(100% - 6px);
+  mask-position: top;
+  mask-repeat: no-repeat;
 }
 
 .chip {

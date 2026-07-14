@@ -25,6 +25,72 @@ const FEED_PRODUCT_LIMIT = 100
 const FEED_ADS_LIMIT = 24
 const FEED_SKELETON_COUNT = 6
 
+/**
+ * Scroll horizontal de chips (bairros/categorias) no desktop:
+ * roda do mouse e arrastar com o botão esquerdo.
+ * (overflow-x sozinho só funciona bem com touchpad/touch.)
+ */
+function bindChipRowScroll(el) {
+  if (!el || el.dataset.chipScrollBound === '1') return
+  el.dataset.chipScrollBound = '1'
+
+  el.addEventListener('wheel', (e) => {
+    if (el.scrollWidth <= el.clientWidth + 1) return
+    // Preferir scroll horizontal na faixa de chips (roda vertical vira horizontal)
+    if (Math.abs(e.deltaY) >= Math.abs(e.deltaX)) {
+      e.preventDefault()
+      el.scrollLeft += e.deltaY
+    }
+  }, { passive: false })
+
+  let dragging = false
+  let moved = false
+  let startX = 0
+  let startLeft = 0
+
+  el.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    if (el.scrollWidth <= el.clientWidth + 1) return
+    dragging = true
+    moved = false
+    startX = e.clientX
+    startLeft = el.scrollLeft
+    el.classList.add('category-scroll--dragging')
+    try { el.setPointerCapture(e.pointerId) } catch { /* ignore */ }
+  })
+
+  el.addEventListener('pointermove', (e) => {
+    if (!dragging) return
+    const dx = e.clientX - startX
+    if (Math.abs(dx) > 4) {
+      moved = true
+      el.scrollLeft = startLeft - dx
+    }
+  })
+
+  const endDrag = (e) => {
+    if (!dragging) return
+    dragging = false
+    el.classList.remove('category-scroll--dragging')
+    try { el.releasePointerCapture?.(e.pointerId) } catch { /* ignore */ }
+  }
+
+  el.addEventListener('pointerup', endDrag)
+  el.addEventListener('pointercancel', endDrag)
+  el.addEventListener('lostpointercapture', () => {
+    dragging = false
+    el.classList.remove('category-scroll--dragging')
+  })
+
+  // Após arrastar, bloqueia o click no chip (evita trocar filtro sem querer)
+  el.addEventListener('click', (e) => {
+    if (!moved) return
+    e.preventDefault()
+    e.stopPropagation()
+    moved = false
+  }, true)
+}
+
 function renderHomeEmptyState({ icon, title, body, actionHtml = '' }) {
   return `
     <div class="home-empty">
@@ -286,6 +352,9 @@ export async function renderHome(main) {
         load()
       })
     })
+
+    bindChipRowScroll(main.querySelector('#neighborhoods'))
+    bindChipRowScroll(main.querySelector('#categories'))
 
     main.querySelector('#feed-pagination')?.addEventListener('click', (event) => {
       const pageInfo = getFeedPage()
