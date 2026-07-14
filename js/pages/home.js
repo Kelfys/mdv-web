@@ -25,14 +25,6 @@ const FEED_PRODUCT_LIMIT = 100
 const FEED_ADS_LIMIT = 24
 const FEED_SKELETON_COUNT = 6
 
-function countUniqueProducts(...lists) {
-  const ids = new Set()
-  for (const list of lists) {
-    for (const product of list ?? []) ids.add(product.id)
-  }
-  return ids.size
-}
-
 function renderHomeEmptyState({ icon, title, body, actionHtml = '' }) {
   return `
     <div class="home-empty">
@@ -164,14 +156,6 @@ export async function renderHome(main) {
 
   function renderHero(selectedNeighborhood) {
     const neighborhoodLabel = selectedNeighborhood ? formatNeighborhoodLabel(selectedNeighborhood) : ''
-    const productCount = countUniqueProducts(newProducts, likedProducts)
-    const statsText = productCount > 0
-      ? (neighborhoodId
-        ? t('home.heroStats', { stores: stores.length, products: productCount })
-        : t('home.heroStatsAll', { stores: stores.length, products: productCount }))
-      : (neighborhoodId
-        ? t('home.heroStatsStoresOnly', { stores: stores.length })
-        : t('home.heroStatsStoresOnlyAll', { stores: stores.length }))
 
     return `
       <section class="home-hero">
@@ -180,7 +164,6 @@ export async function renderHome(main) {
             <p class="home-hero__eyebrow">${t('home.heroEyebrow')}</p>
             <h1 class="home-hero__title">${t('home.heroTitle')}</h1>
             ${neighborhoodLabel ? `<p class="home-hero__location">📍 ${escapeHtml(neighborhoodLabel)}</p>` : ''}
-            ${neighborhoods.length ? `<p class="home-hero__stats">${escapeHtml(statsText)}</p>` : ''}
           </div>
         </div>
       </section>`
