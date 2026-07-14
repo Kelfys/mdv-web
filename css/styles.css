@@ -213,7 +213,7 @@ img { max-width: 100%; display: block; }
   font-weight: 700;
 }
 
-/* “Vendas” — sempre dourado (não muda com alerta) */
+/* “Vendas” — sempre dourado da marca (nunca azul do tema escuro) */
 [data-theme='light'] .logo__vendas,
 :root:not([data-theme='dark']) .logo__vendas {
   background: var(--ig-gradient);
@@ -226,7 +226,7 @@ img { max-width: 100%; display: block; }
   background: none;
   -webkit-background-clip: unset;
   background-clip: unset;
-  color: var(--primary-600);
+  color: #fbd000; /* pixel-yellow — legível no dark, não usa --primary-600 azul */
 }
 
 /* “Maré” — normal = dourado; outros modos = cores de alerta */
@@ -238,11 +238,12 @@ img { max-width: 100%; display: block; }
   color: transparent;
 }
 
+/* Maré no dark só quando normal / sem data-logo-accent (alerta sobrescreve abaixo) */
 [data-theme='dark'] .logo__accent {
   background: none;
   -webkit-background-clip: unset;
   background-clip: unset;
-  color: var(--primary-600);
+  color: #fbd000;
 }
 
 html[data-logo-accent='promo'] .logo__accent,
