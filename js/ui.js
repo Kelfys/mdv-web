@@ -158,7 +158,9 @@ export function renderHeader() {
         <div class="logo__icon logo__icon--image">
           <img src="${escapeHtml(faviconHref())}" alt="" width="28" height="28" decoding="async" />
         </div>
-        <span class="logo__text">${APP_NAME.replace('Vendas', '')}<span class="accent">Vendas</span></span>
+        <span class="logo__text" aria-label="Maré de Vendas">
+          <span class="logo__accent">Maré</span><span class="logo__mid"> de </span><span class="logo__vendas">Vendas</span>
+        </span>
       </a>
 
       <nav class="nav-desktop">

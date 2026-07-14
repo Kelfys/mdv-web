@@ -204,53 +204,71 @@ img { max-width: 100%; display: block; }
   height: 2.25rem;
 }
 
-/* “Vendas” no logo — cor por status (html[data-logo-accent]). Admin: Conta. */
-/* Normal (light): degradê dourado */
-html:not([data-logo-accent]),
-html[data-logo-accent='normal'] {
-  /* marcador default */
+/*
+ * Logo: Maré (alerta) + de (preto/texto) + Vendas (dourado fixo).
+ * Status em html[data-logo-accent] só afeta .logo__accent (“Maré”). Admin: Conta.
+ */
+.logo__mid {
+  color: var(--text);
+  font-weight: 700;
 }
 
-[data-theme='light'] .logo span.accent,
-:root:not([data-theme='dark']) .logo span.accent {
+/* “Vendas” — sempre dourado (não muda com alerta) */
+[data-theme='light'] .logo__vendas,
+:root:not([data-theme='dark']) .logo__vendas {
   background: var(--ig-gradient);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-[data-theme='dark'] .logo span.accent {
+[data-theme='dark'] .logo__vendas {
   background: none;
   -webkit-background-clip: unset;
   background-clip: unset;
   color: var(--primary-600);
 }
 
-/* Presets sólidos — light + dark */
-html[data-logo-accent='promo'] .logo span.accent,
-html[data-logo-accent='alerta'] .logo span.accent,
-html[data-logo-accent='urgente'] .logo span.accent,
-html[data-logo-accent='info'] .logo span.accent,
-html[data-logo-accent='rosa'] .logo span.accent,
-html[data-logo-accent='preto'] .logo span.accent {
+/* “Maré” — normal = dourado; outros modos = cores de alerta */
+[data-theme='light'] .logo__accent,
+:root:not([data-theme='dark']) .logo__accent {
+  background: var(--ig-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+[data-theme='dark'] .logo__accent {
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  color: var(--primary-600);
+}
+
+html[data-logo-accent='promo'] .logo__accent,
+html[data-logo-accent='alerta'] .logo__accent,
+html[data-logo-accent='urgente'] .logo__accent,
+html[data-logo-accent='info'] .logo__accent,
+html[data-logo-accent='rosa'] .logo__accent,
+html[data-logo-accent='preto'] .logo__accent {
   background: none !important;
   -webkit-background-clip: unset !important;
   background-clip: unset !important;
 }
 
-html[data-logo-accent='promo'] .logo span.accent { color: #e65100 !important; }
-html[data-logo-accent='alerta'] .logo span.accent { color: #2e7d32 !important; } /* verde (era amarelo) */
-html[data-logo-accent='urgente'] .logo span.accent { color: #c62828 !important; }
-html[data-logo-accent='info'] .logo span.accent { color: #1565c0 !important; }
-html[data-logo-accent='rosa'] .logo span.accent { color: #c2185b !important; }
-html[data-logo-accent='preto'] .logo span.accent { color: #1a1a1a !important; }
+html[data-logo-accent='promo'] .logo__accent { color: #e65100 !important; }
+html[data-logo-accent='alerta'] .logo__accent { color: #2e7d32 !important; }
+html[data-logo-accent='urgente'] .logo__accent { color: #c62828 !important; }
+html[data-logo-accent='info'] .logo__accent { color: #1565c0 !important; }
+html[data-logo-accent='rosa'] .logo__accent { color: #c2185b !important; }
+html[data-logo-accent='preto'] .logo__accent { color: #1a1a1a !important; }
 
-html[data-theme='dark'][data-logo-accent='promo'] .logo span.accent { color: #ff9800 !important; }
-html[data-theme='dark'][data-logo-accent='alerta'] .logo span.accent { color: #66bb6a !important; }
-html[data-theme='dark'][data-logo-accent='urgente'] .logo span.accent { color: #ef5350 !important; }
-html[data-theme='dark'][data-logo-accent='info'] .logo span.accent { color: #42a5f5 !important; }
-html[data-theme='dark'][data-logo-accent='rosa'] .logo span.accent { color: #f48fb1 !important; }
-html[data-theme='dark'][data-logo-accent='preto'] .logo span.accent { color: #e7e9ea !important; } /* claro no dark */
+html[data-theme='dark'][data-logo-accent='promo'] .logo__accent { color: #ff9800 !important; }
+html[data-theme='dark'][data-logo-accent='alerta'] .logo__accent { color: #66bb6a !important; }
+html[data-theme='dark'][data-logo-accent='urgente'] .logo__accent { color: #ef5350 !important; }
+html[data-theme='dark'][data-logo-accent='info'] .logo__accent { color: #42a5f5 !important; }
+html[data-theme='dark'][data-logo-accent='rosa'] .logo__accent { color: #f48fb1 !important; }
+html[data-theme='dark'][data-logo-accent='preto'] .logo__accent { color: #e7e9ea !important; }
 
 .nav-desktop {
   display: none;

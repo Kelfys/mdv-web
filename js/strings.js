@@ -785,7 +785,7 @@ export const STRINGS = {
     "passwordsMismatch": "As senhas não coincidem.",
     "passwordChangedSuccess": "Senha alterada com sucesso.",
     "logoAccentTitle": "Cor de alerta do logo",
-    "logoAccentHint": "Muda a cor de “Vendas” no cabeçalho para todos os visitantes. Use para promo, aviso ou urgência — sem editar CSS.",
+    "logoAccentHint": "Muda a cor de “Maré” no cabeçalho para todos os visitantes. “de” fica preto e “Vendas” dourado. Use para promo, aviso ou urgência.",
     "logoAccentLabel": "Status atual",
     "logoAccentSave": "Aplicar no site",
     "logoAccentSaved": "Cor do logo atualizada para todos!",

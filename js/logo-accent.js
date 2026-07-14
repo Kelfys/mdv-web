@@ -1,6 +1,7 @@
 /**
- * Cor de alerta do “Vendas” no logo do cabeçalho.
- * Presets em CSS: html[data-logo-accent="…"] .logo span.accent
+ * Cor de alerta do “Maré” no logo do cabeçalho.
+ * Presets em CSS: html[data-logo-accent="…"] .logo__accent
+ * “de” = texto normal; “Vendas” = dourado fixo (.logo__vendas).
  * Valor público em platform_settings.logo_accent (todos os visitantes).
  */
 import { t } from './strings.js'
