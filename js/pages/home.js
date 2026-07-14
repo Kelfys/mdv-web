@@ -52,6 +52,8 @@ function bindChipRowScroll(el) {
   if (!el || el.dataset.chipScrollBound === '1') return
   el.dataset.chipScrollBound = '1'
 
+  const DRAG_THRESHOLD = 6
+
   const onScrollOrResize = () => updateChipRowFade(el)
   el.addEventListener('scroll', onScrollOrResize, { passive: true })
   window.addEventListener('resize', onScrollOrResize, { passive: true })
@@ -68,52 +70,68 @@ function bindChipRowScroll(el) {
     updateChipRowFade(el)
   }, { passive: false })
 
+  // Arraste só com mouse no desktop. Touch usa scroll nativo (overflow-x).
+  // Importante: NÃO capturar pointer / pointer-events:none no pointerdown —
+  // senão o click do chip deixa de funcionar.
+  let tracking = false
   let dragging = false
-  let moved = false
+  let suppressClick = false
   let startX = 0
   let startLeft = 0
+  let activePointerId = null
 
   el.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return
+    if (e.pointerType !== 'mouse' || e.button !== 0) return
     if (el.scrollWidth <= el.clientWidth + 1) return
-    dragging = true
-    moved = false
+    tracking = true
+    dragging = false
+    suppressClick = false
     startX = e.clientX
     startLeft = el.scrollLeft
-    el.classList.add('category-scroll--dragging')
-    try { el.setPointerCapture(e.pointerId) } catch { /* ignore */ }
+    activePointerId = e.pointerId
   })
 
   el.addEventListener('pointermove', (e) => {
-    if (!dragging) return
+    if (!tracking || e.pointerId !== activePointerId) return
     const dx = e.clientX - startX
-    if (Math.abs(dx) > 4) {
-      moved = true
-      el.scrollLeft = startLeft - dx
-      updateChipRowFade(el)
+    if (!dragging) {
+      if (Math.abs(dx) < DRAG_THRESHOLD) return
+      // Só agora entrou em modo arraste
+      dragging = true
+      suppressClick = true
+      el.classList.add('category-scroll--dragging')
+      try { el.setPointerCapture(e.pointerId) } catch { /* ignore */ }
     }
+    el.scrollLeft = startLeft - dx
+    updateChipRowFade(el)
   })
 
   const endDrag = (e) => {
-    if (!dragging) return
-    dragging = false
-    el.classList.remove('category-scroll--dragging')
-    try { el.releasePointerCapture?.(e.pointerId) } catch { /* ignore */ }
+    if (!tracking || (e.pointerId != null && e.pointerId !== activePointerId)) return
+    tracking = false
+    activePointerId = null
+    if (dragging) {
+      dragging = false
+      el.classList.remove('category-scroll--dragging')
+      try { el.releasePointerCapture?.(e.pointerId) } catch { /* ignore */ }
+    }
   }
 
   el.addEventListener('pointerup', endDrag)
   el.addEventListener('pointercancel', endDrag)
   el.addEventListener('lostpointercapture', () => {
+    tracking = false
     dragging = false
+    activePointerId = null
     el.classList.remove('category-scroll--dragging')
   })
 
-  // Após arrastar, bloqueia o click no chip (evita trocar filtro sem querer)
+  // Só bloqueia click se houve arraste real
   el.addEventListener('click', (e) => {
-    if (!moved) return
+    if (!suppressClick) return
     e.preventDefault()
     e.stopPropagation()
-    moved = false
+    suppressClick = false
   }, true)
 
   // Layout pronto → fade + chip ativa visível
