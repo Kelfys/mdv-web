@@ -3,7 +3,7 @@
  *
  * Ciclo: 30 dias (`SUBSCRIPTION_PERIOD_DAYS`). Aviso ao lojista com 72 h de
  * antecedência (`PLAN_RENEWAL_WARNING_HOURS`). Sem renovação, `api.js` faz
- * downgrade ao Gratuito e mantém só os 2 produtos mais recentes ativos.
+ * downgrade ao Gratuito e mantém só o produto mais recente ativo (limite do free).
  *
  * Migration: `045_store_subscription_expires.sql`, `046_downgrade_expired_plans.sql`
  */

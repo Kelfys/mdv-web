@@ -380,8 +380,8 @@ O plano **Gratuito** é ativado após aprovação do cadastro da loja. Planos pa
 
 | Recurso | Limite |
 |---------|--------|
-| **Itens no catálogo** (produtos ou serviços) | **2** no total |
-| **Imagens nos produtos** | **Não** — upload desabilitado na UI e rejeitado na API |
+| **Itens no catálogo** (produtos ou serviços) | **1** no total |
+| **Imagens nos produtos** | **1 foto** no catálogo |
 | **Logo** da loja (foto de perfil) | Sim |
 | **Banner** personalizado da vitrine | Não — apenas cor/tema padrão |
 | **Alteração de preço** | A cada **24 h** |
@@ -389,13 +389,13 @@ O plano **Gratuito** é ativado após aprovação do cadastro da loja. Planos pa
 | **Pedidos** | Via WhatsApp |
 | **Ativar/ocultar** itens no catálogo | Sim |
 
-Lojistas no Gratuito podem publicar até **dois** produtos ou serviços **sem foto**. Para ampliar o catálogo ou enviar imagens nos itens, é necessário assinar um plano pago.
+Lojistas no Gratuito publicam **1 produto/serviço** com **1 foto**. Para ampliar o catálogo, assinar Plus ou Premium.
 
 ### Comparativo de catálogo (todos os planos)
 
 | Plano | Itens no catálogo | Produtos com imagem | Banner personalizado | Anúncios no feed | Cooldown de preço |
 |-------|-------------------|---------------------|----------------------|------------------|-------------------|
-| **Gratuito** | 2 | 0 | Não | Não | 24 h |
+| **Gratuito** | 1 | 1 | Não | Não | 24 h |
 | **Plus** | 6 | 6 | Sim | Não | 12 h |
 | **Premium** | 30 | 30 | Sim | **2 inclusos/mês** (+ extras pagos) | 6 h |
 
@@ -430,7 +430,7 @@ Testes: `tests/api-premium-ads.test.js`, `tests/api-store-ad-approval.test.js`, 
 | `planAllowsStoreBanner(planId)` | Banner só em planos pagos |
 | `planAllowsProductImages(planId)` | Fotos no catálogo só se `productImages > 0` |
 | `canCreateProduct(planId, count)` | Teto de itens no catálogo |
-| `canAddProductImage(planId, …)` | Teto de imagens (Gratuito sempre `false`) |
+| `canAddProductImage(planId, …)` | Teto de imagens (Gratuito: 1 no catálogo) |
 | `planAllowsStoreAds(planId)` | Anúncios no feed só no Premium |
 | `canCreateIncludedStoreAd(planId, includedThisMonth)` | Slot incluso (< 2/mês) |
 | `canCreateExtraStoreAd(planId)` | Permite extra pago no Premium |
@@ -444,7 +444,7 @@ Testes: `tests/plans.test.js`, `tests/api-premium-ads.test.js`, `tests/api-store
 |---------|----------------|
 | **Ciclo** | 30 dias por assinatura (`stores.subscription_expires_at`) |
 | **Aviso ao lojista** | Banner com **72 h** de antecedência no painel |
-| **Sem pagamento** | Downgrade automático ao **Gratuito**; só os **2 produtos mais recentes** permanecem ativos |
+| **Sem pagamento** | Downgrade automático ao **Gratuito**; só o **produto mais recente** permanece ativo |
 | **WhatsApp (comprovante)** | Mensagem inclui **nome e ID da loja** (sem linha de email) |
 | **Admin/moderador** | Seção **Planos a renovar** + pedidos com `merchant_note` identificando a loja |
 

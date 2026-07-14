@@ -75,7 +75,7 @@ describe('plan renewal', () => {
     expect(formatRenewalRemaining(3 * 24 * 60 * 60 * 1000)).toMatch(/3/)
   })
 
-  it('keeps only the two most recently added products active', () => {
+  it('keeps only the single most recently added product active on free', () => {
     const products = [
       { id: 'a', created_at: '2026-01-01T00:00:00.000Z', active: true },
       { id: 'b', created_at: '2026-03-01T00:00:00.000Z', active: true },
@@ -83,18 +83,17 @@ describe('plan renewal', () => {
       { id: 'd', created_at: '2026-04-01T00:00:00.000Z', active: true },
     ]
     const keep = pickProductIdsToKeepActive(products)
-    expect([...keep]).toEqual(['d', 'b'])
+    expect([...keep]).toEqual(['d'])
   })
 
   it('detects stores downgraded to free with inactive catalog items', () => {
     const store = { plan_id: 'free' }
     const products = [
       { id: '1', active: true, created_at: '2026-04-01T00:00:00.000Z' },
-      { id: '2', active: true, created_at: '2026-03-01T00:00:00.000Z' },
+      { id: '2', active: false, created_at: '2026-03-01T00:00:00.000Z' },
       { id: '3', active: false, created_at: '2026-02-01T00:00:00.000Z' },
-      { id: '4', active: false, created_at: '2026-01-01T00:00:00.000Z' },
     ]
     expect(storeWasDowngradedToFree(store, products)).toBe(true)
-    expect(storeWasDowngradedToFree(store, products.slice(0, 2))).toBe(false)
+    expect(storeWasDowngradedToFree(store, [{ id: '1', active: true, created_at: '2026-04-01T00:00:00.000Z' }])).toBe(false)
   })
 })

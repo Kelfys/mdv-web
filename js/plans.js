@@ -3,8 +3,8 @@
  * Fonte de verdade para limites, exibição na página de regras e fluxos de billing.
  *
  * Plano Gratuito (free) — ver PLAN_LIMITS e README § Planos de assinatura:
- *   • até 2 itens no catálogo (produto ou serviço)
- *   • 1 foto no catálogo (productImages: 1 — total entre os produtos)
+ *   • 1 item no catálogo (produto ou serviço)
+ *   • 1 foto no catálogo (productImages: 1)
  *   • logo da loja sim; banner personalizado não (planAllowsStoreBanner)
  *   • alteração de preço a cada 24 h (PLAN_COOLDOWN_HOURS.free)
  * Anúncios no feed (store_ads): exclusivo Premium — até 2 inclusos/mês; extras R$ 5 (STORE_AD_EXTRA_FEE), 24h após aprovação.
@@ -155,8 +155,8 @@ export function planAllowsStoreBranding(planId) {
  * products: teto de cadastro; productImages: teto de produtos com foto no catálogo.
  */
 export const PLAN_LIMITS = {
-  // Gratuito: 2 itens publicáveis, 1 produto com foto
-  free: { products: 2, productImages: 1 },
+  // Gratuito: 1 item publicável, 1 foto no catálogo
+  free: { products: 1, productImages: 1 },
   plus: { products: 6, productImages: 6 },
   premium: { products: 30, productImages: 30 },
 }
@@ -243,7 +243,7 @@ const PLAN_CONFIGS = [
     priceMonthly: 0,
     priceCooldownHours: PLAN_COOLDOWN_HOURS.free,
     featureKeys: [
-      'plans.featureFreeItems2',
+      'plans.featureFreeItems1',
       'plans.featureFreeOneImage',
       'plans.featureStoreLogo',
       'plans.featureDefaultBanner',

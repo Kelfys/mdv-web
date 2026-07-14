@@ -117,7 +117,7 @@ describe('api free plan product images', () => {
     expect(uploadImage).toHaveBeenCalledTimes(1)
   })
 
-  it('createProduct rejects second image when free plan image slot is used', async () => {
+  it('createProduct rejects second catalog item on free plan (limit 1)', async () => {
     const api = await loadApi(createMockSupabase({
       planId: 'free',
       productCount: 1,
@@ -125,13 +125,13 @@ describe('api free plan product images', () => {
     }))
 
     await expect(api.createProduct('store-1', productForm({ withImage: true })))
-      .rejects.toThrow(FREE_IMAGE_LIMIT_ERROR)
+      .rejects.toThrow(/permite até 1 itens no catálogo/)
 
     expect(uploadImage).not.toHaveBeenCalled()
   })
 
-  it('createProduct allows catalog item without image on free plan', async () => {
-    const api = await loadApi(createMockSupabase({ planId: 'free', productCount: 1 }))
+  it('createProduct allows single catalog item without image on free plan', async () => {
+    const api = await loadApi(createMockSupabase({ planId: 'free', productCount: 0 }))
 
     const created = await api.createProduct('store-1', productForm({ withImage: false }))
 
