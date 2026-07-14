@@ -8,7 +8,7 @@ import {
   approveStoreRegistration, rejectStoreRegistration,
   fetchPendingPlanChangeRequests, approvePlanChangeRequest, rejectPlanChangeRequest,
   updateModeratorPermissions,
-  updatePassword, updateEmail, fetchMerchants, fetchModerators, promoteUserToModerator, demoteModerator,
+  updatePassword, updateEmail, fetchModerators, promoteUserToModerator, demoteModerator,
   fetchAllStoresAdmin, fetchStoresAdminPage, fetchStoreStatusCounts, fetchStoresAdminLite, fetchStoreByIdAdmin,
   fetchAdminProducts, createStoreAsAdmin, createProduct, updateProduct,
   updateStoreAsAdmin, deleteStoreAsAdmin, deleteProductAsAdmin, fetchCategories,
@@ -1812,8 +1812,6 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
     }
 
     const stores = pageResult.data
-    // Só lojistas ainda sem loja — um dono = uma loja.
-    const merchants = storesReadOnly ? [] : await fetchMerchants({ withoutStore: true })
 
     setAdminPendingCount(queue.pendingTotal)
     import('../ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
@@ -1829,18 +1827,12 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
       `
         <div id="admin-store-msg"></div>
         ${storesReadOnly ? `<p class="admin-readonly-hint">${t('moderator.readonlyStoresHint')}</p>` : ''}
-        ${!storesReadOnly && merchants.length === 0
-          ? `<div class="empty-state" style="margin-bottom:1rem"><p>${t('admin.noMerchantsHint')}</p></div>`
-          : ''}
-        ${storesReadOnly ? '' : `<details class="admin-form-panel" open ${merchants.length === 0 ? 'style="opacity:0.6;pointer-events:none"' : ''}>
+        ${storesReadOnly ? '' : `<details class="admin-form-panel" open>
           <summary>${t('admin.newStoreSummary')}</summary>
           <form id="admin-store-form" class="admin-form-grid" data-plan-branding-form>
             <div class="form-group">
-              <label class="form-label">${t('admin.responsibleMerchant')}</label>
-              <select class="form-input" name="owner_id" required>
-                <option value="">${t('app.selectPlaceholder')}</option>
-                ${merchants.map((m) => `<option value="${m.id}">${escapeHtml(m.name)} (${escapeHtml(m.email)})</option>`).join('')}
-              </select>
+              <label class="form-label" for="admin-store-owner-email">${t('admin.responsibleMerchant')}</label>
+              <input class="form-input" type="email" id="admin-store-owner-email" name="owner_email" required autocomplete="off" placeholder="${t('admin.userEmailPlaceholder')}" />
               <p class="form-hint">${t('admin.responsibleMerchantHint')}</p>
             </div>
             <div class="form-group">
@@ -2777,7 +2769,7 @@ function bindStoreForm(main) {
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('common.creating') }
     try {
       const store = await createStoreAsAdmin({
-        owner_id: f.owner_id.value,
+        owner_email: f.owner_email.value.trim(),
         name: f.name.value.trim(),
         category_id: f.category_id.value,
         whatsapp: f.whatsapp.value.trim(),

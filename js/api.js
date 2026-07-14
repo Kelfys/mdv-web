@@ -2280,17 +2280,59 @@ export async function fetchAdminProducts(storeId = null, { page = 1, pageSize = 
   }
 }
 
+/**
+ * Resolve o dono da loja a partir do e-mail (admin).
+ * Aceita merchant sem loja; se for customer, promove a merchant.
+ * Admin/moderador não podem ser donos de loja.
+ */
+export async function resolveOwnerForAdminStore(email) {
+  const trimmed = String(email ?? '').trim()
+  if (!trimmed) throw new Error(t('errors.informResponsibleMerchantEmail'))
+
+  const user = await fetchUserByEmail(trimmed)
+  if (!user) throw new Error(t('errors.userNotFound'))
+  if (user.role === 'admin') throw new Error(t('errors.cannotAssignAdminAsStoreOwner'))
+  if (user.role === 'moderator') throw new Error(t('errors.cannotAssignModeratorAsStoreOwner'))
+
+  const client = await requireClient()
+  let owner = user
+
+  if (user.role === 'customer') {
+    const { data, error } = await client
+      .from('users')
+      .update({ role: 'merchant' })
+      .eq('id', user.id)
+      .eq('role', 'customer')
+      .select('id, name, email, role')
+      .single()
+    if (error) throw error
+    owner = data
+  }
+
+  if (owner.role !== 'merchant') {
+    throw new Error(t('errors.userMustBeMerchantOrCustomer'))
+  }
+
+  return { id: owner.id, name: owner.name, email: owner.email, role: owner.role }
+}
+
 export async function createStoreAsAdmin(form) {
   const client = await requireClient()
   const slug = form.slug?.trim() || generateSlug(form.name)
   const approved = form.approved !== false
-  if (!form.owner_id) throw new Error(t('errors.selectResponsibleMerchant'))
+
+  let ownerId = form.owner_id || null
+  if (form.owner_email) {
+    const owner = await resolveOwnerForAdminStore(form.owner_email)
+    ownerId = owner.id
+  }
+  if (!ownerId) throw new Error(t('errors.informResponsibleMerchantEmail'))
 
   // Um lojista = uma loja (mesma regra do cadastro em /lojista/cadastro).
   const { data: existingStore, error: existingErr } = await client
     .from('stores')
     .select('id, name')
-    .eq('owner_id', form.owner_id)
+    .eq('owner_id', ownerId)
     .maybeSingle()
   if (existingErr) throw existingErr
   if (existingStore) throw new Error(t('errors.merchantAlreadyHasStore', { name: existingStore.name }))
@@ -2301,7 +2343,7 @@ export async function createStoreAsAdmin(form) {
   const approvedAt = approved ? new Date().toISOString() : null
   const planId = form.plan_id ?? 'free'
   const { data, error } = await client.from('stores').insert({
-    owner_id: form.owner_id,
+    owner_id: ownerId,
     name: form.name,
     slug,
     description: form.description ?? '',
