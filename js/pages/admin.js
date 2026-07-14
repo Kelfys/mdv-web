@@ -20,7 +20,9 @@ import {
   fetchAllStoreAdsAdmin, createStoreAdAsStaff, updateStoreAdAsStaff, deleteStoreAdAsStaff,
   fetchStoresNeedingPlanRenewal,
   fetchNeighborhoods, createNeighborhood, updateNeighborhood, deleteNeighborhood,
+  fetchLogoAccentMode, setLogoAccentMode,
 } from '../api.js'
+import { logoAccentOptionsHtml, applyLogoAccentMode, logoAccentModeLabel } from '../logo-accent.js'
 import { getReportReasonLabel } from '../report-reasons.js'
 import { getStaffNeighborhoodScope, formatNeighborhoodLabel, bindNeighborhoodLocationFields } from '../neighborhood.js'
 import { getUser, loadUser, setAdminPendingCount } from '../state.js'
@@ -2622,6 +2624,27 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
   }
 
   if (tab === 'account') {
+    const logoAccentMode = panel === 'admin' ? await fetchLogoAccentMode() : null
+
+    const logoAccentSection = panel === 'admin'
+      ? `
+          <form id="admin-logo-accent-form" class="admin-password-form">
+            <h3 class="admin-account-card__section-title">${t('admin.logoAccentTitle')}</h3>
+            <p class="form-hint">${t('admin.logoAccentHint')}</p>
+            <div class="form-group">
+              <label class="form-label" for="logo-accent-mode">${t('admin.logoAccentLabel')}</label>
+              <select class="form-input" id="logo-accent-mode" name="logo_accent" required>
+                ${logoAccentOptionsHtml(logoAccentMode)}
+              </select>
+              <p class="form-hint" style="margin-top:0.35rem">${escapeHtml(logoAccentModeLabel(logoAccentMode))}</p>
+            </div>
+            <div id="admin-logo-accent-msg"></div>
+            <button type="submit" class="btn btn-primary btn-sm">${t('admin.logoAccentSave')}</button>
+          </form>
+          <hr class="admin-account-card__divider" />
+        `
+      : ''
+
     const emailSection = panel === 'admin'
       ? `
           <form id="admin-email-form" class="admin-password-form">
@@ -2649,6 +2672,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
               <strong>${t('admin.regionLabel')}</strong> ${user.neighborhood ? escapeHtml(formatNeighborhoodLabel(user.neighborhood)) : t('admin.regionNotAssignedAdmin')}
             </p>
           ` : ''}
+          ${logoAccentSection}
           ${emailSection}
           <form id="admin-password-form" class="admin-password-form">
             <h3 class="admin-account-card__section-title">${t('admin.changePassword')}</h3>
@@ -2669,6 +2693,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
       panel
     )
 
+    bindLogoAccentForm(main)
     bindEmailForm(main)
     bindPasswordForm(main)
   }
@@ -3646,6 +3671,26 @@ function bindModeratorManagement(main, neighborhoods = []) {
         showToast(err.message)
       }
     })
+  })
+}
+
+function bindLogoAccentForm(main) {
+  main.querySelector('#admin-logo-accent-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const form = e.target
+    const msgEl = main.querySelector('#admin-logo-accent-msg')
+    const submitBtn = form.querySelector('button[type="submit"]')
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('common.saving') }
+    try {
+      const mode = await setLogoAccentMode(form.logo_accent.value)
+      applyLogoAccentMode(mode)
+      msgEl.innerHTML = `<div class="alert alert-success">${escapeHtml(t('admin.logoAccentSaved'))}</div>`
+      showToast(t('admin.logoAccentSaved'))
+    } catch (err) {
+      msgEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`
+    } finally {
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = t('admin.logoAccentSave') }
+    }
   })
 }
 

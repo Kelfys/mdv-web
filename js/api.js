@@ -42,6 +42,9 @@ import {
   PLAN_RENEWAL_WARNING_HOURS,
   pickProductIdsToKeepActive,
 } from './plan-renewal.js'
+import {
+  LOGO_ACCENT_KEY, LOGO_ACCENT_DEFAULT, normalizeLogoAccentMode,
+} from './logo-accent.js'
 
 async function countStoreProductsWithImages(client, storeId) {
   const { data, error } = await client
@@ -1722,6 +1725,53 @@ export async function updateCustomerProfile(userId, { name, phone, address, deli
 }
 
 // --- Admin ---
+
+/**
+ * Lê configuração pública da plataforma (ex.: logo_accent).
+ * Se a tabela ainda não existir no remoto, devolve default.
+ */
+export async function fetchPlatformSetting(key, fallback = '') {
+  try {
+    const client = await requireClient()
+    const { data, error } = await client
+      .from('platform_settings')
+      .select('value')
+      .eq('key', key)
+      .maybeSingle()
+    if (error) {
+      // 42P01 = relation missing; PGRST205 = table not in schema cache
+      if (error.code === '42P01' || error.code === 'PGRST205' || /platform_settings/i.test(error.message ?? '')) {
+        return fallback
+      }
+      throw error
+    }
+    return data?.value ?? fallback
+  } catch {
+    return fallback
+  }
+}
+
+export async function fetchLogoAccentMode() {
+  const raw = await fetchPlatformSetting(LOGO_ACCENT_KEY, LOGO_ACCENT_DEFAULT)
+  return normalizeLogoAccentMode(raw)
+}
+
+/** Admin: grava modo do logo (todos os visitantes passam a ver). */
+export async function setLogoAccentMode(mode) {
+  const client = await requireClient()
+  const value = normalizeLogoAccentMode(mode)
+  const { data, error } = await client
+    .from('platform_settings')
+    .upsert(
+      { key: LOGO_ACCENT_KEY, value, updated_at: new Date().toISOString() },
+      { onConflict: 'key' },
+    )
+    .select('value')
+    .single()
+  if (error) throw error
+  return normalizeLogoAccentMode(data?.value ?? value)
+}
+
 /**
  * Lista lojistas (role merchant).
  * @param {{ withoutStore?: boolean }} [opts]

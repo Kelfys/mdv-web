@@ -8,7 +8,8 @@ import { setTheme, loadUser, onAuthChange } from './state.js'
 import { initHeader, initCart } from './ui.js'
 import { registerRoute, initRouter, routeHref, navigate, getCurrentPath, render } from './router.js'
 import { getSupabase } from './db.js'
-import { completeOAuthSignup } from './api.js'
+import { completeOAuthSignup, fetchLogoAccentMode } from './api.js'
+import { applyLogoAccentMode } from './logo-accent.js'
 import { initScrollToTop } from './scroll-to-top.js'
 import { initHeaderScroll } from './header-scroll.js'
 
@@ -203,10 +204,22 @@ function boot() {
   delete window.__MV_INITIAL_ROUTE__
 }
 
+/** Cor do “Vendas” no logo — pública (platform_settings), todos os visitantes. */
+async function loadLogoAccent() {
+  try {
+    const mode = await fetchLogoAccentMode()
+    applyLogoAccentMode(mode)
+  } catch (err) {
+    console.warn('Logo accent:', err)
+    applyLogoAccentMode('normal')
+  }
+}
+
 // Ordem: OAuth → sessão restaurada → perfil carregado → rotas (evita "Acesso restrito" no F5)
 handleAuthCallback()
   .then(() => waitForInitialSession())
   .then(() => loadUser())
+  .then(() => loadLogoAccent())
   .then(boot)
   .catch((err) => {
     console.error('Boot error:', err)

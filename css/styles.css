@@ -204,6 +204,13 @@ img { max-width: 100%; display: block; }
   height: 2.25rem;
 }
 
+/* “Vendas” no logo — cor por status (html[data-logo-accent]). Admin: Conta. */
+/* Normal (light): degradê dourado */
+html:not([data-logo-accent]),
+html[data-logo-accent='normal'] {
+  /* marcador default */
+}
+
 [data-theme='light'] .logo span.accent,
 :root:not([data-theme='dark']) .logo span.accent {
   background: var(--ig-gradient);
@@ -213,8 +220,31 @@ img { max-width: 100%; display: block; }
 }
 
 [data-theme='dark'] .logo span.accent {
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
   color: var(--primary-600);
 }
+
+/* Presets sólidos (promo / alerta / urgente / info) — light + dark */
+html[data-logo-accent='promo'] .logo span.accent,
+html[data-logo-accent='alerta'] .logo span.accent,
+html[data-logo-accent='urgente'] .logo span.accent,
+html[data-logo-accent='info'] .logo span.accent {
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+}
+
+html[data-logo-accent='promo'] .logo span.accent { color: #e65100 !important; }
+html[data-logo-accent='alerta'] .logo span.accent { color: #c9a100 !important; }
+html[data-logo-accent='urgente'] .logo span.accent { color: #c62828 !important; }
+html[data-logo-accent='info'] .logo span.accent { color: #1565c0 !important; }
+
+html[data-theme='dark'][data-logo-accent='promo'] .logo span.accent { color: #ff9800 !important; }
+html[data-theme='dark'][data-logo-accent='alerta'] .logo span.accent { color: #fbd000 !important; }
+html[data-theme='dark'][data-logo-accent='urgente'] .logo span.accent { color: #ef5350 !important; }
+html[data-theme='dark'][data-logo-accent='info'] .logo span.accent { color: #42a5f5 !important; }
 
 .nav-desktop {
   display: none;
