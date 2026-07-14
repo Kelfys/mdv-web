@@ -1348,8 +1348,24 @@ function renderProductTableRows(products, categories, store = null, { readOnly =
   `}).join('')
 }
 
+/** Nome para ordenação/busca: ignora emoji e símbolos no início (ex.: "🎉 Faça…" → "faca…"). */
+function storeListSortKey(name) {
+  return String(name ?? '')
+    .replace(/^[\p{Extended_Pictographic}\p{S}\p{P}\s]+/gu, '')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .trim()
+}
+
 function renderStoreProductsSidebar(stores, counts, selectedStoreId, panel = 'admin') {
-  const sorted = [...stores].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+  const sorted = [...stores].sort((a, b) => {
+    const ka = storeListSortKey(a.name)
+    const kb = storeListSortKey(b.name)
+    const cmp = ka.localeCompare(kb, 'pt-BR')
+    if (cmp !== 0) return cmp
+    return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'pt-BR')
+  })
 
   return `
     <aside class="admin-store-products-nav">
@@ -1372,7 +1388,7 @@ function renderStoreProductsSidebar(stores, counts, selectedStoreId, panel = 'ad
               href="#${staffProductsPath(panel, s.id)}"
               class="admin-store-products-nav__item ${s.id === selectedStoreId ? 'active' : ''}"
               data-store-nav="${s.id}"
-              data-store-search="${escapeHtml(buildStoreSearchKey(s))}"
+              data-store-search="${escapeHtml(buildStoreSearchKey(s))} ${escapeHtml(storeListSortKey(s.name))}"
             >
               <span class="admin-store-products-nav__item-name">${escapeHtml(s.name)}</span>
               <span class="admin-store-products-nav__item-meta">
@@ -2087,19 +2103,40 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
       storeProducts = Array.isArray(products) ? products : (products?.data ?? [])
     }
 
-    const counts = Object.fromEntries(storesLite.map((s) => [s.id, s.product_count ?? 0]))
-    const totalProducts = storesLite.reduce((sum, s) => sum + (s.product_count ?? 0), 0)
+    // Garante loja da URL na sidebar mesmo se sumir do lite (filtros/cache).
+    let sidebarStores = storesLite
+    if (selectedStore && !storesLite.some((s) => s.id === selectedStore.id)) {
+      sidebarStores = [
+        {
+          id: selectedStore.id,
+          name: selectedStore.name,
+          slug: selectedStore.slug,
+          status: selectedStore.status,
+          plan_id: selectedStore.plan_id,
+          city: selectedStore.city,
+          state: selectedStore.state,
+          neighborhood_id: selectedStore.neighborhood_id,
+          category_id: selectedStore.category_id,
+          neighborhood: selectedStore.neighborhood,
+          product_count: storeProducts.length,
+        },
+        ...storesLite,
+      ]
+    }
+
+    const counts = Object.fromEntries(sidebarStores.map((s) => [s.id, s.product_count ?? 0]))
+    const totalProducts = sidebarStores.reduce((sum, s) => sum + (s.product_count ?? 0), 0)
 
     main.innerHTML = adminPage(
       menuItem.label,
       selectedStore
         ? (productsReadOnly ? t('admin.productsReadOnly', { name: selectedStore.name }) : t('admin.managingProducts', { name: selectedStore.name }))
-        : t('admin.productsAcrossStores', { products: totalProducts, stores: storesLite.length }),
+        : t('admin.productsAcrossStores', { products: totalProducts, stores: sidebarStores.length }),
       `
         ${productsReadOnly ? `<p class="admin-readonly-hint">${t('admin.readonlyProductsHint')}</p>` : ''}
         <div id="admin-product-msg"></div>
         <div class="admin-store-products-layout">
-          ${renderStoreProductsSidebar(storesLite, counts, selectedStoreId, panel)}
+          ${renderStoreProductsSidebar(sidebarStores, counts, selectedStoreId, panel)}
           ${renderStoreProductsPanel({
             store: selectedStore,
             products: storeProducts,
@@ -2114,6 +2151,11 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
     )
 
     bindStoreProductsNav(main)
+    // Destaca a loja aberta na lista (emoji no nome fazia ela “sumir” do meio alfabético)
+    requestAnimationFrame(() => {
+      const active = main.querySelector('.admin-store-products-nav__item.active')
+      active?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    })
     if (storeProducts.length > 0) {
       bindPaginatedSortableList(main, {
         searchId: 'admin-products-search',
