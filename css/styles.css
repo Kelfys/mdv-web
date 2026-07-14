@@ -998,11 +998,12 @@ html[data-theme='dark'][data-logo-accent='preto'] .logo__accent { color: #e7e9ea
 
 .category-scroll {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 0.4rem;
-  /* espaço no fim para a última chip não ficar “cortada” pelo fade */
+  padding-block: 0.2rem 0.35rem;
+  /* espaço no fim para a última chip não ficar colada/cortada */
   padding-inline-end: 1rem;
   scrollbar-width: none;
   min-width: 0;
@@ -1029,6 +1030,7 @@ html[data-theme='dark'][data-logo-accent='preto'] .logo__accent { color: #e7e9ea
   .category-scroll {
     scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--text-muted) 55%, transparent) transparent;
+    padding-bottom: 0.45rem;
   }
 
   .category-scroll::-webkit-scrollbar {
@@ -1051,22 +1053,22 @@ html[data-theme='dark'][data-logo-accent='preto'] .logo__accent { color: #e7e9ea
   }
 }
 
-/* Fade dinâmico nas pontas (classes toggled em JS) — sem esconder a última chip no fim */
+/* Fade só nas laterais — altura 100% no mobile (não corta botões) */
 .category-scroll--fade {
   mask-image: none;
 }
 
 .category-scroll--fade-end {
   mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 1.25rem), transparent 100%);
-  mask-size: 100% calc(100% - 8px);
-  mask-position: top left;
+  mask-size: 100% 100%;
+  mask-position: center;
   mask-repeat: no-repeat;
 }
 
 .category-scroll--fade-start {
   mask-image: linear-gradient(to right, transparent 0%, #000 1.25rem, #000 100%);
-  mask-size: 100% calc(100% - 8px);
-  mask-position: top left;
+  mask-size: 100% 100%;
+  mask-position: center;
   mask-repeat: no-repeat;
 }
 
@@ -1078,6 +1080,19 @@ html[data-theme='dark'][data-logo-accent='preto'] .logo__accent { color: #e7e9ea
     #000 calc(100% - 1.25rem),
     transparent 100%
   );
+  mask-size: 100% 100%;
+  mask-position: center;
+  mask-repeat: no-repeat;
+}
+
+/* Desktop: máscara só acima da scrollbar (8px) */
+@media (min-width: 768px) {
+  .category-scroll--fade-end,
+  .category-scroll--fade-start,
+  .category-scroll--fade-start.category-scroll--fade-end {
+    mask-size: 100% calc(100% - 8px);
+    mask-position: top left;
+  }
 }
 
 .chip {
