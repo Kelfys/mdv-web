@@ -181,7 +181,7 @@ npm test
 | Cliente | `cliente@maredevendas.com` | `DemoCliente2026!` | — |
 | Admin | `brunopdaraujo@gmail.com` | `MarecAdmin2026!` | global |
 | Moderador | `moderador@maredevendas.com` | `DemoModerador2026!` | bairro ativo (ex.: Baixa do sapateiro) |
-| **Lojas fake (seed)** | `lojasfake@gmail.com` | `LojasFake2026!` | dono de **todas** as lojas ads/seed |
+| **Lojas fake (seed)** | `lojasfake@gmail.com` | `LojasFake2026!` | dono de **todas** as lojas ads/seed; **pode ter N lojas** |
 
 O moderador demo: login em `#/moderador/entrar`.
 
@@ -189,14 +189,22 @@ O moderador demo: login em `#/moderador/entrar`.
 
 Para o marketplace parecer cheio sem misturar com usuários reais:
 
-- Todas as lojas seed/ads ficam com **um único dono**
-- Apagar esse perfil no admin (ou no SQL) remove as lojas em **cascade** (`owner_id ON DELETE CASCADE`)
+| Item | Detalhe |
+|------|---------|
+| **E-mail / senha** | `lojasfake@gmail.com` / `LojasFake2026!` |
+| **Papel** | merchant |
+| **Constante no código** | `SEED_MULTI_STORE_OWNER_EMAIL` em `js/config.js` (`isSeedMultiStoreOwnerEmail`) |
+| **Regra especial** | Este e-mail **pode ter várias lojas** (exceção admin). Demais lojistas: **1 loja = 1 dono** |
+| **Criar mais demos** | `#/admin/lojas` → Nova loja → dono `lojasfake@gmail.com` |
+| **Limpeza** | Apagar o perfil no admin (ou SQL) remove as lojas em **cascade** (`owner_id ON DELETE CASCADE`) |
+
+- Todas as lojas seed/ads devem ficar com **esse único dono** (não criar um merchant por loja fake)
 - Scripts locais (pasta `scripts/`, **não versionada** — ver `.gitignore`):
-  - `node scripts/seed-ads-free-stores.mjs` — cria lojas a partir de imagens
+  - `node scripts/seed-ads-free-stores.mjs` — cria lojas a partir de imagens (já usa `lojasfake@`)
   - `node scripts/consolidate-fake-owner.mjs` — reatribui lojas fake ao dono único
   - `node scripts/cleanup-orphans.mjs` — audita/limpa lojistas sem loja, lojas/produtos órfãos
 
-Contas `demo-gratuito@…` / `demo-plus@…` antigas **sem loja** foram removidas na limpeza de órfãos; use admin + e-mail real ou `lojasfake@` para demos.
+Contas `demo-gratuito@…` / `demo-plus@…` antigas **sem loja** foram removidas na limpeza de órfãos; use admin + e-mail real (1 loja) ou `lojasfake@` (N lojas demo).
 
 ---
 
@@ -362,7 +370,7 @@ Bairros são geridos em `#/admin/bairros` (criar, editar, ativar/desativar, excl
 |-----|------|-----------|
 | **Bairros** | `#/admin/bairros` | Criar região (nome, cidade, UF); ativar/desativar |
 | **Moderadores** | `#/admin/moderadores` | Promover usuário existente **com bairro obrigatório**; alterar região depois; permissão de aprovar mudança de plano |
-| **Lojas** | `#/admin/lojas` | Ver/editar bairro; **criar loja** informando o **e-mail** do dono (cliente → vira lojista; merchant precisa ainda não ter loja) |
+| **Lojas** | `#/admin/lojas` | Ver/editar bairro; **criar loja** por **e-mail** do dono (cliente → lojista; 1 loja/lojista, **exceto** `lojasfake@gmail.com`) |
 | **Produtos** | `#/admin/produtos` | Sidebar de lojas (ordenação sem emoji) + catálogo; admin **sem cooldown** de preço |
 | **Conta** | `#/admin/conta` | Senha, e-mail e **cor de alerta do logo** |
 
@@ -531,8 +539,14 @@ Em `#/admin/lojas` → **+ Nova loja**:
 1. Informe o **e-mail** de uma conta já cadastrada (`owner_email`)
 2. API: `resolveOwnerForAdminStore` + `createStoreAsAdmin` em `js/api.js`
 3. Se for **cliente**, o admin promove a **lojista** na hora
-4. Se o lojista **já tem loja**, a criação é bloqueada (1 merchant = 1 loja no app)
-5. Admin e moderador **não** podem ser donos de loja
+4. **Regra 1 lojista = 1 loja** — se o e-mail já tem loja, erro amigável (*“Este lojista já tem a loja …”*)
+5. **Exceção seed:** `lojasfake@gmail.com` (`SEED_MULTI_STORE_OWNER_EMAIL`) **pode ter N lojas** — use este e-mail para novas lojas demo/ads
+6. Admin e moderador **não** podem ser donos de loja
+
+| Objetivo | E-mail do dono |
+|----------|----------------|
+| Loja de pessoa real | Conta nova ou lojista **sem** loja |
+| Mais lojas fake no feed | `lojasfake@gmail.com` |
 
 Testes: `tests/api-resolve-owner-email.test.js`, `tests/api-fetch-merchants.test.js`.
 
