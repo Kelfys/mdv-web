@@ -1,5 +1,10 @@
 /**
  * Painéis admin e moderador — conteúdo dinâmico; navegação no header.
+ *
+ * Criar loja (#/admin/lojas):
+ * - Campo e-mail do lojista (`owner_email`) → api.resolveOwnerForAdminStore
+ * - Cliente existente vira merchant; merchant precisa ainda não ter loja
+ * - Não lista select de lojistas (evita confusão com contas seed/demo)
  */
 import {
   fetchAdminMetrics, fetchAdminOrdersAnalytics, fetchAdminOrders,
@@ -2768,6 +2773,7 @@ function bindStoreForm(main) {
     const submitBtn = f.querySelector('button[type="submit"]')
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = t('common.creating') }
     try {
+      // Dono por e-mail (não select): resolve merchant ou promove customer.
       const store = await createStoreAsAdmin({
         owner_email: f.owner_email.value.trim(),
         name: f.name.value.trim(),

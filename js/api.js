@@ -1775,7 +1775,8 @@ export async function setLogoAccentMode(mode) {
 /**
  * Lista lojistas (role merchant).
  * @param {{ withoutStore?: boolean }} [opts]
- *   withoutStore — só quem ainda não tem loja (select "Lojista responsável" ao criar loja).
+ *   withoutStore — só quem ainda não tem loja (1 merchant = 1 loja na regra de negócio).
+ *   Preferido no admin: criar loja por e-mail (`resolveOwnerForAdminStore` / `owner_email`).
  */
 export async function fetchMerchants({ withoutStore = false } = {}) {
   const client = await requireClient()
@@ -2281,9 +2282,16 @@ export async function fetchAdminProducts(storeId = null, { page = 1, pageSize = 
 }
 
 /**
- * Resolve o dono da loja a partir do e-mail (admin).
- * Aceita merchant sem loja; se for customer, promove a merchant.
- * Admin/moderador não podem ser donos de loja.
+ * Resolve o dono da loja a partir do e-mail (painel admin → Nova loja).
+ *
+ * Fluxo:
+ * 1. Busca `public.users` por e-mail (ilike)
+ * 2. Customer → promove a merchant (admin pode mudar role; trigger 053)
+ * 3. Merchant sem loja → ok; merchant com loja → erro em createStoreAsAdmin
+ * 4. Admin/moderador → rejeitados (não viram dono de loja)
+ *
+ * @param {string} email
+ * @returns {Promise<{ id: string, name: string, email: string, role: string }>}
  */
 export async function resolveOwnerForAdminStore(email) {
   const trimmed = String(email ?? '').trim()
@@ -2316,11 +2324,22 @@ export async function resolveOwnerForAdminStore(email) {
   return { id: owner.id, name: owner.name, email: owner.email, role: owner.role }
 }
 
+/**
+ * Cria loja pelo admin.
+ * Dono: `form.owner_email` (preferido — resolve e-mail) ou `form.owner_id` (legado).
+ * Regra de negócio: 1 merchant = 1 loja (igual /lojista/cadastro).
+ * Exceção de dados: seed demo concentrado em lojasfake@gmail.com (várias lojas no mesmo dono via SQL).
+ *
+ * @param {object} form
+ * @param {string} [form.owner_email]
+ * @param {string} [form.owner_id]
+ */
 export async function createStoreAsAdmin(form) {
   const client = await requireClient()
   const slug = form.slug?.trim() || generateSlug(form.name)
   const approved = form.approved !== false
 
+  // Preferir e-mail (UI admin); owner_id mantido para scripts/testes.
   let ownerId = form.owner_id || null
   if (form.owner_email) {
     const owner = await resolveOwnerForAdminStore(form.owner_email)

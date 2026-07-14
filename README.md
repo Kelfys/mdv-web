@@ -174,18 +174,29 @@ npm test
 
 ---
 
-## Contas demo (produção / migrations 012, 021, 023, 024)
+## Contas demo / seed
 
-| Papel | Email | Senha | Plano |
-|-------|-------|-------|-------|
+| Papel | Email | Senha | Plano / notas |
+|-------|-------|-------|----------------|
 | Cliente | `cliente@maredevendas.com` | `DemoCliente2026!` | — |
-| Lojista (Gratuito) | `demo-gratuito@maredevendas.com` | `DemoLojista2026!` | Gratuito |
-| Lojista (Plus) | `demo-plus@maredevendas.com` | `DemoLojista2026!` | Plus |
-| Lojista | `demo-pet-2@maredevendas.com` | `DemoLojista2026!` | Gratuito |
-| Admin | `brunopdaraujo@gmail.com` | `MarecAdmin2026!` |
-| Moderador | `moderador@maredevendas.com` | `DemoModerador2026!` |
+| Admin | `brunopdaraujo@gmail.com` | `MarecAdmin2026!` | global |
+| Moderador | `moderador@maredevendas.com` | `DemoModerador2026!` | bairro ativo (ex.: Baixa do sapateiro) |
+| **Lojas fake (seed)** | `lojasfake@gmail.com` | `LojasFake2026!` | dono de **todas** as lojas ads/seed |
 
-O moderador demo fica vinculado a um **bairro ativo** (ex.: Baixa do sapateiro). Login em `#/moderador/entrar`.
+O moderador demo: login em `#/moderador/entrar`.
+
+### Lojas fake (`lojasfake@gmail.com`)
+
+Para o marketplace parecer cheio sem misturar com usuários reais:
+
+- Todas as lojas seed/ads ficam com **um único dono**
+- Apagar esse perfil no admin (ou no SQL) remove as lojas em **cascade** (`owner_id ON DELETE CASCADE`)
+- Scripts locais (pasta `scripts/`, **não versionada** — ver `.gitignore`):
+  - `node scripts/seed-ads-free-stores.mjs` — cria lojas a partir de imagens
+  - `node scripts/consolidate-fake-owner.mjs` — reatribui lojas fake ao dono único
+  - `node scripts/cleanup-orphans.mjs` — audita/limpa lojistas sem loja, lojas/produtos órfãos
+
+Contas `demo-gratuito@…` / `demo-plus@…` antigas **sem loja** foram removidas na limpeza de órfãos; use admin + e-mail real ou `lojasfake@` para demos.
 
 ---
 
@@ -351,7 +362,7 @@ Bairros são geridos em `#/admin/bairros` (criar, editar, ativar/desativar, excl
 |-----|------|-----------|
 | **Bairros** | `#/admin/bairros` | Criar região (nome, cidade, UF); ativar/desativar |
 | **Moderadores** | `#/admin/moderadores` | Promover usuário existente **com bairro obrigatório**; alterar região depois; permissão de aprovar mudança de plano |
-| **Lojas** | `#/admin/lojas` | Ver/editar bairro; criar loja só com **lojista sem loja** |
+| **Lojas** | `#/admin/lojas` | Ver/editar bairro; **criar loja** informando o **e-mail** do dono (cliente → vira lojista; merchant precisa ainda não ter loja) |
 | **Produtos** | `#/admin/produtos` | Sidebar de lojas (ordenação sem emoji) + catálogo; admin **sem cooldown** de preço |
 | **Conta** | `#/admin/conta` | Senha, e-mail e **cor de alerta do logo** |
 
@@ -512,6 +523,18 @@ Testes: `tests/plan-renewal.test.js`.
 - `043_product_is_used.sql` — tag **Usado** em produtos
 - `042_content_reports.sql` — denúncias de loja/produto
 - `033_neighborhoods.sql` — bairros, escopo regional de moderadores e RLS
+
+### Admin: criar loja por e-mail
+
+Em `#/admin/lojas` → **+ Nova loja**:
+
+1. Informe o **e-mail** de uma conta já cadastrada (`owner_email`)
+2. API: `resolveOwnerForAdminStore` + `createStoreAsAdmin` em `js/api.js`
+3. Se for **cliente**, o admin promove a **lojista** na hora
+4. Se o lojista **já tem loja**, a criação é bloqueada (1 merchant = 1 loja no app)
+5. Admin e moderador **não** podem ser donos de loja
+
+Testes: `tests/api-resolve-owner-email.test.js`, `tests/api-fetch-merchants.test.js`.
 
 **Scripts locais de DB** (`.env.local` com `DATABASE_URL`):
 

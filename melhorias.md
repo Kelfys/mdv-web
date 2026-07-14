@@ -19,7 +19,7 @@ Reaplicação: **com calma, uma por uma**, testando local e em produção antes 
 | **Próximo sugerido** | `C1` (medalhas de plano) — baixo risco, sem banco |
 | **Evitar por ora** | `E6`, `E16` e **vários E de uma vez** |
 | **Não urgente** | Seção **G** (dashboard produtos) — backlog de polish |
-| **Última atualização** | 14/07/2026 (README + diário alinhados ao main) |
+| **Última atualização** | 14/07/2026 (admin loja por e-mail + lojasfake + docs/Obsidian) |
 
 ---
 
@@ -405,7 +405,8 @@ Trabalho recente **não** mapeado como A–E, mas está em produção:
 | `3dba8f0` | Plano Gratuito: **1 produto + 1 foto** |
 | `3a60ba7` | Categorias marketplace v2 (migration `056`) |
 | `b5c9471` | Editor de textos (download com helpers completos) |
-| `2a27991` | Admin criar loja: lojista responsável só sem loja |
+| `2a27991` | Admin criar loja: lojista responsável só sem loja (select) |
+| `985adc0` | Admin criar loja por **e-mail** (`resolveOwnerForAdminStore`; sem select) |
 | `9bb99a1` | Gratuito **sem logo**; admin **sem cooldown** de preço |
 | `cfb8239` … `7b301b6` | Cor de alerta do logo (**Maré**): presets + admin Conta (`057`) |
 | `651ece4` | Logo: Maré = alerta; de = texto; Vendas = dourado fixo |
@@ -413,6 +414,7 @@ Trabalho recente **não** mapeado como A–E, mas está em produção:
 | `28fdccd` … `c3399bc` | Chips bairro/categoria: scroll/arraste desktop + clique |
 | `90cdd97` … `6cb8682` | Chips mobile sem corte de botões |
 | `fb04d75` | Sidebar produtos: ordenação sem emoji + scroll à loja ativa |
+| *(dados)* | Dono único seed: `lojasfake@gmail.com` · limpeza órfãos seed · 20 lojas ads |
 
 ---
 
@@ -489,6 +491,8 @@ Referência da época em que o pacote existia (muitos commits **não** estão no
 | 14/07/2026 | Logo tipografia: **Maré** (alerta) + **de** (texto) + **Vendas** (dourado) |
 | 14/07/2026 | Home: sem stats de lojas/produtos no hero; chips com scroll/arraste (desktop/mobile) |
 | 14/07/2026 | Produção: removidos bairros Centro/Copacabana/Ipanema/Leblon/Tijuca (lojas redistribuídas) |
+| 14/07/2026 | Admin criar loja por **e-mail** (não select); customer → merchant na hora |
+| 14/07/2026 | Lojas fake sob `lojasfake@gmail.com`; limpeza de lojistas seed órfãos |
 
 ---
 
@@ -499,13 +503,16 @@ Referência da época em que o pacote existia (muitos commits **não** estão no
 - Contexto: se alguém troca a senha (sessão aberta / e-mail / Auth), senha antiga falha no login; sessão residual e falta de alerta são lacunas a cobrir com F1–F3.
 - Também em produção (fora A–E): engajamento no feed, banner free, free 1+1, categorias v2, editor de textos.
 - Visualizado dashboard de produtos (admin + lojista): funciona; polish → seção **G** (`G1`–`G4`), sem prazo.
-- Deploy: `2a27991` (select lojista responsável só sem loja).
+- Deploy: `2a27991` (select lojista responsável só sem loja) → depois `985adc0` (**e-mail** do lojista, sem select).
 - **Planos:** free sem upload de logo; admin bypass cooldown de preço (`9bb99a1`).
 - **Logo accent:** `platform_settings` + seletor em `#/admin/conta`; cores em “Maré” (`cfb8239`…`651ece4`).
 - **Home UX:** hero sem contagens; chips bairro/categoria scrolláveis e clicáveis no desktop; fix corte mobile.
-- **Dados:** seed lojas ads-free; renome orgânico; bairros zona sul removidos; redistribuição para região ativa.
+- **Dados:** seed lojas ads; renome orgânico; bairros zona sul removidos; redistribuição para região ativa.
 - **Admin produtos:** ordenação sidebar ignora emoji; scroll até loja ativa (`fb04d75`).
-- **Docs:** `README.md` alinhado (planos, logo, bairros, migrations `057`).
+- **Admin lojas:** campo e-mail do dono (`resolveOwnerForAdminStore`); testes `api-resolve-owner-email`.
+- **Seed/limpeza:** `lojasfake@gmail.com` dono de ~20 lojas ads; `cleanup-orphans` removeu 11 merchants seed sem loja; scripts em `scripts/` (gitignored).
+- **Docs:** `README.md` + `melhorias.md` + Obsidian roadmap de aprendizado.
+- **Aprendizado (triggers):** `054` bloqueia troca de `owner_id` sem admin Auth; script desliga trigger só na sessão SQL.
 
 ### 2026-07-13
 - Arquivo atualizado para fluxo **1 código → testar → próximo**.
