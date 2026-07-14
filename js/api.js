@@ -1691,15 +1691,24 @@ export async function updateCustomerProfile(userId, { name, phone, address, deli
 }
 
 // --- Admin ---
-export async function fetchMerchants() {
+/**
+ * Lista lojistas (role merchant).
+ * @param {{ withoutStore?: boolean }} [opts]
+ *   withoutStore — só quem ainda não tem loja (select "Lojista responsável" ao criar loja).
+ */
+export async function fetchMerchants({ withoutStore = false } = {}) {
   const client = await requireClient()
   const { data, error } = await client
     .from('users')
-    .select('id, name, email')
+    .select(withoutStore ? 'id, name, email, stores(id)' : 'id, name, email')
     .eq('role', 'merchant')
     .order('name')
   if (error) throw error
-  return data ?? []
+  const rows = data ?? []
+  if (!withoutStore) return rows
+  return rows
+    .filter((m) => !Array.isArray(m.stores) || m.stores.length === 0)
+    .map(({ stores: _stores, ...merchant }) => merchant)
 }
 
 export async function fetchModerators() {
@@ -2194,6 +2203,16 @@ export async function createStoreAsAdmin(form) {
   const client = await requireClient()
   const slug = form.slug?.trim() || generateSlug(form.name)
   const approved = form.approved !== false
+  if (!form.owner_id) throw new Error(t('errors.selectResponsibleMerchant'))
+
+  // Um lojista = uma loja (mesma regra do cadastro em /lojista/cadastro).
+  const { data: existingStore, error: existingErr } = await client
+    .from('stores')
+    .select('id, name')
+    .eq('owner_id', form.owner_id)
+    .maybeSingle()
+  if (existingErr) throw existingErr
+  if (existingStore) throw new Error(t('errors.merchantAlreadyHasStore', { name: existingStore.name }))
 
   const neighborhood = await resolveActiveNeighborhoodLocation(client, form.neighborhood_id)
   if (form.category_id) await assertCategoryExists(client, form.category_id)

@@ -1782,7 +1782,8 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
     }
 
     const stores = pageResult.data
-    const merchants = storesReadOnly ? [] : await fetchMerchants()
+    // Só lojistas ainda sem loja — um dono = uma loja.
+    const merchants = storesReadOnly ? [] : await fetchMerchants({ withoutStore: true })
 
     setAdminPendingCount(queue.pendingTotal)
     import('../ui.js').then(({ renderHeader }) => renderHeader()).catch(() => {})
@@ -1810,6 +1811,7 @@ export async function renderStaffDashboard(main, tab = 'overview', selectedStore
                 <option value="">${t('app.selectPlaceholder')}</option>
                 ${merchants.map((m) => `<option value="${m.id}">${escapeHtml(m.name)} (${escapeHtml(m.email)})</option>`).join('')}
               </select>
+              <p class="form-hint">${t('admin.responsibleMerchantHint')}</p>
             </div>
             <div class="form-group">
               <label class="form-label">${t('labels.storeName')}</label>
