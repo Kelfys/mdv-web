@@ -1082,15 +1082,18 @@ html[data-theme='dark'][data-logo-accent='preto'] .logo__accent { color: #e7e9ea
 
 .chip {
   flex-shrink: 0;
-  padding: 0.375rem 0.875rem;
+  padding: 0.4375rem 0.875rem;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface);
   font-size: 0.8125rem;
   font-weight: 500;
+  line-height: 1.25;
   color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
+  /* evita corte vertical por subpixel / mask */
+  box-sizing: border-box;
   transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
 }
 
@@ -1193,15 +1196,32 @@ html[data-theme='dark'][data-logo-accent='preto'] .logo__accent { color: #e7e9ea
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
-  /* overflow hidden só para animar recolher; altura folgada p/ 2 linhas + barra de scroll */
+  /* overflow hidden só para animar recolher; altura folgada p/ 2 linhas de chips */
   overflow: hidden;
-  max-height: 12rem;
+  max-height: 14rem;
   transition: max-height 0.25s ease, opacity 0.2s ease;
 }
 
 @media (min-width: 768px) {
   .home-toolbar__filters {
-    max-height: 14rem; /* espaço para scrollbars finas nas duas faixas */
+    max-height: 15rem; /* + barras de scroll finas */
+  }
+}
+
+@media (max-width: 767px) {
+  .home-toolbar__filters {
+    max-height: 13rem;
+  }
+
+  .home-toolbar__row {
+    /* linha inteira sem clipar altura dos botões */
+    align-items: stretch;
+    min-height: 2.25rem;
+  }
+
+  .category-scroll {
+    /* no mobile prioriza toque horizontal sem clipar chips */
+    padding-block: 0.2rem 0.3rem;
   }
 }
 
