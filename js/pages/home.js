@@ -27,20 +27,45 @@ const FEED_SKELETON_COUNT = 6
 
 /**
  * Scroll horizontal de chips (bairros/categorias) no desktop:
- * roda do mouse e arrastar com o botão esquerdo.
- * (overflow-x sozinho só funciona bem com touchpad/touch.)
+ * roda do mouse, arrastar e barra de scroll.
+ * Atualiza fade nas pontas e leva a chip ativa para a área visível.
  */
+function updateChipRowFade(el) {
+  if (!el) return
+  const max = el.scrollWidth - el.clientWidth
+  const overflow = max > 2
+  el.classList.toggle('category-scroll--fade-start', overflow && el.scrollLeft > 4)
+  el.classList.toggle('category-scroll--fade-end', overflow && el.scrollLeft < max - 4)
+}
+
+function scrollActiveChipIntoView(el) {
+  if (!el) return
+  const active = el.querySelector('.chip.active')
+  if (!active) return
+  // centraliza a ativa quando possível
+  const left = active.offsetLeft - (el.clientWidth - active.offsetWidth) / 2
+  el.scrollTo({ left: Math.max(0, left), behavior: 'instant' in HTMLElement.prototype ? 'instant' : 'auto' })
+  updateChipRowFade(el)
+}
+
 function bindChipRowScroll(el) {
   if (!el || el.dataset.chipScrollBound === '1') return
   el.dataset.chipScrollBound = '1'
 
+  const onScrollOrResize = () => updateChipRowFade(el)
+  el.addEventListener('scroll', onScrollOrResize, { passive: true })
+  window.addEventListener('resize', onScrollOrResize, { passive: true })
+
   el.addEventListener('wheel', (e) => {
     if (el.scrollWidth <= el.clientWidth + 1) return
-    // Preferir scroll horizontal na faixa de chips (roda vertical vira horizontal)
+    // Roda vertical → scroll horizontal na faixa
     if (Math.abs(e.deltaY) >= Math.abs(e.deltaX)) {
       e.preventDefault()
       el.scrollLeft += e.deltaY
+    } else {
+      el.scrollLeft += e.deltaX
     }
+    updateChipRowFade(el)
   }, { passive: false })
 
   let dragging = false
@@ -65,6 +90,7 @@ function bindChipRowScroll(el) {
     if (Math.abs(dx) > 4) {
       moved = true
       el.scrollLeft = startLeft - dx
+      updateChipRowFade(el)
     }
   })
 
@@ -89,6 +115,12 @@ function bindChipRowScroll(el) {
     e.stopPropagation()
     moved = false
   }, true)
+
+  // Layout pronto → fade + chip ativa visível
+  requestAnimationFrame(() => {
+    scrollActiveChipIntoView(el)
+    updateChipRowFade(el)
+  })
 }
 
 function renderHomeEmptyState({ icon, title, body, actionHtml = '' }) {
