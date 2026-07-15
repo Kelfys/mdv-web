@@ -20,7 +20,7 @@ import {
   getCart, onCartChange, openCart, closeCart, removeItem, updateQuantity,
   getCartTotal, getCartItemCount, clearCart,
 } from './state.js'
-import { buildOrderMessage, buildWhatsAppUrl } from './whatsapp.js'
+import { buildOrderMessage, buildWhatsAppUrl, assertValidBrazilWhatsapp } from './whatsapp.js'
 import {
   getPaymentMethod, getDefaultPaymentMethod, isValidPaymentMethod,
 } from './payment.js'
@@ -855,7 +855,8 @@ export function renderCartDrawer() {
               </div>
               <div class="form-group">
                 <label class="form-label" for="checkout-phone">${t('labels.phone')}</label>
-                <input class="form-input" id="checkout-phone" name="phone" placeholder="(21) 99999-9999" required />
+                <input class="form-input" id="checkout-phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="${t('admin.whatsappPlaceholder')}" required />
+                <p class="form-hint">${t('checkout.phoneHint')}</p>
               </div>
               <div class="form-group">
                 <label class="form-label" for="checkout-address">${t('labels.address')}</label>
@@ -968,8 +969,29 @@ async function handleCheckout(e, allowedPayments) {
 
   const form = e.target
   const name = form.name.value.trim()
-  const phone = form.phone.value.trim()
+  const phoneRaw = form.phone.value.trim()
   const address = form.address.value.trim()
+  if (!name) {
+    showToast(t('errors.informName'))
+    form.phone?.blur()
+    form.name?.focus()
+    return
+  }
+  if (!address) {
+    showToast(t('errors.informAddress'))
+    form.address?.focus()
+    return
+  }
+
+  let phone
+  try {
+    phone = assertValidBrazilWhatsapp(phoneRaw)
+  } catch (err) {
+    showToast(err.message ?? t('errors.invalidBrazilWhatsapp'))
+    form.phone?.focus()
+    return
+  }
+
   const paymentMethod = form.payment?.value
   const allowed = allowedPayments ?? cart.storePaymentMethods ?? []
   if (!isValidPaymentMethod(paymentMethod, allowed)) return
@@ -982,7 +1004,7 @@ async function handleCheckout(e, allowedPayments) {
     items: cart.items,
     total,
     customerName: name,
-    customerPhone: phone,
+    customerPhone: formatPhone(phone) || phone,
     customerAddress: address,
     deliveryPeriod,
     paymentMethod,
@@ -1000,6 +1022,12 @@ async function handleCheckout(e, allowedPayments) {
     }, cart.items)
   } catch (err) {
     console.error('Erro ao salvar pedido:', err)
+    if (submitBtn) {
+      submitBtn.disabled = false
+      submitBtn.textContent = t('checkout.sendViaWhatsapp')
+    }
+    showToast(err.message ?? t('checkout.submitting'))
+    return
   }
 
   window.open(buildWhatsAppUrl(cart.storeWhatsapp, message), '_blank')

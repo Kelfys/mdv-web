@@ -1470,14 +1470,19 @@ export async function reviewContentReport(reportId, status, reviewNote = '') {
 export async function createOrder(storeId, checkout, items) {
   const client = await requireClient()
   const total = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+  const customerPhone = assertValidBrazilWhatsapp(checkout.customerPhone)
+  const customerName = String(checkout.customerName ?? '').trim()
+  if (!customerName) throw new Error(t('errors.informName'))
+  const customerAddress = String(checkout.customerAddress ?? '').trim()
+  if (!customerAddress) throw new Error(t('errors.informAddress'))
 
   const { data: { user: authUser } } = await client.auth.getUser()
 
   const orderPayload = {
     store_id: storeId,
-    customer_name: checkout.customerName,
-    customer_phone: checkout.customerPhone,
-    customer_address: checkout.customerAddress,
+    customer_name: customerName,
+    customer_phone: customerPhone,
+    customer_address: customerAddress,
     total,
     status: 'sent',
   }

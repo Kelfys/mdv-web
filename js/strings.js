@@ -218,7 +218,8 @@ export const STRINGS = {
     "namePlaceholder": "Seu nome completo",
     "addressPlaceholder": "Rua, número, bairro, complemento",
     "submitting": "Enviando...",
-    "storeNoWhatsapp": "Esta loja ainda não recebe pedidos por WhatsApp."
+    "storeNoWhatsapp": "Esta loja ainda não recebe pedidos por WhatsApp.",
+    "phoneHint": "DDD + número, ex.: 21912345678 (só dígitos)."
   },
   "customer": {
     "loginRequiredTitle": "Faça login",

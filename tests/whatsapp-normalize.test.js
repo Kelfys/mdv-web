@@ -57,3 +57,13 @@ describe('buildWhatsAppUrl', () => {
     expect(url).not.toContain('555521')
   })
 })
+
+describe('checkout customer phone rejects garbage', () => {
+  it('rejects non-phone text', async () => {
+    const { parseBrazilWhatsapp } = await import('../js/whatsapp.js')
+    expect(parseBrazilWhatsapp('abc').ok).toBe(false)
+    expect(parseBrazilWhatsapp('123').ok).toBe(false)
+    expect(parseBrazilWhatsapp('telefone').ok).toBe(false)
+    expect(parseBrazilWhatsapp('21912345678').ok).toBe(true)
+  })
+})
