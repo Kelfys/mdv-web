@@ -136,12 +136,19 @@ function setupAuthListeners() {
   if (!client) return
 
   client.auth.onAuthStateChange(async (event) => {
-    if (!['SIGNED_IN', 'SIGNED_OUT', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) return
-    await loadUser()
+    // TOKEN_REFRESHED dispara ao focar a aba / renovar JWT — não deve remontar o dashboard.
+    // loadUser() só notifica listeners se id/role/email etc. mudarem.
+    if (event === 'TOKEN_REFRESHED') {
+      await loadUser()
+      return
+    }
+    if (!['SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED'].includes(event)) return
+    await loadUser({ forceNotify: event === 'SIGNED_OUT' || event === 'SIGNED_IN' })
   })
 
   onAuthChange(() => {
     const path = getCurrentPath()
+    // Login/logout/perfil: re-render. Refresh de token não chega aqui se o user for o mesmo.
     if (isProtectedRoute(path)) render()
   })
 }

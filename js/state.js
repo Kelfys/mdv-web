@@ -77,15 +77,36 @@ export function getUser() {
   return currentUser
 }
 
-export async function loadUser() {
-  currentUser = await getCurrentUser()
-  notifyAuth()
+/** Compara identidade relevante — evita re-render em TOKEN_REFRESHED ao trocar de aba. */
+function isSameAuthUser(a, b) {
+  if (a === b) return true
+  if (!a && !b) return true
+  if (!a || !b) return false
+  return a.id === b.id
+    && a.role === b.role
+    && a.email === b.email
+    && a.name === b.name
+    && Boolean(a.can_approve_plan_changes) === Boolean(b.can_approve_plan_changes)
+    && (a.neighborhood_id ?? null) === (b.neighborhood_id ?? null)
+}
+
+/**
+ * Recarrega o perfil do Supabase.
+ * Só notifica listeners (header/dashboard) se o usuário “visível” mudou.
+ * @param {{ forceNotify?: boolean }} [opts]
+ */
+export async function loadUser(opts = {}) {
+  const next = await getCurrentUser()
+  const changed = !isSameAuthUser(currentUser, next)
+  currentUser = next
+  if (opts.forceNotify || changed) notifyAuth()
   return currentUser
 }
 
 export function setUser(user) {
+  const changed = !isSameAuthUser(currentUser, user)
   currentUser = user
-  notifyAuth()
+  if (changed) notifyAuth()
 }
 
 export async function logout() {
