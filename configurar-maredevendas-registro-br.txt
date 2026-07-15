@@ -1,6 +1,6 @@
 ================================================================================
   CONFIGURAR maredevendas.com.br → GitHub Pages
-  Registro.br + GitHub (kelfys / MaredeVendas-vanilla)
+  Registro.br + GitHub (kelfys / mdv-web)
 ================================================================================
 
 Valores fixos
@@ -8,7 +8,7 @@ Valores fixos
 Domínio:          maredevendas.com.br
 GitHub user:      kelfys
 CNAME destino:    kelfys.github.io
-Site atual:       https://kelfys.github.io/MaredeVendas-vanilla/
+Site atual:       https://kelfys.github.io/mdv-web/
 
 
 ================================================================================
@@ -50,7 +50,7 @@ Sintoma se faltar este passo:
   (GitHub ainda não emitiu cert de maredevendas.com.br)
 
 Link direto:
-https://github.com/Kelfys/MaredeVendas-vanilla/settings/pages
+https://github.com/Kelfys/mdv-web/settings/pages
 
 Passo a passo:
 1) Abra o link acima (Settings → Pages do repositório)
@@ -110,9 +110,9 @@ https://maredevendas.com.br/#/auth/callback
 https://www.maredevendas.com.br
 https://www.maredevendas.com.br/
 https://www.maredevendas.com.br/#/auth/callback
-https://kelfys.github.io/MaredeVendas-vanilla/
-https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback
-https://kelfys.github.io/MaredeVendas-vanilla/**
+https://kelfys.github.io/mdv-web/
+https://kelfys.github.io/mdv-web/#/auth/callback
+https://kelfys.github.io/mdv-web/**
 http://localhost:8080
 http://localhost:8080/**
 http://127.0.0.1:3000
@@ -160,7 +160,7 @@ Esperado:
 
 O redirect maredevendas.com.br → github.io foi REMOVIDO.
 Produção canônica: https://maredevendas.com.br/
-GitHub Pages continua como espelho em /MaredeVendas-vanilla/.
+GitHub Pages continua como espelho em /mdv-web/.
 
 Após deploy, configure o Custom domain no GitHub Pages e as URLs no Supabase
 (seção 4).

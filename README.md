@@ -3,7 +3,7 @@
 Marketplace local de lojas — **HTML, CSS e JavaScript vanilla** com backend [Supabase](https://supabase.com). Clientes exploram lojas, montam o carrinho e finalizam o pedido pelo **WhatsApp**. Não há pagamento in-app.
 
 **Site em produção:** https://maredevendas.com.br/  
-**Espelho (GitHub Pages):** https://kelfys.github.io/MaredeVendas-vanilla/
+**Espelho (GitHub Pages):** https://kelfys.github.io/mdv-web/
 
 ---
 
@@ -33,7 +33,7 @@ Marketplace local de lojas — **HTML, CSS e JavaScript vanilla** com backend [S
 ## Estrutura do projeto
 
 ```
-maredevendas-vanilla/
+mdv-web/
 ├── index.html              # Shell HTML — cache bust em app.js/styles.css no deploy
 ├── strings-editor.html     # Editor visual dos textos (js/strings.js)
 ├── 404.html                # Fallback SPA para rotas diretas no GitHub Pages
@@ -89,7 +89,7 @@ deliveryPeriodLabel('manha')               // "Manhã"
 
 ### Editor visual
 
-**`strings-editor.html`** — publicado junto com o site (ex.: `https://kelfys.github.io/MaredeVendas-vanilla/strings-editor.html`).
+**`strings-editor.html`** — publicado junto com o site (ex.: `https://kelfys.github.io/mdv-web/strings-editor.html`).
 
 1. Buscar por chave ou valor
 2. Editar textos (rascunho salvo em `localStorage`)
@@ -151,8 +151,8 @@ Ou execute cada arquivo em `supabase/migrations/` no **SQL Editor** (ordem numé
 | Redirect URLs | `https://maredevendas.com.br/#/auth/callback` |
 | | `https://maredevendas.com.br/` |
 | | `https://www.maredevendas.com.br/#/auth/callback` |
-| | `https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback` |
-| | `https://kelfys.github.io/MaredeVendas-vanilla/` |
+| | `https://kelfys.github.io/mdv-web/#/auth/callback` |
+| | `https://kelfys.github.io/mdv-web/` |
 | Local | `http://localhost:8080` |
 
 Aplicar no projeto remoto: `npx supabase config push` (valores em `supabase/config.toml`).
@@ -373,7 +373,7 @@ gh workflow run deploy.yml
 | `/regras` | Regras e planos |
 | `/auth/callback` | Retorno OAuth Google / recovery de senha |
 
-> Rotas sempre em hash: `https://maredevendas.com.br/#/conta/entrar` (ou `…github.io/MaredeVendas-vanilla/#/conta/entrar`). O `404.html` redireciona rotas diretas para `/#/rota`.
+> Rotas sempre em hash: `https://maredevendas.com.br/#/conta/entrar` (ou `…github.io/mdv-web/#/conta/entrar`). O `404.html` redireciona rotas diretas para `/#/rota`.
 
 ---
 

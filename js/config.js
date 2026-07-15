@@ -64,8 +64,8 @@ export const PRODUCTION_SITE_PATH = '/'
 
 /** Fallback / espelho no GitHub Pages (project site). */
 export const GITHUB_PAGES_ORIGIN = 'https://kelfys.github.io'
-export const GITHUB_PAGES_PATH = '/MaredeVendas-vanilla/'
-export const GITHUB_PROJECT_BASE = '/MaredeVendas-vanilla'
+export const GITHUB_PAGES_PATH = '/mdv-web/'
+export const GITHUB_PROJECT_BASE = '/mdv-web'
 
 export function getProductionSiteUrl() {
   return `${PRODUCTION_SITE_ORIGIN}${PRODUCTION_SITE_PATH}`
@@ -94,7 +94,7 @@ export function isProductionSiteHost(hostname = window.location.hostname) {
 
 /**
  * Prefixo de path quando o app não está na raiz do host.
- * Vazio em maredevendas.com.br, localhost e /; preenchido só em github.io/MaredeVendas-vanilla/.
+ * Vazio em maredevendas.com.br, localhost e /; preenchido só em github.io/mdv-web/.
  */
 export function detectAppBasePath() {
   const path = window.location.pathname || '/'

@@ -251,7 +251,7 @@ export function getAuthRedirectUrl() {
  * 3. Redirect URLs (adicione todas as usadas):
  *    - https://maredevendas.com.br/#/auth/callback
  *    - https://www.maredevendas.com.br/#/auth/callback
- *    - https://kelfys.github.io/MaredeVendas-vanilla/#/auth/callback
+ *    - https://kelfys.github.io/mdv-web/#/auth/callback
  *
  * Sem o provider ativo, a API retorna "provider is not enabled".
  * @param {string} [nextPath] — rota após callback (sessionStorage oauth-next)

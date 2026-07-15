@@ -96,11 +96,11 @@ Após feito: atualizar status no melhorias.md.
 
 | | |
 |---|---|
-| **Nome** | MaredeVendas-vanilla |
+| **Nome** | mdv-web |
 | **Stack** | JavaScript vanilla (ES modules) + Supabase, sem bundler |
-| **Repo** | `Kelfys/MaredeVendas-vanilla` |
+| **Repo** | `Kelfys/mdv-web` |
 | **Produção** | https://maredevendas.com.br |
-| **GitHub Pages** | https://kelfys.github.io/MaredeVendas-vanilla/ |
+| **GitHub Pages** | https://kelfys.github.io/mdv-web/ |
 | **HEAD** | verificar: `git log -1 --oneline` |
 | **Rollback SW** | `8bb11b1` |
 

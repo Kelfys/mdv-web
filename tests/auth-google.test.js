@@ -5,7 +5,7 @@ describe('google auth', () => {
     vi.stubGlobal('window', {
       location: {
         origin: 'https://example.github.io',
-        pathname: '/MaredeVendas-vanilla/',
+        pathname: '/mdv-web/',
         hash: '#/conta/criar',
       },
     })
@@ -33,7 +33,7 @@ describe('google auth', () => {
       getSupabase: vi.fn(),
     }))
     const { getAuthRedirectUrl } = await import('../js/api.js')
-    expect(getAuthRedirectUrl()).toBe('https://example.github.io/MaredeVendas-vanilla/#/auth/callback')
+    expect(getAuthRedirectUrl()).toBe('https://example.github.io/mdv-web/#/auth/callback')
   })
 
   it('getAuthRedirectUrl stays on custom domain host', async () => {

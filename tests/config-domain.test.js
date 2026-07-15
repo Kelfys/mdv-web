@@ -22,9 +22,9 @@ describe('custom domain base path', () => {
   })
 
   it('detectAppBasePath keeps github.io project subfolder', async () => {
-    vi.stubGlobal('window', { location: { pathname: '/MaredeVendas-vanilla/' } })
+    vi.stubGlobal('window', { location: { pathname: '/mdv-web/' } })
     const { detectAppBasePath } = await import('../js/config.js')
-    expect(detectAppBasePath()).toBe('/MaredeVendas-vanilla')
+    expect(detectAppBasePath()).toBe('/mdv-web')
   })
 
   it('assetHref resolves from domain root without prefix', async () => {

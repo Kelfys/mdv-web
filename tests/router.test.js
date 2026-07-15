@@ -4,9 +4,9 @@ describe('router path helpers', () => {
   beforeEach(() => {
     vi.stubGlobal('window', {
       location: {
-        href: 'https://example.github.io/MaredeVendas-vanilla/#/dashboard/pedidos',
+        href: 'https://example.github.io/mdv-web/#/dashboard/pedidos',
         hash: '#/dashboard/pedidos',
-        pathname: '/MaredeVendas-vanilla/dashboard/pedidos',
+        pathname: '/mdv-web/dashboard/pedidos',
       },
     })
   })
@@ -26,28 +26,28 @@ describe('router path helpers', () => {
     expect(routeHref('/dashboard')).toBe('#/dashboard')
 
     window.location.hash = '#/conta/entrar?sec=planos'
-    window.location.href = 'https://example.github.io/MaredeVendas-vanilla/#/conta/entrar?sec=planos'
+    window.location.href = 'https://example.github.io/mdv-web/#/conta/entrar?sec=planos'
     expect(getCurrentPath()).toBe('/conta/entrar')
     expect(getHashSection()).toBe('planos')
     expect(getHashQueryParam('sec')).toBe('planos')
 
     window.location.hash = '#/favoritos?tab=orders'
-    window.location.href = 'https://example.github.io/MaredeVendas-vanilla/#/favoritos?tab=orders'
+    window.location.href = 'https://example.github.io/mdv-web/#/favoritos?tab=orders'
     expect(getCurrentPath()).toBe('/favoritos')
     expect(getHashQueryParam('tab')).toBe('orders')
 
-    window.location.href = 'https://example.github.io/MaredeVendas-vanilla/#/admin/entrar'
+    window.location.href = 'https://example.github.io/mdv-web/#/admin/entrar'
     window.location.hash = '#/admin/entrar'
-    window.location.pathname = '/MaredeVendas-vanilla/'
+    window.location.pathname = '/mdv-web/'
     expect(getCurrentPath()).toBe('/admin/entrar')
 
     window.location.hash = ''
-    window.location.href = 'https://example.github.io/MaredeVendas-vanilla/'
+    window.location.href = 'https://example.github.io/mdv-web/'
     window.__MV_INITIAL_ROUTE__ = '/admin/entrar'
     expect(getCurrentPath()).toBe('/admin/entrar')
 
     window.location.hash = '#/'
-    window.location.href = 'https://example.github.io/MaredeVendas-vanilla/#/'
+    window.location.href = 'https://example.github.io/mdv-web/#/'
     expect(getCurrentPath()).toBe('/')
 
     delete window.__MV_INITIAL_ROUTE__
