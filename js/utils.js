@@ -24,6 +24,17 @@ export function formatPhone(phone) {
   return phone
 }
 
+/**
+ * WhatsApp efetivo para comprar o item:
+ * 1) product.whatsapp (vitrine seed / contato por anúncio)
+ * 2) product.store.whatsapp
+ */
+export function getProductContactWhatsapp(product) {
+  const fromProduct = String(product?.whatsapp ?? '').trim()
+  if (fromProduct) return fromProduct
+  return String(product?.store?.whatsapp ?? '').trim()
+}
+
 /** Extrai handle do Instagram (sem @) de URL, @usuario ou usuario. */
 export function normalizeInstagramHandle(raw) {
   const value = String(raw ?? '').trim()

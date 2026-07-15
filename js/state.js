@@ -16,6 +16,9 @@
 import { CART_STORAGE_KEY, THEME_STORAGE_KEY } from './config.js'
 import { DEFAULT_PAYMENT_METHOD_IDS, normalizeStorePaymentMethods } from './payment.js'
 import { getCurrentUser, signOut as apiSignOut } from './api.js'
+import { getProductContactWhatsapp } from './utils.js'
+
+export { getProductContactWhatsapp }
 
 // --- Theme ---
 export function getTheme() {
@@ -135,17 +138,6 @@ function notifyCart() {
 
 export function getCart() {
   return cart
-}
-
-/**
- * WhatsApp efetivo para comprar o item:
- * 1) product.whatsapp (vitrine seed / contato por anúncio)
- * 2) product.store.whatsapp
- */
-export function getProductContactWhatsapp(product) {
-  const fromProduct = String(product?.whatsapp ?? '').trim()
-  if (fromProduct) return fromProduct
-  return String(product?.store?.whatsapp ?? '').trim()
 }
 
 export function setStore(storeId, storeName, whatsapp, paymentMethods = DEFAULT_PAYMENT_METHOD_IDS) {
